@@ -5,16 +5,29 @@ if(NOT WIN32)
   message(FATAL_ERROR "OnyxOS UWP must be configured with the Windows SDK on Windows.")
 endif()
 
-add_executable(OnyxOS WIN32 src/App.cpp)
-target_compile_features(OnyxOS PRIVATE cxx_std_20)
-target_compile_definitions(OnyxOS PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX UNICODE _UNICODE)
-target_link_libraries(OnyxOS PRIVATE windowsapp)
-
-set_target_properties(OnyxOS PROPERTIES
-  OUTPUT_NAME "OnyxOS"
-  VS_GLOBAL_WindowsAppContainer true
-  VS_GLOBAL_WindowsPackageType None
-  VS_GLOBAL_AppContainerApplication true
-  VS_GLOBAL_AppxPackage false
+# Seven launch entries are packaged into ONE APPX. Each entry currently uses
+# the shared UWP host scaffold; profile-specific QEMU activation is a later step.
+set(ONYXOS_APPS
+  "OnyxOS-Launcher"
+  "OnyxOS-Windows10"
+  "OnyxOS-Windows11"
+  "OnyxOS-Debian"
+  "OnyxOS-Ubuntu"
+  "OnyxOS-ArchLinux"
+  "OnyxOS-macOS"
 )
-install(TARGETS OnyxOS RUNTIME DESTINATION .)
+
+foreach(app IN LISTS ONYXOS_APPS)
+  add_executable(${app} WIN32 src/App.cpp)
+  target_compile_features(${app} PRIVATE cxx_std_20)
+  target_compile_definitions(${app} PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX UNICODE _UNICODE)
+  target_link_libraries(${app} PRIVATE windowsapp)
+  set_target_properties(${app} PROPERTIES
+    OUTPUT_NAME "${app}"
+    VS_GLOBAL_WindowsAppContainer true
+    VS_GLOBAL_WindowsPackageType None
+    VS_GLOBAL_AppContainerApplication true
+    VS_GLOBAL_AppxPackage false
+  )
+  install(TARGETS ${app} RUNTIME DESTINATION .)
+endforeach()
