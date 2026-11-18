@@ -1,4 +1,4 @@
-name: OnyxOS CMake Xbox UWP Build
+name: OnyxOS Xbox UWP Packages
 
 on:
   push:
@@ -11,16 +11,16 @@ permissions:
   contents: read
 
 jobs:
-  build-uwp:
-    name: CMake Configure and Build (UWP x64)
+  build-appx:
+    name: Build and package OnyxOS apps (x64)
     runs-on: windows-2022
-    timeout-minutes: 45
+    timeout-minutes: 60
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up MSVC developer environment
+      - name: Set up MSVC x64
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x64
@@ -28,37 +28,65 @@ jobs:
       - name: Set up CMake
         uses: lukka/get-cmake@latest
 
-      - name: Verify CMake project
+      - name: Locate Windows SDK packaging tools
+        id: sdk
         shell: pwsh
         run: |
-          if (-not (Test-Path './CMakeLists.txt')) {
-            Write-Error 'CMakeLists.txt was not found in the repository root. Add the OnyxOS CMake project before building.'
-            exit 1
+          $makeAppx = Get-ChildItem "$env:ProgramFiles(x86)\Windows Kits\10\bin" -Filter MakeAppx.exe -Recurse -ErrorAction SilentlyContinue |
+            Where-Object { $_.FullName -match '\\x64\\MakeAppx.exe$' } |
+            Sort-Object FullName -Descending | Select-Object -First 1
+          if (-not $makeAppx) { throw 'MakeAppx.exe (Windows SDK) was not found on this runner.' }
+          "makeappx=$($makeAppx.FullName)" >> $env:GITHUB_OUTPUT
+
+      - name: Validate seven UWP app projects
+        shell: pwsh
+        run: |
+          $apps = @('Launcher','Windows10','Windows11','Debian','Ubuntu','ArchLinux','macOS')
+          foreach ($app in $apps) {
+            $dir = Join-Path 'Apps' $app
+            if (-not (Test-Path (Join-Path $dir 'CMakeLists.txt'))) { throw "Missing $dir/CMakeLists.txt" }
+            if (-not (Test-Path (Join-Path $dir 'Package.appxmanifest'))) { throw "Missing $dir/Package.appxmanifest" }
           }
 
-      - name: Configure Xbox UWP x64
-        run: >-
-          cmake -S . -B build
-          -G "Visual Studio 17 2022"
-          -A x64
-          -DCMAKE_SYSTEM_NAME=WindowsStore
-          -DCMAKE_SYSTEM_VERSION=10.0
-          -DCMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION=10.0.26100.0
+      - name: Configure and build each UWP app with CMake
+        shell: pwsh
+        run: |
+          $apps = @('Launcher','Windows10','Windows11','Debian','Ubuntu','ArchLinux','macOS')
+          foreach ($app in $apps) {
+            $source = Join-Path 'Apps' $app
+            $build = Join-Path 'build' $app
+            cmake -S $source -B $build -G 'Visual Studio 17 2022' -A x64 -DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0 -DCMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION=10.0.26100.0
+            if ($LASTEXITCODE -ne 0) { throw "CMake configure failed for $app" }
+            cmake --build $build --config Release --parallel
+            if ($LASTEXITCODE -ne 0) { throw "CMake build failed for $app" }
+          }
 
-      - name: Build Release
-        run: cmake --build build --config Release --parallel
+      - name: Package seven APPX files
+        shell: pwsh
+        run: |
+          $apps = @('Launcher','Windows10','Windows11','Debian','Ubuntu','ArchLinux','macOS')
+          $makeAppx = '${{ steps.sdk.outputs.makeappx }}'
+          New-Item -ItemType Directory -Force -Path 'artifacts' | Out-Null
+          foreach ($app in $apps) {
+            $source = Join-Path 'Apps' $app
+            $manifest = Join-Path $source 'Package.appxmanifest'
+            $build = Join-Path 'build' $app
+            $appx = Join-Path (Resolve-Path $build) 'Release'
+            $packageDir = Join-Path 'artifacts' $app
+            New-Item -ItemType Directory -Force -Path $packageDir | Out-Null
+            $stage = Join-Path $packageDir 'Package'
+            New-Item -ItemType Directory -Force -Path $stage | Out-Null
+            Copy-Item $manifest (Join-Path $stage 'AppxManifest.xml')
+            Get-ChildItem $appx -File -ErrorAction Stop | Copy-Item -Destination $stage
+            & $makeAppx pack /d $stage /p (Join-Path $packageDir "$app-x64.appx") /o
+            if ($LASTEXITCODE -ne 0) { throw "MakeAppx failed for $app" }
+          }
 
-      - name: Upload build artifacts
+      - name: Upload seven Xbox UWP packages
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: OnyxOS-CMake-UWP-x64
-          path: |
-            build/**/*.appx
-            build/**/*.msix
-            build/**/*.msixbundle
-            build/**/*.appxbundle
-            build/**/*.exe
-            build/**/*.dll
-          if-no-files-found: warn
+          name: OnyxOS-Xbox-UWP-APPX-x64
+          path: artifacts/**/*.appx
+          if-no-files-found: error
           retention-days: 14
