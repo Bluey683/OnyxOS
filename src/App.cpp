@@ -1,7 +1,6 @@
 #include <windows.h>
 #include <winrt/base.h>
 #include <winrt/Windows.ApplicationModel.Core.h>
-#include <winrt/Windows.ApplicationModel.Activation.h>
 #include <winrt/Windows.UI.Core.h>
 
 using namespace winrt;
@@ -24,7 +23,7 @@ private:
     CoreWindow m_window{ nullptr };
 };
 
-struct OnyxOSViewSource final : implements<OnyxOSViewSource, IFrameworkViewSource>
+struct App final : implements<App, IFrameworkViewSource>
 {
     IFrameworkView CreateView() { return make<OnyxOSView>(); }
 };
@@ -32,6 +31,6 @@ struct OnyxOSViewSource final : implements<OnyxOSViewSource, IFrameworkViewSourc
 int __stdcall wWinMain(HINSTANCE, HINSTANCE, PWSTR, int)
 {
     init_apartment(apartment_type::single_threaded);
-    CoreApplication::Run(make<OnyxOSViewSource>());
+    CoreApplication::Run(make<App>());
     return 0;
 }
