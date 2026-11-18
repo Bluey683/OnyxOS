@@ -1,33 +1,28 @@
 name: OnyxOS Xbox UWP Build
-
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
   workflow_dispatch:
-
 permissions:
   contents: read
-
 jobs:
   build-onyxos:
     name: Build and package one OnyxOS Xbox app (x64)
     runs-on: windows-2022
     timeout-minutes: 60
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
+      - uses: actions/checkout@v4
       - name: Set up MSVC x64
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x64
-
       - name: Set up CMake
         uses: lukka/get-cmake@latest
-
+      - name: Generate UWP manifest assets
+        shell: pwsh
+        run: ./scripts/Make-Assets.ps1
       - name: Locate Windows SDK MakeAppx
         id: sdk
         shell: pwsh
@@ -35,16 +30,9 @@ jobs:
           $makeAppx = Get-ChildItem "$env:ProgramFiles(x86)\Windows Kits\10\bin" -Filter MakeAppx.exe -Recurse -ErrorAction SilentlyContinue |
             Where-Object { $_.FullName -match '\\x64\\MakeAppx.exe$' } |
             Sort-Object FullName -Descending | Select-Object -First 1
-          if (-not $makeAppx) { throw 'MakeAppx.exe was not found in the installed Windows SDK.' }
+          if (-not $makeAppx) { throw 'MakeAppx.exe was not found.' }
           "makeappx=$($makeAppx.FullName)" >> $env:GITHUB_OUTPUT
-
-      - name: Validate single UWP application
-        shell: pwsh
-        run: |
-          if (-not (Test-Path 'CMakeLists.txt')) { throw 'Root CMakeLists.txt is missing.' }
-          if (-not (Test-Path 'Package.appxmanifest')) { throw 'Root Package.appxmanifest is missing.' }
-
-      - name: Configure OnyxOS for Xbox UWP x64
+      - name: Configure OnyxOS for Windows UWP x64
         run: >-
           cmake -S . -B build
           -G "Visual Studio 17 2022"
@@ -52,10 +40,8 @@ jobs:
           -DCMAKE_SYSTEM_NAME=WindowsStore
           -DCMAKE_SYSTEM_VERSION=10.0
           -DCMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION=10.0.26100.0
-
       - name: Build OnyxOS
         run: cmake --build build --config Release --parallel
-
       - name: Stage and package one APPX
         shell: pwsh
         run: |
@@ -63,16 +49,14 @@ jobs:
           $stage = Join-Path $env:RUNNER_TEMP 'OnyxOS-Package'
           New-Item -ItemType Directory -Force -Path $stage | Out-Null
           Copy-Item 'Package.appxmanifest' (Join-Path $stage 'AppxManifest.xml')
-          $binary = Get-ChildItem 'build' -Recurse -File |
-            Where-Object { $_.Extension -in @('.exe', '.dll', '.pri') }
-          if (-not $binary) { throw 'No UWP build output (.exe/.dll/.pri) was found. Check the CMake target and output directory.' }
-          $binary | Copy-Item -Destination $stage
-          $assets = Get-ChildItem 'Assets' -File -ErrorAction SilentlyContinue
-          if ($assets) { $assets | Copy-Item -Destination $stage }
+          $exe = Get-ChildItem 'build' -Recurse -Filter 'OnyxOS.exe' -File | Select-Object -First 1
+          if (-not $exe) { throw 'OnyxOS.exe was not produced.' }
+          Copy-Item $exe.FullName $stage
+          Get-ChildItem 'build' -Recurse -Filter '*.dll' -File | ForEach-Object { Copy-Item $_.FullName $stage -Force }
+          Copy-Item 'Assets' (Join-Path $stage 'Assets') -Recurse -Force
           New-Item -ItemType Directory -Force -Path 'artifacts' | Out-Null
           & $makeAppx pack /d $stage /p 'artifacts/OnyxOS-x64.appx' /o
-          if ($LASTEXITCODE -ne 0) { throw 'MakeAppx failed to create OnyxOS-x64.appx.' }
-
+          if ($LASTEXITCODE -ne 0) { throw 'MakeAppx failed.' }
       - name: Upload single OnyxOS Xbox UWP package
         if: always()
         uses: actions/upload-artifact@v4
