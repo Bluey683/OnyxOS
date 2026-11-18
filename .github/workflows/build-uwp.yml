@@ -1,0 +1,69 @@
+name: OnyxOS Xbox UWP Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-uwp:
+    name: Build UWP (x64)
+    runs-on: windows-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Locate solution or UWP project
+        id: locate
+        shell: pwsh
+        run: |
+          $solution = Get-ChildItem -Path . -Recurse -File |
+            Where-Object { $_.Extension -in '.sln', '.slnx' } |
+            Select-Object -First 1
+
+          if ($solution) {
+            "build_target=$($solution.FullName)" >> $env:GITHUB_OUTPUT
+            Write-Host "Found solution: $($solution.FullName)"
+            exit 0
+          }
+
+          $project = Get-ChildItem -Path . -Recurse -Filter *.vcxproj -File |
+            Select-Object -First 1
+
+          if ($project) {
+            "build_target=$($project.FullName)" >> $env:GITHUB_OUTPUT
+            Write-Host "Found C++ project: $($project.FullName)"
+            exit 0
+          }
+
+          Write-Error "No .sln, .slnx, or .vcxproj was found. Add the OnyxOS Visual Studio UWP project before enabling automated compilation."
+          exit 1
+
+      - name: Build UWP package
+        shell: pwsh
+        run: |
+          $target = "${{ steps.locate.outputs.build_target }}"
+          Write-Host "Building: $target"
+          msbuild "$target" /m /restore /p:Configuration=Release /p:Platform=x64 /p:AppxPackage=true /p:AppxBundle=Always /p:UapAppxPackageBuildMode=SideloadOnly /p:AppxPackageSigningEnabled=false /verbosity:minimal
+
+      - name: Upload build output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: OnyxOS-UWP-x64
+          path: |
+            **/AppPackages/**
+            **/bin/x64/Release/**
+            **/x64/Release/**
+          if-no-files-found: warn
+          retention-days: 14
