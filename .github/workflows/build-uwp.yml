@@ -9,7 +9,7 @@ permissions:
   contents: read
 jobs:
   build-onyxos:
-    name: Build and package one OnyxOS Xbox app (x64)
+    name: Build seven OnyxOS entries into one APPX (x64)
     runs-on: windows-2022
     timeout-minutes: 60
     steps:
@@ -40,18 +40,29 @@ jobs:
           -DCMAKE_SYSTEM_NAME=WindowsStore
           -DCMAKE_SYSTEM_VERSION=10.0
           -DCMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION=10.0.26100.0
-      - name: Build OnyxOS
+      - name: Build all seven app entry executables
         run: cmake --build build --config Release --parallel
-      - name: Stage and package one APPX
+      - name: Stage and package one APPX containing seven entries
         shell: pwsh
         run: |
           $makeAppx = '${{ steps.sdk.outputs.makeappx }}'
           $stage = Join-Path $env:RUNNER_TEMP 'OnyxOS-Package'
           New-Item -ItemType Directory -Force -Path $stage | Out-Null
           Copy-Item 'Package.appxmanifest' (Join-Path $stage 'AppxManifest.xml')
-          $exe = Get-ChildItem 'build' -Recurse -Filter 'OnyxOS.exe' -File | Select-Object -First 1
-          if (-not $exe) { throw 'OnyxOS.exe was not produced.' }
-          Copy-Item $exe.FullName $stage
+          $names = @(
+            'OnyxOS-Launcher.exe',
+            'OnyxOS-Windows10.exe',
+            'OnyxOS-Windows11.exe',
+            'OnyxOS-Debian.exe',
+            'OnyxOS-Ubuntu.exe',
+            'OnyxOS-ArchLinux.exe',
+            'OnyxOS-macOS.exe'
+          )
+          foreach ($name in $names) {
+            $exe = Get-ChildItem 'build' -Recurse -Filter $name -File | Select-Object -First 1
+            if (-not $exe) { throw "$name was not produced." }
+            Copy-Item $exe.FullName $stage
+          }
           Get-ChildItem 'build' -Recurse -Filter '*.dll' -File | ForEach-Object { Copy-Item $_.FullName $stage -Force }
           Copy-Item 'Assets' (Join-Path $stage 'Assets') -Recurse -Force
           New-Item -ItemType Directory -Force -Path 'artifacts' | Out-Null
