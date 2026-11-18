@@ -1,4 +1,4 @@
-name: OnyxOS Xbox UWP Build
+name: OnyxOS CMake Xbox UWP Build
 
 on:
   push:
@@ -12,58 +12,53 @@ permissions:
 
 jobs:
   build-uwp:
-    name: Build UWP (x64)
-    runs-on: windows-latest
+    name: CMake Configure and Build (UWP x64)
+    runs-on: windows-2022
     timeout-minutes: 45
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up MSBuild
-        uses: microsoft/setup-msbuild@v2
+      - name: Set up MSVC developer environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
 
-      - name: Locate solution or UWP project
-        id: locate
+      - name: Set up CMake
+        uses: lukka/get-cmake@latest
+
+      - name: Verify CMake project
         shell: pwsh
         run: |
-          $solution = Get-ChildItem -Path . -Recurse -File |
-            Where-Object { $_.Extension -in '.sln', '.slnx' } |
-            Select-Object -First 1
-
-          if ($solution) {
-            "build_target=$($solution.FullName)" >> $env:GITHUB_OUTPUT
-            Write-Host "Found solution: $($solution.FullName)"
-            exit 0
+          if (-not (Test-Path './CMakeLists.txt')) {
+            Write-Error 'CMakeLists.txt was not found in the repository root. Add the OnyxOS CMake project before building.'
+            exit 1
           }
 
-          $project = Get-ChildItem -Path . -Recurse -Filter *.vcxproj -File |
-            Select-Object -First 1
+      - name: Configure Xbox UWP x64
+        run: >-
+          cmake -S . -B build
+          -G "Visual Studio 17 2022"
+          -A x64
+          -DCMAKE_SYSTEM_NAME=WindowsStore
+          -DCMAKE_SYSTEM_VERSION=10.0
+          -DCMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION=10.0.26100.0
 
-          if ($project) {
-            "build_target=$($project.FullName)" >> $env:GITHUB_OUTPUT
-            Write-Host "Found C++ project: $($project.FullName)"
-            exit 0
-          }
+      - name: Build Release
+        run: cmake --build build --config Release --parallel
 
-          Write-Error "No .sln, .slnx, or .vcxproj was found. Add the OnyxOS Visual Studio UWP project before enabling automated compilation."
-          exit 1
-
-      - name: Build UWP package
-        shell: pwsh
-        run: |
-          $target = "${{ steps.locate.outputs.build_target }}"
-          Write-Host "Building: $target"
-          msbuild "$target" /m /restore /p:Configuration=Release /p:Platform=x64 /p:AppxPackage=true /p:AppxBundle=Always /p:UapAppxPackageBuildMode=SideloadOnly /p:AppxPackageSigningEnabled=false /verbosity:minimal
-
-      - name: Upload build output
+      - name: Upload build artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: OnyxOS-UWP-x64
+          name: OnyxOS-CMake-UWP-x64
           path: |
-            **/AppPackages/**
-            **/bin/x64/Release/**
-            **/x64/Release/**
+            build/**/*.appx
+            build/**/*.msix
+            build/**/*.msixbundle
+            build/**/*.appxbundle
+            build/**/*.exe
+            build/**/*.dll
           if-no-files-found: warn
           retention-days: 14
