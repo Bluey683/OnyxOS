@@ -44,8 +44,8 @@ namespace
     }
 }
 
-struct OnyxOSApp :
-    winrt::implements<OnyxOSApp, winrt::Windows::UI::Xaml::ApplicationT<OnyxOSApp>>
+struct App :
+    winrt::implements<App, winrt::Windows::UI::Xaml::ApplicationT<App>>
 {
     void OnLaunched(
         winrt::Windows::ApplicationModel::Activation::LaunchActivatedEventArgs const&)
@@ -154,7 +154,7 @@ int __stdcall wWinMain(HINSTANCE, HINSTANCE, PWSTR, int)
         winrt::init_apartment(winrt::apartment_type::single_threaded);
         winrt::Windows::UI::Xaml::Application::Start([](auto&&)
         {
-            winrt::make<OnyxOSApp>();
+            winrt::make<App>();
         });
         return 0;
     }
