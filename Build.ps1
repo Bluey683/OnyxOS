@@ -105,7 +105,7 @@ $configureArgs = @(
 )
 Invoke-CheckedCommand -FilePath 'cmake' -Arguments $configureArgs
 
-Write-Host 'Building seven app-entry host executables...' -ForegroundColor Yellow
+Write-Host 'Building seven UWP XAML app-entry executables...' -ForegroundColor Yellow
 Invoke-CheckedCommand -FilePath 'cmake' -Arguments @(
     '--build', $buildPath,
     '--config', $Configuration,
@@ -206,4 +206,4 @@ Write-Host ''
 Write-Host 'OnyxOS APPX build completed.' -ForegroundColor Green
 Write-Host "Package: $appxPath"
 Write-Host 'Package is unsigned. Sign it with a trusted development certificate whose subject matches CN=Bluey683.'
-Write-Warning 'The current targets still use the placeholder CoreApplication host. LauncherPage.xaml is not wired into the executable or compiled by this build script; QEMU guest boot is not implemented. The QEMU DLL loader is a preflight adapter only.'
+Write-Warning 'The launcher interface is created with native UWP XAML controls in src/App.cpp. The standalone LauncherPage.xaml and GuestPage.xaml files are not compiled by this CMake build. QEMU guest boot and the guest display lifecycle are not implemented yet.'
