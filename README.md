@@ -134,3 +134,7 @@ integrated. No successful build or guest boot has been verified yet.
 ## VM devices
 
 - [Audio, keyboard, mouse, Xbox controller and network integration](docs/VM-DEVICES.md)
+
+## Automatic OS image downloads and VHDX
+
+- [Official ISO download catalog, TCG and VHDX provisioning status](docs/AUTO-OS-DOWNLOAD.md)
