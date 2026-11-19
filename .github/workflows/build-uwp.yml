@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   build-onyxos:
-    name: Build seven OnyxOS entries into one APPX (x64)
+    name: Build and sign seven OnyxOS entries into one APPX (x64)
     runs-on: windows-2022
     timeout-minutes: 60
 
@@ -30,10 +30,66 @@ jobs:
         shell: pwsh
         run: ./Build.ps1 -Mode GitHubActions -Configuration Release -Architecture x64
 
-      - name: Upload single OnyxOS Xbox UWP package
+      - name: Create development certificate and sign APPX
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $appx = Join-Path $PWD 'artifacts/OnyxOS-x64.appx'
+          if (-not (Test-Path $appx)) {
+            throw "APPX package not found: $appx"
+          }
+
+          # Temporary development certificate. Its public .cer is uploaded
+          # beside the APPX so the tester can explicitly trust this exact signer.
+          $cert = New-SelfSignedCertificate `
+            -Type Custom `
+            -Subject 'CN=Bluey683' `
+            -FriendlyName 'OnyxOS GitHub Actions Development Signing' `
+            -CertStoreLocation 'Cert:\CurrentUser\My' `
+            -KeyAlgorithm RSA `
+            -KeyLength 2048 `
+            -HashAlgorithm SHA256 `
+            -KeyUsage DigitalSignature `
+            -NotAfter (Get-Date).AddYears(2) `
+            -TextExtension @('2.5.29.37={text}1.3.6.1.5.5.7.3.3')
+
+          $passwordText = [Guid]::NewGuid().ToString('N')
+          $password = ConvertTo-SecureString $passwordText -AsPlainText -Force
+          $pfxPath = Join-Path $env:RUNNER_TEMP 'OnyxOS-signing.pfx'
+          $cerPath = Join-Path $PWD 'artifacts/OnyxOS-signing.cer'
+          Export-PfxCertificate -Cert $cert -FilePath $pfxPath -Password $password | Out-Null
+          Export-Certificate -Cert $cert -FilePath $cerPath | Out-Null
+
+          $sdkBin = Join-Path ${env:ProgramFiles(x86)} 'Windows Kits/10/bin'
+          $signTool = Get-ChildItem -Path $sdkBin -Filter 'signtool.exe' -Recurse -File |
+            Where-Object { $_.FullName -match '[\\/]x64[\\/]signtool.exe$' } |
+            Sort-Object FullName -Descending |
+            Select-Object -First 1
+          if (-not $signTool) {
+            throw 'SignTool.exe was not found in the installed Windows SDK.'
+          }
+
+          & $signTool.FullName sign /fd SHA256 /f $pfxPath /p $passwordText /v $appx
+          if (-not $?) {
+            throw 'SignTool failed to sign the APPX package.'
+          }
+
+          & $signTool.FullName verify /pa /v $appx
+          if (-not $?) {
+            throw 'SignTool could not verify the signed APPX package.'
+          }
+
+          Remove-Item $pfxPath -Force
+          Write-Host "Signed APPX: $appx"
+          Write-Host "Public certificate: $cerPath"
+          Write-Warning 'This is a self-signed development certificate. Trust OnyxOS-signing.cer on the Xbox before installing the APPX. A new certificate is generated for each workflow run.'
+
+      - name: Upload signed OnyxOS package and public certificate
         uses: actions/upload-artifact@v4
         with:
-          name: OnyxOS-Xbox-UWP-x64
-          path: artifacts/OnyxOS-x64.appx
+          name: OnyxOS-Xbox-UWP-x64-Signed
+          path: |
+            artifacts/OnyxOS-x64.appx
+            artifacts/OnyxOS-signing.cer
           if-no-files-found: error
           retention-days: 14
