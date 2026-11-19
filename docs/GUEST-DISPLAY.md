@@ -1,9 +1,18 @@
-# XAML guest display for the six OS entries
+# Xbox XAML guest display — 1920x1080
 
-`GuestPage.xaml` is the shared guest-console layout for the six non-launcher
-entries in the single APPX: Windows 10, Windows 11, Debian, Ubuntu, Arch Linux
-and experimental macOS. It contains a `SwapChainPanel` intended for the QEMU
+`GuestPage.xaml` is the shared guest-console layout for the six guest OS entries
+in the Xbox APPX: Windows 10, Windows 11, Debian, Ubuntu, Arch Linux and
+experimental macOS. It contains a `SwapChainPanel` intended for the QEMU
 framebuffer, status overlays and a stop control.
+
+## Xbox display and layout
+
+- Target design canvas: **1920 × 1080 (16:9)**, for both installation and normal use.
+- The XAML `Viewbox` scales the same layout uniformly to the active Xbox/TV
+  display mode; controls and text use slightly larger base sizes for TV viewing.
+- This sets the app's design/framebuffer target, not the Xbox system's display
+  mode. The console/TV resolution remains controlled by Xbox display settings.
+- OnyxOS is **Xbox-only**. There is no Android or Moto phone build.
 
 ## Renderer policy
 
