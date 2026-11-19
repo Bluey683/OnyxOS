@@ -30,36 +30,37 @@ jobs:
         shell: pwsh
         run: ./Build.ps1 -Mode GitHubActions -Configuration Release -Architecture x64
 
-      - name: Create development certificate and sign APPX
+      - name: Import persistent signing certificate and sign APPX
+        if: github.event_name != 'pull_request'
         shell: pwsh
+        env:
+          ONYXOS_SIGNING_PFX_BASE64: ${{ secrets.ONYXOS_SIGNING_PFX_BASE64 }}
+          ONYXOS_SIGNING_PFX_PASSWORD: ${{ secrets.ONYXOS_SIGNING_PFX_PASSWORD }}
         run: |
           $ErrorActionPreference = 'Stop'
           $appx = Join-Path $PWD 'artifacts/OnyxOS-x64.appx'
           if (-not (Test-Path $appx)) {
             throw "APPX package not found: $appx"
           }
+          if ([string]::IsNullOrWhiteSpace($env:ONYXOS_SIGNING_PFX_BASE64) -or
+              [string]::IsNullOrWhiteSpace($env:ONYXOS_SIGNING_PFX_PASSWORD)) {
+            throw 'Configure repository Actions secrets ONYXOS_SIGNING_PFX_BASE64 and ONYXOS_SIGNING_PFX_PASSWORD with the existing persistent OnyxOS signing PFX.'
+          }
 
-          # Temporary development certificate. Only the public .cer is published.
-          $cert = New-SelfSignedCertificate `
-            -Type Custom `
-            -Subject 'CN=Bluey683' `
-            -FriendlyName 'OnyxOS GitHub Actions Development Signing' `
-            -CertStoreLocation 'Cert:\CurrentUser\My' `
-            -KeyAlgorithm RSA `
-            -KeyLength 2048 `
-            -HashAlgorithm SHA256 `
-            -KeyUsage DigitalSignature `
-            -NotAfter (Get-Date).AddYears(2) `
-            -TextExtension @('2.5.29.37={text}1.3.6.1.5.5.7.3.3')
-
-          $passwordText = [Guid]::NewGuid().ToString('N')
-          $password = ConvertTo-SecureString $passwordText -AsPlainText -Force
           $pfxPath = Join-Path $env:RUNNER_TEMP 'OnyxOS-signing.pfx'
           $cerPath = Join-Path $PWD 'artifacts/OnyxOS-signing.cer'
-          Export-PfxCertificate -Cert $cert -FilePath $pfxPath -Password $password | Out-Null
+          [IO.File]::WriteAllBytes($pfxPath, [Convert]::FromBase64String($env:ONYXOS_SIGNING_PFX_BASE64))
+          $password = ConvertTo-SecureString $env:ONYXOS_SIGNING_PFX_PASSWORD -AsPlainText -Force
+          $imported = Import-PfxCertificate -FilePath $pfxPath -CertStoreLocation 'Cert:\CurrentUser\My' -Password $password
+          $cert = $imported | Where-Object { $_.HasPrivateKey } | Select-Object -First 1
+          if (-not $cert) {
+            throw 'The supplied PFX does not contain an accessible private key.'
+          }
+          if ($cert.Subject -ne 'CN=Bluey683') {
+            throw "Unexpected signing certificate subject: $($cert.Subject). Expected CN=Bluey683."
+          }
           Export-Certificate -Cert $cert -FilePath $cerPath | Out-Null
 
-          # Trust the temporary signer on this disposable GitHub runner.
           Import-Certificate -FilePath $cerPath -CertStoreLocation 'Cert:\CurrentUser\Root' | Out-Null
           Import-Certificate -FilePath $cerPath -CertStoreLocation 'Cert:\CurrentUser\TrustedPeople' | Out-Null
 
@@ -72,8 +73,7 @@ jobs:
             throw 'SignTool.exe was not found in the installed Windows SDK.'
           }
 
-          # Sign locally with SHA-256; no external timestamp server is contacted.
-          & $signTool.FullName sign /fd SHA256 /f $pfxPath /p $passwordText /v $appx
+          & $signTool.FullName sign /fd SHA256 /f $pfxPath /p $env:ONYXOS_SIGNING_PFX_PASSWORD /v $appx
           $signExitCode = $LASTEXITCODE
           if ($signExitCode -ne 0) {
             throw "SignTool failed to sign the APPX (exit code $signExitCode)."
@@ -86,11 +86,11 @@ jobs:
           }
 
           Remove-Item $pfxPath -Force
-          Write-Host "Signed and verified APPX: $appx"
+          Write-Host "Signed and verified APPX using persistent certificate: $($cert.Thumbprint)"
           Write-Host "Public certificate: $cerPath"
-          Write-Warning 'This is a self-signed development certificate. Trust OnyxOS-signing.cer on the Xbox before installing the APPX. A new certificate is generated for each workflow run.'
 
       - name: Upload signed OnyxOS package and public certificate
+        if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: OnyxOS-Xbox-UWP-x64-Signed
