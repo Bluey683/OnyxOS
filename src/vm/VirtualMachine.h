@@ -21,9 +21,13 @@ namespace onyx::vm
         std::string isoPath;
         std::string diskPath;
         std::string machineType{ "q35" };
+        std::string cpuModel{ "max" };
         std::uint32_t memoryMB{ 3072 };
         std::uint32_t cpuCount{ 2 };
         bool useUefi{ true };
+        bool enableNetwork{ true };
+        bool enableVirtioGraphics{ true };
+        bool enableUsbInput{ true };
         bool enabled{ true };
     };
 
@@ -33,11 +37,9 @@ namespace onyx::vm
         std::string message;
     };
 
-    // Validates configuration values only. File existence and QEMU runtime
-    // availability are checked by the platform integration layer.
+    // Builds arguments for the QEMU UWP host API. It does not launch a process.
+    // Firmware and host-specific audio/video callbacks must be configured by
+    // the QEMU integration layer after the matching runtime is loaded.
     ValidationResult Validate(const VmConfiguration& configuration);
-
-    // Produces QEMU command-line arguments for the future QEMU host adapter.
-    // This function does not start a VM or execute a process.
     std::vector<std::string> BuildQemuArguments(const VmConfiguration& configuration);
 }
