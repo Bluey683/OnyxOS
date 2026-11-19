@@ -33,10 +33,10 @@ namespace
     }
 }
 
-ref class OnyxApp sealed : public Application
+ref class App sealed : public Application
 {
 public:
-    OnyxApp()
+    App()
     {
         selection = nullptr;
         status = nullptr;
@@ -114,7 +114,7 @@ protected:
             card->Foreground = MakeBrush(244, 247, 251);
             card->BorderBrush = MakeBrush(41, 59, 80);
             card->BorderThickness = Thickness(1);
-            card->Click += ref new RoutedEventHandler(this, &OnyxApp::OnProfileClick);
+            card->Click += ref new RoutedEventHandler(this, &App::OnProfileClick);
             page->Children->Append(card);
         }
 
@@ -153,7 +153,7 @@ int main(Array<String^>^)
     Application::Start(ref new ApplicationInitializationCallback(
         [](ApplicationInitializationCallbackParams^)
         {
-            auto app = ref new OnyxApp();
+            auto app = ref new App();
         }));
     return 0;
 }
