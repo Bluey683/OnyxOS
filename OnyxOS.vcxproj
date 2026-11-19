@@ -59,7 +59,8 @@
   <ItemGroup>
     <ClCompile Include="src\App.cpp">
       <CompileAsWinRT>true</CompileAsWinRT>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpp14</LanguageStandard>
+      <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="src\vm\VirtualMachine.cpp" />
