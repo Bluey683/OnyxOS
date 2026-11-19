@@ -71,10 +71,12 @@ int main(Array<String^>^)
     OutputDebugStringW(L"[OnyxOS][APP] main() entered.\n");
     try
     {
-        OnyxOS::OnyxLogger::App(L"Entering Application::Start.");
+        OutputDebugStringW(L"[OnyxOS][APP] Entering Application::Start.\n");
         Application::Start(ref new ApplicationInitializationCallback(
             [](ApplicationInitializationCallbackParams^)
             {
+                // ApplicationData::Current is accessed only after UWP activation.
+                OnyxOS::OnyxLogger::App(L"Application initialization callback entered.");
                 auto app = ref new OnyxOS::App();
             }));
         OnyxOS::OnyxLogger::App(L"Application::Start returned normally.");
