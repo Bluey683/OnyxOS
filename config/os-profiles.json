@@ -1,14 +1,36 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "application": "OnyxOS",
   "architecture": "x86_64",
-  "engine": "QEMU",
+  "engine": "QEMU UWP Host",
+  "runtime": {
+    "qemuDirectory": "Dependencies/Qemu",
+    "runtimeDirectory": "Dependencies/Runtime",
+    "firmwareDirectory": "Dependencies/qemu",
+    "acceleration": "TCG software emulation",
+    "audio": "XAudio2 host integration pending",
+    "video": "QEMU host video callback pending"
+  },
   "storage": {
     "isoDirectory": "ISO",
     "diskDirectory": "VHDX",
     "configurationDirectory": "Configurations",
     "logDirectory": "Logs",
     "diskFormat": "vhdx"
+  },
+  "defaults": {
+    "machine": "q35",
+    "cpuModel": "max",
+    "cpuCount": 2,
+    "ramMB": 3072,
+    "network": "user-mode NAT",
+    "graphics": "virtio-vga",
+    "input": [
+      "qemu-xhci",
+      "usb-kbd",
+      "usb-tablet"
+    ],
+    "boot": "ISO first"
   },
   "profiles": [
     {
@@ -20,11 +42,15 @@
       "ramMB": 3072,
       "cpuCount": 2,
       "machine": "q35",
+      "cpuModel": "max",
       "architecture": "x86_64",
       "iso": "ISO/windows-10.iso",
       "disk": "VHDX/windows-10.vhdx",
       "firmware": "UEFI",
-      "notes": "Requires a bootable Windows 10 x64 installation ISO."
+      "network": true,
+      "graphics": "virtio-vga",
+      "input": "USB keyboard and tablet",
+      "notes": "Requires bootable Windows 10 x64 ISO. 3 GB is a constrained starting profile."
     },
     {
       "id": "windows-11",
@@ -35,11 +61,17 @@
       "ramMB": 3072,
       "cpuCount": 2,
       "machine": "q35",
+      "cpuModel": "max",
       "architecture": "x86_64",
       "iso": "ISO/windows-11.iso",
       "disk": "VHDX/windows-11.vhdx",
       "firmware": "UEFI",
-      "notes": "Guest hardware requirements and performance must be validated; TPM and Secure Boot emulation are not configured yet."
+      "network": true,
+      "graphics": "virtio-vga",
+      "input": "USB keyboard and tablet",
+      "tpm": "Not configured",
+      "secureBoot": "Not configured",
+      "notes": "TPM 2.0 and Secure Boot emulation are not configured; standard Windows 11 installer may refuse to install."
     },
     {
       "id": "debian",
@@ -47,14 +79,18 @@
       "family": "linux",
       "version": "stable",
       "enabled": true,
-      "ramMB": 3584,
+      "ramMB": 3072,
       "cpuCount": 2,
       "machine": "q35",
+      "cpuModel": "max",
       "architecture": "x86_64",
       "iso": "ISO/debian.iso",
       "disk": "VHDX/debian.vhdx",
       "firmware": "UEFI",
-      "notes": "Use an official Debian amd64 installer ISO."
+      "network": true,
+      "graphics": "virtio-vga",
+      "input": "USB keyboard and tablet",
+      "notes": "Use official Debian amd64 ISO."
     },
     {
       "id": "ubuntu",
@@ -62,14 +98,18 @@
       "family": "linux",
       "version": "LTS",
       "enabled": true,
-      "ramMB": 3584,
+      "ramMB": 3072,
       "cpuCount": 2,
       "machine": "q35",
+      "cpuModel": "max",
       "architecture": "x86_64",
       "iso": "ISO/ubuntu.iso",
       "disk": "VHDX/ubuntu.vhdx",
       "firmware": "UEFI",
-      "notes": "Use an official Ubuntu amd64 installer ISO."
+      "network": true,
+      "graphics": "virtio-vga",
+      "input": "USB keyboard and tablet",
+      "notes": "Use official Ubuntu amd64 ISO."
     },
     {
       "id": "arch-linux",
@@ -77,14 +117,18 @@
       "family": "linux",
       "version": "rolling",
       "enabled": true,
-      "ramMB": 3584,
+      "ramMB": 3072,
       "cpuCount": 2,
       "machine": "q35",
+      "cpuModel": "max",
       "architecture": "x86_64",
       "iso": "ISO/archlinux.iso",
       "disk": "VHDX/archlinux.vhdx",
       "firmware": "UEFI",
-      "notes": "Use the official Arch Linux x86_64 installation ISO."
+      "network": true,
+      "graphics": "virtio-vga",
+      "input": "USB keyboard and tablet",
+      "notes": "Use official Arch Linux x86_64 ISO."
     },
     {
       "id": "macos",
@@ -93,14 +137,18 @@
       "version": "user-supplied",
       "enabled": false,
       "experimental": true,
-      "ramMB": 3584,
+      "ramMB": 3072,
       "cpuCount": 2,
       "machine": "q35",
+      "cpuModel": "max",
       "architecture": "x86_64",
       "iso": "ISO/macos.iso",
       "disk": "VHDX/macos.vhdx",
       "firmware": "UEFI",
-      "notes": "Experimental placeholder only. Compatibility, required Apple firmware and licensing must be checked before implementation. No macOS image or firmware is included."
+      "network": false,
+      "graphics": "not configured",
+      "input": "not configured",
+      "notes": "Disabled placeholder. Apple firmware, hardware compatibility and licensing are unresolved; no image or firmware is included."
     }
   ]
-}
+}\n
