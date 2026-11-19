@@ -4,7 +4,7 @@
 
 namespace OnyxOS
 {
-    public ref class LauncherPage sealed : public Windows::UI::Xaml::Controls::Page
+    public ref class LauncherPage sealed
     {
     public:
         LauncherPage();
