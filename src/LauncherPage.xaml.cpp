@@ -1,4 +1,3 @@
-#include "pch.h"
 #include "LauncherPage.xaml.h"
 
 using namespace Platform;
