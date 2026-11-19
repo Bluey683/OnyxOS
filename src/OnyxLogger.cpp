@@ -40,8 +40,8 @@ namespace OnyxOS
         }
     }
 
-    void OnyxLogger::App(String^ message) { Write(L"App.log", L"APP", message); }
-    void OnyxLogger::Qemu(String^ message) { Write(L"QEMU.log", L"QEMU", message); }
+    void OnyxLogger::App(String^ message) { Write(L"App.txt", L"APP", message); }
+    void OnyxLogger::Qemu(String^ message) { Write(L"QEMU.txt", L"QEMU", message); }
 
     void WriteQemuLogNative(const wchar_t* message)
     {
