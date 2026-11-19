@@ -1,70 +1,89 @@
 #include <windows.h>
 #include <cstdint>
+
 #include <winrt/base.h>
 #include <winrt/Windows.Foundation.h>
+#include <winrt/Windows.Foundation.Collections.h>
+#include <winrt/Windows.ApplicationModel.Activation.h>
 #include <winrt/Windows.UI.h>
 #include <winrt/Windows.UI.Text.h>
 #include <winrt/Windows.UI.Xaml.h>
 #include <winrt/Windows.UI.Xaml.Controls.h>
+#include <winrt/Windows.UI.Xaml.Controls.Primitives.h>
 #include <winrt/Windows.UI.Xaml.Media.h>
-
-using namespace winrt;
-using namespace Windows::UI;
-using namespace Windows::UI::Xaml;
-using namespace Windows::UI::Xaml::Controls;
-using namespace Windows::UI::Xaml::Media;
 
 namespace
 {
-    SolidColorBrush Brush(std::uint8_t r, std::uint8_t g, std::uint8_t b)
+    using namespace winrt;
+    using namespace Windows::UI;
+    using namespace Windows::UI::Xaml;
+    using namespace Windows::UI::Xaml::Controls;
+    using namespace Windows::UI::Xaml::Media;
+
+    SolidColorBrush MakeBrush(std::uint8_t red, std::uint8_t green, std::uint8_t blue)
     {
-        return SolidColorBrush(Color{ 255, r, g, b });
+        Color color{};
+        color.A = 255;
+        color.R = red;
+        color.G = green;
+        color.B = blue;
+        return SolidColorBrush(color);
     }
 
-    TextBlock MakeText(hstring const& value, double size, SolidColorBrush const& color)
+    TextBlock MakeText(
+        winrt::hstring const& value,
+        double size,
+        Windows::UI::Xaml::Media::Brush const& foreground)
     {
         TextBlock text;
         text.Text(value);
         text.FontSize(size);
-        text.Foreground(color);
+        text.Foreground(foreground);
         text.TextWrapping(TextWrapping::Wrap);
         return text;
     }
 }
 
-struct OnyxOSApp : implements<OnyxOSApp, ApplicationT<OnyxOSApp>>
+struct OnyxOSApp final :
+    winrt::implements<OnyxOSApp, winrt::Windows::UI::Xaml::ApplicationT<OnyxOSApp>>
 {
-    void OnLaunched(LaunchActivatedEventArgs const&)
+    void OnLaunched(
+        winrt::Windows::ApplicationModel::Activation::LaunchActivatedEventArgs const&)
     {
+        using namespace Windows::UI::Xaml;
+        using namespace Windows::UI::Xaml::Controls;
+
         auto window = Window::Current();
 
         auto page = StackPanel();
-        page.Spacing(16);
+        page.Spacing(14);
         page.Padding(Thickness{ 28, 24, 28, 24 });
+        page.Background(MakeBrush(12, 19, 30));
 
-        auto title = MakeText(L"ONYXOS", 32, Brush(244, 247, 251));
+        auto title = MakeText(L"ONYXOS", 32, MakeBrush(244, 247, 251));
         title.FontWeight(Windows::UI::Text::FontWeights::Bold());
         page.Children().Append(title);
 
-        auto subtitle = MakeText(L"VIRTUAL MACHINE CENTER", 12, Brush(139, 154, 175));
-        page.Children().Append(subtitle);
+        page.Children().Append(
+            MakeText(L"VIRTUAL MACHINE CENTER", 12, MakeBrush(139, 154, 175)));
 
-        auto heading = MakeText(L"Escolha seu sistema", 25, Brush(244, 247, 251));
+        auto heading = MakeText(
+            L"Escolha seu sistema", 25, MakeBrush(244, 247, 251));
         heading.Margin(Thickness{ 0, 18, 0, 0 });
         page.Children().Append(heading);
 
-        auto description = MakeText(
+        page.Children().Append(MakeText(
             L"Selecione um perfil para preparar sua máquina virtual.",
-            14, Brush(154, 169, 188));
-        page.Children().Append(description);
+            14, MakeBrush(154, 169, 188)));
 
-        auto selection = MakeText(L"Nenhum sistema selecionado", 16, Brush(244, 247, 251));
+        auto selection = MakeText(
+            L"Nenhum sistema selecionado", 16, MakeBrush(244, 247, 251));
         selection.Margin(Thickness{ 0, 14, 0, 0 });
         page.Children().Append(selection);
 
         auto status = MakeText(
-            L"Launcher iniciado. A inicialização das máquinas virtuais ainda não está disponível.",
-            13, Brush(154, 169, 188));
+            L"Launcher iniciado. O mecanismo de inicialização das VMs ainda precisa ser integrado.",
+            13, MakeBrush(154, 169, 188));
         page.Children().Append(status);
 
         auto launch = Button();
@@ -72,8 +91,8 @@ struct OnyxOSApp : implements<OnyxOSApp, ApplicationT<OnyxOSApp>>
         launch.IsEnabled(false);
         launch.MinHeight(52);
         launch.Margin(Thickness{ 0, 8, 0, 0 });
-        launch.Background(Brush(32, 49, 70));
-        launch.Foreground(Brush(244, 247, 251));
+        launch.Background(MakeBrush(32, 49, 70));
+        launch.Foreground(MakeBrush(244, 247, 251));
         page.Children().Append(launch);
 
         struct Profile
@@ -99,27 +118,25 @@ struct OnyxOSApp : implements<OnyxOSApp, ApplicationT<OnyxOSApp>>
             card.MinHeight(64);
             card.HorizontalContentAlignment(HorizontalAlignment::Left);
             card.Padding(Thickness{ 18, 12, 18, 12 });
-            card.Background(Brush(20, 32, 49));
-            card.Foreground(Brush(244, 247, 251));
-            card.BorderBrush(Brush(41, 59, 80));
+            card.Background(MakeBrush(20, 32, 49));
+            card.Foreground(MakeBrush(244, 247, 251));
+            card.BorderBrush(MakeBrush(41, 59, 80));
             card.BorderThickness(Thickness{ 1 });
-            card.Click([selection, status, launch](IInspectable const& sender, RoutedEventArgs const&)
+            card.Click([selection, status](IInspectable const& sender, RoutedEventArgs const&)
             {
                 auto selected = sender.as<Button>();
-                auto id = unbox_value<hstring>(selected.Tag());
-                auto name = unbox_value<hstring>(selected.Content());
-                selection.Text(L"Selecionado: " + name);
-                status.Text(L"Perfil " + id + L" selecionado. O mecanismo QEMU ainda precisa ser integrado.");
-                launch.IsEnabled(false);
+                auto id = unbox_value<winrt::hstring>(selected.Tag());
+                auto name = unbox_value<winrt::hstring>(selected.Content());
+                selection.Text(winrt::hstring(L"Selecionado: ") + name);
+                status.Text(winrt::hstring(L"Perfil ") + id +
+                    L" selecionado. O mecanismo QEMU ainda precisa ser integrado.");
             });
             page.Children().Append(card);
         }
 
-        auto footer = MakeText(
-            L"ONYXOS  •  QEMU HOST  •  ISO / VHDX / CONFIGURAÇÕES",
-            11, Brush(101, 117, 138));
-        footer.Margin(Thickness{ 0, 16, 0, 0 });
-        page.Children().Append(footer);
+        page.Children().Append(MakeText(
+            L"ONYXOS  |  QEMU HOST  |  ISO / VHDX / CONFIGURACOES",
+            11, MakeBrush(101, 117, 138)));
 
         auto scroll = ScrollViewer();
         scroll.VerticalScrollBarVisibility(ScrollBarVisibility::Auto);
@@ -134,9 +151,10 @@ int __stdcall wWinMain(HINSTANCE, HINSTANCE, PWSTR, int)
 {
     try
     {
-        Application::Start([](auto&&)
+        winrt::init_apartment(winrt::apartment_type::single_threaded);
+        winrt::Windows::UI::Xaml::Application::Start([](auto&&)
         {
-            make<OnyxOSApp>();
+            winrt::make<OnyxOSApp>();
         });
         return 0;
     }
