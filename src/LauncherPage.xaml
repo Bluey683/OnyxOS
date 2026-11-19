@@ -40,14 +40,8 @@
                 <TextBlock Text="VIRTUAL MACHINE CENTER" Foreground="#8B9AAF"
                            FontSize="12" CharacterSpacing="120"/>
             </StackPanel>
-            <Border Grid.Column="1" Background="#172333" CornerRadius="12"
-                    Padding="16,10" VerticalAlignment="Center">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Ellipse Width="8" Height="8" Fill="#E5A93D"/>
-                    <TextBlock Text="EARLY ACCESS" Foreground="#E5B85F"
-                               FontSize="12" FontWeight="SemiBold"/>
-                </StackPanel>
-            </Border>
+            <Button Grid.Column="1" Content="Logs / Diagnóstico" Padding="18,12"
+                    VerticalAlignment="Center" Click="LogsButton_Click"/>
         </Grid>
 
         <Grid Grid.Row="1">
