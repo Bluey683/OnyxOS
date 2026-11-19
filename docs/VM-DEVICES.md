@@ -15,7 +15,7 @@ actual Xbox audio output still needs an end-to-end run test on the target consol
 `QemuInputBridge` maps CoreWindow key events to SDL-compatible QEMU key numbers.
 Pointer motion is sent as relative movement when the host DLL exports
 `qemu_host_send_pointer_rel`, with absolute-coordinate fallback. Mouse buttons
-are forwarded using the QEMU host input API.
+are forwarded using the QEMU host input API (button IDs: 0 left, 1 middle, 2 right).
 
 ## Xbox controller
 The bridge polls `Windows.Gaming.Input.Gamepad`:
