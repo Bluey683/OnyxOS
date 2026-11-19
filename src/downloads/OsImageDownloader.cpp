@@ -6,11 +6,9 @@
 #include <winrt/Windows.Storage.FileProperties.h>
 #include <winerror.h>
 #include <array>
-using namespace winrt;
-using namespace Windows::Foundation;
-using namespace Windows::Networking;
-using namespace Windows::Networking::BackgroundTransfer;
-using namespace Windows::Storage;
+namespace wf = winrt::Windows::Foundation;
+namespace wnbt = winrt::Windows::Networking::BackgroundTransfer;
+namespace ws = winrt::Windows::Storage;
 namespace onyx::downloads {
 namespace {
 const std::array<OsImageSource,5> Sources{{
@@ -22,14 +20,14 @@ const std::array<OsImageSource,5> Sources{{
 }};
 }
 const OsImageSource* FindImageSource(const std::string& id) noexcept { for(const auto& s:Sources)if(s.profileId==id)return &s;return nullptr; }
-IAsyncOperation<StorageFile> OsImageDownloader::DownloadOfficialIsoAsync(const std::string& id,StorageFolder folder) {
+wf::IAsyncOperation<ws::StorageFile> OsImageDownloader::DownloadOfficialIsoAsync(const std::string& id,ws::StorageFolder folder) {
 const auto* source=FindImageSource(id);
 if(!source)throw hresult_invalid_argument(L"No official ISO source for this profile.");
 if(source->kind!=ImageSourceKind::DirectIso||source->url.empty())
 throw hresult_error(E_NOTIMPL,L"Microsoft requires edition/language selection on its official download page. Open the page and select the ISO.");
-auto file=co_await folder.CreateFileAsync(source->fileName,CreationCollisionOption::ReplaceExisting);
-BackgroundDownloader downloader;
-auto op=downloader.CreateDownload(Uri(source->url),file);
+auto file=co_await folder.CreateFileAsync(winrt::hstring(source->fileName),ws::CreationCollisionOption::ReplaceExisting);
+wnbt::BackgroundDownloader downloader;
+auto op=downloader.CreateDownload(wf::Uri(winrt::hstring(source->url)),file);
 co_await op.StartAsync();
 auto props=co_await file.GetBasicPropertiesAsync();
 if(props.Size()<65536){co_await file.DeleteAsync();throw hresult_error(E_FAIL,L"Downloaded file is too small to be a valid installer ISO.");}
