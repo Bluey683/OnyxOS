@@ -5,5 +5,5 @@
 #include <ppltasks.h>
 
 // Make the XAML page runtime classes visible to generated XamlTypeInfo code.
-#include "src/LauncherPage.xaml.h"
+#include "src/MainPage.xaml.h"
 #include "src/GuestPage.xaml.h"
