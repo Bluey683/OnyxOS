@@ -32,12 +32,12 @@ struct OnyxOSView final : implements<OnyxOSView, IFrameworkView>
         m_window.PointerPressed([this](CoreWindow const&,PointerEventArgs const& e)
         {
             if(!m_input)return; auto p=e.CurrentPoint().Properties();
-            if(p.IsLeftButtonPressed())m_input->SendPointerButton(1,true);
-            if(p.IsMiddleButtonPressed())m_input->SendPointerButton(2,true);
-            if(p.IsRightButtonPressed())m_input->SendPointerButton(3,true);
+            if(p.IsLeftButtonPressed())m_input->SendPointerButton(0,true);
+            if(p.IsMiddleButtonPressed())m_input->SendPointerButton(1,true);
+            if(p.IsRightButtonPressed())m_input->SendPointerButton(2,true);
         });
         m_window.PointerReleased([this](CoreWindow const&,PointerEventArgs const&)
-        { if(m_input){m_input->SendPointerButton(1,false);m_input->SendPointerButton(2,false);m_input->SendPointerButton(3,false);} });
+        { if(m_input){m_input->SendPointerButton(0,false);m_input->SendPointerButton(1,false);m_input->SendPointerButton(2,false);} });
     }
     void Load(hstring const&) {}
     void Run()
