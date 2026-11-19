@@ -4,7 +4,9 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Background="#080D14">
 
-    <Grid>
+    <!-- Xbox layout canvas: 1920x1080, uniformly scaled to the active TV mode. -->
+    <Viewbox Stretch="Uniform" StretchDirection="Both">
+    <Grid Width="1920" Height="1080">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -18,9 +20,9 @@
             </Grid.ColumnDefinitions>
             <StackPanel Spacing="3">
                 <TextBlock x:Name="GuestTitle" Text="ONYXOS • QEMU"
-                           Foreground="#F4F7FB" FontSize="19" FontWeight="SemiBold"/>
+                           Foreground="#F4F7FB" FontSize="25" FontWeight="SemiBold"/>
                 <TextBlock x:Name="GuestSubtitle" Text="Máquina virtual"
-                           Foreground="#91A2B8" FontSize="12"/>
+                           Foreground="#91A2B8" FontSize="16"/>
             </StackPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
                         VerticalAlignment="Center">
@@ -43,11 +45,11 @@
                                 VerticalAlignment="Center" Spacing="10"
                                 MaxWidth="460">
                         <TextBlock Text="QEMU DISPLAY" Foreground="#6F829B"
-                                   FontSize="13" FontWeight="SemiBold"
+                                   FontSize="17" FontWeight="SemiBold"
                                    HorizontalAlignment="Center"/>
                         <TextBlock x:Name="DisplayStatus"
                                    Text="Aguardando o framebuffer do QEMU..."
-                                   Foreground="#DCE6F2" FontSize="18"
+                                   Foreground="#DCE6F2" FontSize="24"
                                    TextAlignment="Center" TextWrapping="Wrap"/>
                         <TextBlock Text="A superfície gráfica será apresentada aqui."
                                    Foreground="#718198" FontSize="12"
@@ -66,8 +68,9 @@
                        Foreground="#91A2B8" FontSize="12"
                        VerticalAlignment="Center"/>
             <TextBlock Grid.Column="1" Text="TECLADO • MOUSE • CONTROLE • ÁUDIO"
-                       Foreground="#718198" FontSize="11"
+                       Foreground="#718198" FontSize="15"
                        VerticalAlignment="Center"/>
         </Grid>
     </Grid>
+    </Viewbox>
 </Page>
