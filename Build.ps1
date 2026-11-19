@@ -74,16 +74,26 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 
 # MSBuild can omit wildcard Content items from UWP package layouts. Inject the
 # staged QEMU binaries explicitly before validating the final unsigned APPX.
-$zipUpdate=[IO.Compression.ZipFile]::Open($finalAppx,[IO.Compression.ZipArchiveMode]::Update)
-try {
-    foreach ($file in @((Get-Item -LiteralPath $qemu)) + $runtimeFiles) {
-        $existing=$zipUpdate.GetEntry($file.Name)
-        if ($existing) { $existing.Delete() }
-        [void][IO.Compression.ZipFileExtensions]::CreateEntryFromFile(
-            $zipUpdate,$file.FullName,$file.Name,[IO.Compression.CompressionLevel]::NoCompression
-        )
-    }
-} finally { $zipUpdate.Dispose() }
+# Rebuild the APPX with MakeAppx after adding QEMU. Editing an APPX as a raw ZIP
+# leaves AppxBlockMap.xml stale and SignTool rejects the package format.
+$sdkBin=Join-Path ${env:ProgramFiles(x86)} 'Windows Kits/10/bin'
+$makeAppx=Get-ChildItem -Path $sdkBin -Directory -ErrorAction Stop |
+    Sort-Object Name -Descending |
+    ForEach-Object { Join-Path $_.FullName 'x64/MakeAppx.exe' } |
+    Where-Object { Test-Path $_ } |
+    Select-Object -First 1
+if (!$makeAppx) { throw "MakeAppx.exe was not found under $sdkBin." }
+$unpacked=Join-Path $buildPath 'AppxRepack'
+if (Test-Path $unpacked) { Remove-Item $unpacked -Recurse -Force }
+New-Item -ItemType Directory -Force -Path $unpacked | Out-Null
+Invoke-CheckedCommand $makeAppx @('unpack','/p',$finalAppx,'/d',$unpacked,'/o')
+foreach ($file in @((Get-Item -LiteralPath $qemu)) + $runtimeFiles) {
+    Copy-Item -LiteralPath $file.FullName -Destination (Join-Path $unpacked $file.Name) -Force
+}
+$rebuiltAppx=Join-Path $outPath 'OnyxOS-x64-repacked.appx'
+if (Test-Path $rebuiltAppx) { Remove-Item $rebuiltAppx -Force }
+Invoke-CheckedCommand $makeAppx @('pack','/d',$unpacked,'/p',$rebuiltAppx,'/o')
+Move-Item -LiteralPath $rebuiltAppx -Destination $finalAppx -Force
 
 $zip=[IO.Compression.ZipFile]::OpenRead($finalAppx)
 try {
