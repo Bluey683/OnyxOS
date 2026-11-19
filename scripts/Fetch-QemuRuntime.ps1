@@ -43,7 +43,12 @@ function Save-UpstreamFile {
         return
     }
 
-    $downloadUrl = "$rawRoot/$($Item.path.Substring('Dependencies/'.Length))"
+    # Use GitHub's canonical download URL. The previous URL builder removed
+    # the Dependencies/ prefix, producing a path that does not exist (404).
+    $downloadUrl = $Item.download_url
+    if ([string]::IsNullOrWhiteSpace($downloadUrl)) {
+        $downloadUrl = "$rawRoot/$($Item.path)"
+    }
     Write-Host "Downloading $($Item.name) ($($Item.size) bytes)..." -ForegroundColor Cyan
     Invoke-WebRequest -Uri $downloadUrl -Headers @{ 'User-Agent' = 'OnyxOS-QEMU-runtime-fetcher' } -OutFile $target -UseBasicParsing
 
