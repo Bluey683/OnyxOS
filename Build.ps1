@@ -85,10 +85,9 @@ try {
 } finally { $zip.Dispose() }
 $vclibs=Join-Path $outPath 'Microsoft.VCLibs.x64.14.00.appx'
 $pf86=[Environment]::GetFolderPath('ProgramFilesX86')
-$candidates=@(
-    (Join-Path $pf86 'Microsoft SDKs/Windows Kits/10/ExtensionSDKs/Microsoft.VCLibs/14.0/AppX/Retail/x64/Microsoft.VCLibs.x64.14.00.appx'),
-    (Join-Path $env:WindowsSdkDir 'ExtensionSDKs/Microsoft.VCLibs/14.0/AppX/Retail/x64/Microsoft.VCLibs.x64.14.00.appx')
-) | Where-Object { $_ -and (Test-Path $_) }
+$candidates=@((Join-Path $pf86 'Microsoft SDKs/Windows Kits/10/ExtensionSDKs/Microsoft.VCLibs/14.0/AppX/Retail/x64/Microsoft.VCLibs.x64.14.00.appx'))
+if ($env:WindowsSdkDir) { $candidates += Join-Path $env:WindowsSdkDir 'ExtensionSDKs/Microsoft.VCLibs/14.0/AppX/Retail/x64/Microsoft.VCLibs.x64.14.00.appx' }
+$candidates=$candidates | Where-Object { $_ -and (Test-Path $_) }
 $source=$candidates | Select-Object -First 1
 if ($source) { Copy-Item $source $vclibs -Force }
 else { Invoke-WebRequest -Uri 'https://aka.ms/Microsoft.VCLibs.x64.14.00.appx' -OutFile $vclibs -UseBasicParsing }
