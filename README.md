@@ -139,6 +139,14 @@ integrated. No successful build or guest boot has been verified yet.
 
 - [Official ISO download catalog, TCG and VHDX provisioning status](docs/AUTO-OS-DOWNLOAD.md)
 
+## Xbox display layout
+
+The guest interface uses a 1920 × 1080 (16:9) design canvas for installation
+and normal use. XAML scales the same layout to the active Xbox/TV mode, with
+slightly larger controls and text for TV viewing. The app does not change the
+console's system display setting. OnyxOS is Xbox-only; there is no Android/Moto
+version.
+
 ## XAML guest display
 
-- [Shared XAML QEMU display for the six OS apps](docs/GUEST-DISPLAY.md)
+- [Shared Xbox XAML QEMU display for the six OS apps](docs/GUEST-DISPLAY.md)
