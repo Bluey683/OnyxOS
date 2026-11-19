@@ -22,7 +22,7 @@
         </Style>
     </Page.Resources>
 
-    <Grid Padding="32">
+    <Grid Margin="32">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
