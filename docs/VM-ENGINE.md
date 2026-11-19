@@ -43,3 +43,11 @@ installer may reject this profile. macOS compatibility, firmware and licensing
 remain unresolved.
 
 See [QEMU-HOST-ADAPTER.md](QEMU-HOST-ADAPTER.md) for DLL integration status.
+
+## Host devices
+
+See [VM-DEVICES.md](VM-DEVICES.md) for the current XAudio2, keyboard, mouse,
+Xbox controller and user-mode NAT configuration. The input bridge uses the
+QEMU UWP host API and CoreWindow/Gamepad events. It is not yet a complete guest
+runtime: the QEMU initialization/main-loop and video/audio session path must be
+connected before input can control a running guest.
