@@ -26,9 +26,9 @@ foreach(app IN LISTS ONYXOS_APPS)
     src/vm/VhdxProvisioner.cpp
     src/downloads/OsImageDownloader.cpp
   )
-  target_compile_features(${app} PRIVATE cxx_std_20)
+  target_compile_features(${app} PRIVATE cxx_std_17)
   target_compile_definitions(${app} PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX UNICODE _UNICODE)
-  # Use the Visual C++ component extensions (C++/CX), not the C++/WinRT projection.
+  # C++/CX (/ZW) is incompatible with /std:c++20; this host uses C++17.
   target_compile_options(${app} PRIVATE /ZW)
   target_link_libraries(${app} PRIVATE windowsapp)
   set_target_properties(${app} PROPERTIES
