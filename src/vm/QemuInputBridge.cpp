@@ -49,7 +49,7 @@ namespace onyx::vm
 
     void QemuInputBridge::SendPointerButton(int button, bool down) noexcept
     {
-        if (button>=1 && button<=3) { m_host.SendPointerButton(button,down); m_host.WakeMainLoop(); }
+        if (button>=0 && button<=2) { m_host.SendPointerButton(button,down); m_host.WakeMainLoop(); }
     }
 
     void QemuInputBridge::UpdateGamepadKey(std::uint32_t mask, int key, std::uint32_t current) noexcept
@@ -89,7 +89,11 @@ namespace onyx::vm
         if(dx||dy)
         {
             if(!m_host.SendPointerRelative(dx,dy))
-                m_gamepadX=std::clamp(m_gamepadX+dx,0.0f,m_surfaceWidth-1.0f); m_gamepadY=std::clamp(m_gamepadY+dy,0.0f,m_surfaceHeight-1.0f); m_host.SendPointerAbsolute(static_cast<int>(m_gamepadX),static_cast<int>(m_gamepadY),static_cast<int>(m_surfaceWidth),static_cast<int>(m_surfaceHeight));
+            {
+                m_gamepadX=std::clamp(m_gamepadX+dx,0.0f,m_surfaceWidth-1.0f);
+                m_gamepadY=std::clamp(m_gamepadY+dy,0.0f,m_surfaceHeight-1.0f);
+                m_host.SendPointerAbsolute(static_cast<int>(m_gamepadX),static_cast<int>(m_gamepadY),static_cast<int>(m_surfaceWidth),static_cast<int>(m_surfaceHeight));
+            }
             m_host.WakeMainLoop();
         }
         m_previousButtons=bits;
