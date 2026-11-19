@@ -37,8 +37,10 @@
     <OutDir>$(SolutionDir)build\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)build\obj\$(Platform)\$(Configuration)\</IntDir>
     <TargetName>OnyxOS</TargetName>
-    <GenerateAppxPackageOnBuild>false</GenerateAppxPackageOnBuild>
-    <AppxPackage>false</AppxPackage>
+    <GenerateAppxPackageOnBuild>true</GenerateAppxPackageOnBuild>
+    <AppxPackage>true</AppxPackage>
+    <AppxBundle>Never</AppxBundle>
+    <AppxPackageSigningEnabled>false</AppxPackageSigningEnabled>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
