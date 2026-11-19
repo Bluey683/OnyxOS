@@ -56,7 +56,7 @@ jobs:
             Write-Host "Using configured PFX certificate: $($cert.Thumbprint)"
           }
           else {
-            Write-Warning 'No persistent PFX secrets configured. Creating a temporary development certificate for this build.'
+            Write-Host 'No persistent PFX configured; generating a temporary development certificate for this build.'
             $cert = New-SelfSignedCertificate -Type Custom -Subject 'CN=Bluey683' -FriendlyName 'OnyxOS Development Signing' -CertStoreLocation 'Cert:\CurrentUser\My' -KeyAlgorithm RSA -KeyLength 2048 -HashAlgorithm SHA256 -KeyUsage DigitalSignature -NotAfter (Get-Date).AddYears(2) -TextExtension @('2.5.29.37={text}1.3.6.1.5.5.7.3.3')
             $passwordText = [Guid]::NewGuid().ToString('N')
             $password = ConvertTo-SecureString $passwordText -AsPlainText -Force
