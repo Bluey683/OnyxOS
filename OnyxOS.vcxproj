@@ -60,6 +60,7 @@
     <ClCompile Include="src\App.cpp">
       <CompileAsWinRT>true</CompileAsWinRT>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="src\vm\VirtualMachine.cpp" />
     <ClCompile Include="src\vm\QemuHostAdapter.cpp" />
