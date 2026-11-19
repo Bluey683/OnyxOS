@@ -2,6 +2,7 @@
 #include <cmath>
 #include <algorithm>
 #include <winrt/Windows.Gaming.Input.h>
+#include <winrt/Windows.Foundation.Collections.h>
 
 using namespace winrt;
 using namespace Windows::Gaming::Input;
