@@ -4,8 +4,7 @@
 #include <winrt/Windows.Gaming.Input.h>
 #include <winrt/Windows.Foundation.Collections.h>
 
-using namespace winrt;
-using namespace Windows::Gaming::Input;
+namespace wgi = winrt::Windows::Gaming::Input;
 
 namespace onyx::vm
 {
@@ -61,20 +60,20 @@ namespace onyx::vm
 
     void QemuInputBridge::PollGamepad() noexcept
     {
-        const auto pads=Gamepad::Gamepads();
+        const auto pads=wgi::Gamepad::Gamepads();
         if (!pads || pads.Size()==0) { ReleaseAll(); return; }
         const auto reading=pads.GetAt(0).GetCurrentReading();
         const auto bits=static_cast<std::uint32_t>(reading.Buttons);
-        const auto mask=[](GamepadButtons b){return static_cast<std::uint32_t>(b);};
-        UpdateGamepadKey(mask(GamepadButtons::DPadUp),273,bits);
-        UpdateGamepadKey(mask(GamepadButtons::DPadDown),274,bits);
-        UpdateGamepadKey(mask(GamepadButtons::DPadLeft),276,bits);
-        UpdateGamepadKey(mask(GamepadButtons::DPadRight),275,bits);
-        UpdateGamepadKey(mask(GamepadButtons::A),13,bits);
-        UpdateGamepadKey(mask(GamepadButtons::B),27,bits);
+        const auto mask=[](wgi::GamepadButtons b){return static_cast<std::uint32_t>(b);};
+        UpdateGamepadKey(mask(wgi::GamepadButtons::DPadUp),273,bits);
+        UpdateGamepadKey(mask(wgi::GamepadButtons::DPadDown),274,bits);
+        UpdateGamepadKey(mask(wgi::GamepadButtons::DPadLeft),276,bits);
+        UpdateGamepadKey(mask(wgi::GamepadButtons::DPadRight),275,bits);
+        UpdateGamepadKey(mask(wgi::GamepadButtons::A),13,bits);
+        UpdateGamepadKey(mask(wgi::GamepadButtons::B),27,bits);
 
-        const bool left=(bits&mask(GamepadButtons::X))!=0;
-        const bool right=(bits&mask(GamepadButtons::Y))!=0;
+        const bool left=(bits&mask(wgi::GamepadButtons::X))!=0;
+        const bool right=(bits&mask(wgi::GamepadButtons::Y))!=0;
         if(left!=m_left){SendPointerButton(0,left);m_left=left;}
         if(right!=m_right){SendPointerButton(2,right);m_right=right;}
 
@@ -102,13 +101,13 @@ namespace onyx::vm
 
     void QemuInputBridge::ReleaseAll() noexcept
     {
-        const auto release=[this](GamepadButtons b,int key)
+        const auto release=[this](wgi::GamepadButtons b,int key)
         {
             if(m_previousButtons&static_cast<std::uint32_t>(b))m_host.SendKeyNumber(key,false);
         };
-        release(GamepadButtons::DPadUp,273); release(GamepadButtons::DPadDown,274);
-        release(GamepadButtons::DPadLeft,276); release(GamepadButtons::DPadRight,275);
-        release(GamepadButtons::A,13); release(GamepadButtons::B,27);
+        release(wgi::GamepadButtons::DPadUp,273); release(wgi::GamepadButtons::DPadDown,274);
+        release(wgi::GamepadButtons::DPadLeft,276); release(wgi::GamepadButtons::DPadRight,275);
+        release(wgi::GamepadButtons::A,13); release(wgi::GamepadButtons::B,27);
         if(m_left)SendPointerButton(0,false);
         if(m_right)SendPointerButton(2,false);
         if(m_middle)SendPointerButton(2,false);
