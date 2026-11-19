@@ -1,3 +1,5 @@
 #pragma once
 
-// Minimal precompiled-header shim required by generated UWP XAML type-info code.
+// Shared precompiled-header shim for the C++/CX UWP XAML-generated sources.
+#include <collection.h>
+#include <ppltasks.h>
