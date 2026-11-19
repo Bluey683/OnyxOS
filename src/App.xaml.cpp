@@ -1,5 +1,5 @@
 #include "App.xaml.h"
-#include "LauncherPage.xaml.h"
+#include "MainPage.xaml.h"
 #include "OnyxLogger.h"
 
 using namespace Platform;
@@ -49,9 +49,9 @@ namespace OnyxOS
 
             if (frame->Content == nullptr)
             {
-                OnyxLogger::App(L"Navigating to LauncherPage.");
-                if (!frame->Navigate(LauncherPage::typeid))
-                    OnyxLogger::App(L"ERROR: navigation to LauncherPage returned false.");
+                OnyxLogger::App(L"Navigating to MainPage.");
+                if (!frame->Navigate(MainPage::typeid))
+                    OnyxLogger::App(L"ERROR: navigation to MainPage returned false.");
             }
 
             window->Activate();
@@ -71,29 +71,29 @@ int main(Array<String^>^)
     OutputDebugStringW(L"[OnyxOS][APP] main() entered.\n");
     try
     {
-        OnyxLogger::App(L"Entering Application::Start.");
+        OnyxOS::OnyxLogger::App(L"Entering Application::Start.");
         Application::Start(ref new ApplicationInitializationCallback(
             [](ApplicationInitializationCallbackParams^)
             {
                 auto app = ref new OnyxOS::App();
             }));
-        OnyxLogger::App(L"Application::Start returned normally.");
+        OnyxOS::OnyxLogger::App(L"Application::Start returned normally.");
     }
     catch (Exception^ ex)
     {
-        OnyxLogger::App(L"FATAL PLATFORM EXCEPTION IN main: " + ex->Message);
+        OnyxOS::OnyxLogger::App(L"FATAL PLATFORM EXCEPTION IN main: " + ex->Message);
         return -1;
     }
     catch (const std::exception& ex)
     {
-        OnyxLogger::App(L"FATAL C++ EXCEPTION IN main.");
+        OnyxOS::OnyxLogger::App(L"FATAL C++ EXCEPTION IN main.");
         OutputDebugStringA(ex.what());
         OutputDebugStringA("\n");
         return -2;
     }
     catch (...)
     {
-        OnyxLogger::App(L"FATAL UNKNOWN EXCEPTION IN main.");
+        OnyxOS::OnyxLogger::App(L"FATAL UNKNOWN EXCEPTION IN main.");
         return -3;
     }
     return 0;
