@@ -105,10 +105,12 @@
          LoadPackagedLibrary(L"qemu-system-x86_64.dll") can resolve it. -->
     <Content Include="Dependencies\Qemu\qemu-system-x86_64.dll">
       <Link>%(Filename)%(Extension)</Link>
+      <DeploymentContent>true</DeploymentContent>
     </Content>
     <!-- Keep every matching upstream runtime DLL beside the QEMU host DLL. -->
     <Content Include="Dependencies\Runtime\*.dll">
       <Link>%(Filename)%(Extension)</Link>
+      <DeploymentContent>true</DeploymentContent>
     </Content>
   </ItemGroup>
   <ItemGroup>
