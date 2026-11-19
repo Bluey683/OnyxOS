@@ -144,12 +144,33 @@ foreach ($executableName in $executableNames) {
     Copy-Item $builtExecutable.FullName (Join-Path $stagePath $executableName) -Force
 }
 
-# Stage any runtime DLLs emitted by the build. QEMU itself is not bundled yet.
+# Stage build runtime DLLs.
 Get-ChildItem -Path $buildPath -Recurse -Filter '*.dll' -File |
     Where-Object { $_.FullName -match "[\\/]$Configuration[\\/]" } |
     ForEach-Object {
         Copy-Item $_.FullName (Join-Path $stagePath $_.Name) -Force
     }
+
+# Stage the QEMU UWP host DLL and its matching runtime/firmware payload when supplied.
+$qemuDll = Join-Path $repoRoot 'Dependencies/Qemu/qemu-system-x86_64.dll'
+if (Test-Path $qemuDll) {
+    Copy-Item $qemuDll (Join-Path $stagePath 'qemu-system-x86_64.dll') -Force
+    Write-Host 'Bundled QEMU x86_64 UWP host DLL.' -ForegroundColor Green
+} else {
+    Write-Warning 'Dependencies/Qemu/qemu-system-x86_64.dll is missing. The APPX will build without QEMU; VM startup will not be available.'
+}
+
+$runtimePath = Join-Path $repoRoot 'Dependencies/Runtime'
+if (Test-Path $runtimePath) {
+    Get-ChildItem -Path $runtimePath -Filter '*.dll' -File | ForEach-Object {
+        Copy-Item $_.FullName (Join-Path $stagePath $_.Name) -Force
+    }
+}
+
+$firmwarePath = Join-Path $repoRoot 'Dependencies/qemu'
+if (Test-Path $firmwarePath) {
+    Copy-Item $firmwarePath (Join-Path $stagePath 'qemu') -Recurse -Force
+}
 
 $appxPath = Join-Path $outputPath 'OnyxOS-x64.appx'
 if (Test-Path $appxPath) {
