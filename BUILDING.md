@@ -164,3 +164,14 @@ These are starter shader sources; they are not yet compiled or connected to QEMU
 - A successful CMake build and APPX packaging do not prove that any guest OS boots on Xbox.
 
 See [docs/IMPLEMENTATION-STATUS.md](docs/IMPLEMENTATION-STATUS.md), [docs/OS-PROFILES.md](docs/OS-PROFILES.md), and [docs/APPX-STRUCTURE.md](docs/APPX-STRUCTURE.md).
+
+
+### QEMU UWP dependencies
+
+Before packaging, `Build.ps1` runs `scripts/Fetch-QemuRuntime.ps1` to download the x64/UWP `qemu-system-x86_64.dll` and the matching DLL set from the upstream `QEMU-UWP-Host` branch `x86-64`. To stage them manually, run:
+
+```powershell
+.\scripts\Fetch-QemuRuntime.ps1
+```
+
+Use `-SkipQemuDownload` with `Build.ps1` only when the files are already staged. Firmware/BIOS resources are a separate upstream `qemu` directory and are not downloaded by this runtime script. The host adapter currently checks DLL loading and exports; it does not yet start a guest VM.
