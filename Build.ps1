@@ -80,7 +80,8 @@ Invoke-CheckedCommand -FilePath $msbuild -Arguments @(
 # Use the APPX emitted by the official UWP packaging targets. Do not stage
 # files manually: MSBuild must generate the XBF files, PRI index, manifest
 # metadata, and package layout as one consistent deployment unit.
-$generatedAppx = Get-ChildItem -Path $packageDirectory -File -Recurse |`n    Where-Object { $_.Extension -in @('.appx', '.msix') } |
+$generatedAppx = Get-ChildItem -Path $packageDirectory -File -Recurse |
+    Where-Object { $_.Extension -in @('.appx', '.msix') } |
     Where-Object { $_.Name -notmatch 'VCLibs|Dependencies' } |
     Sort-Object LastWriteTime -Descending |
     Select-Object -First 1
