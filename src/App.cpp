@@ -78,7 +78,7 @@ private:
     std::thread m_gamepadThread;
 };
 
-struct App final : implements<App,IFrameworkViewSource>
+struct App : implements<App,IFrameworkViewSource>
 { IFrameworkView CreateView(){return make<OnyxOSView>();} };
 
 int __stdcall wWinMain(HINSTANCE,HINSTANCE,PWSTR,int)
