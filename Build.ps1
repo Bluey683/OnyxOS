@@ -18,7 +18,9 @@ param(
 
     [switch]$Clean,
 
-    [switch]$SkipAssets
+    [switch]$SkipAssets,
+
+    [switch]$SkipQemuDownload
 )
 
 $ErrorActionPreference = 'Stop'
@@ -53,6 +55,18 @@ if (-not (Get-Command cmake -ErrorAction SilentlyContinue)) {
 
 if (-not (Test-Path $manifestPath)) {
     throw 'Package.appxmanifest was not found in the repository root.'
+}
+
+if (-not $SkipQemuDownload) {
+    $qemuFetchScript = Join-Path $repoRoot 'scripts/Fetch-QemuRuntime.ps1'
+    if (-not (Test-Path $qemuFetchScript)) {
+        throw 'scripts/Fetch-QemuRuntime.ps1 was not found.'
+    }
+    Write-Host 'Fetching QEMU UWP host DLL and matching runtime dependencies...' -ForegroundColor Yellow
+    & $qemuFetchScript -RepositoryRoot $repoRoot
+    if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) {
+        throw 'QEMU dependency download failed.'
+    }
 }
 
 if ($Clean -and (Test-Path $buildPath)) {
@@ -193,4 +207,4 @@ Write-Host ''
 Write-Host 'OnyxOS APPX build completed.' -ForegroundColor Green
 Write-Host "Package: $appxPath"
 Write-Host 'Package is unsigned. Sign it with a trusted development certificate whose subject matches CN=Bluey683.'
-Write-Warning 'The current targets still use the placeholder CoreApplication host. LauncherPage.xaml is not wired into the executable or compiled by this build script; QEMU guest boot is not implemented.'
+Write-Warning 'The current targets still use the placeholder CoreApplication host. LauncherPage.xaml is not wired into the executable or compiled by this build script; QEMU guest boot is not implemented. The QEMU DLL loader is a preflight adapter only.'
