@@ -1,6 +1,6 @@
 #pragma once
 
-#include "LauncherPage.g.h"
+#include "src/LauncherPage.g.h"
 
 namespace OnyxOS
 {
