@@ -44,8 +44,7 @@ namespace
     }
 }
 
-struct App :
-    winrt::implements<App, winrt::Windows::UI::Xaml::ApplicationT<App>>
+struct App : winrt::Windows::UI::Xaml::ApplicationT<App>
 {
     void OnLaunched(
         winrt::Windows::ApplicationModel::Activation::LaunchActivatedEventArgs const&)
