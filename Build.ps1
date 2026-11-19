@@ -16,8 +16,10 @@ Set-StrictMode -Version Latest
 function Invoke-CheckedCommand {
     param([string]$FilePath,[string[]]$Arguments)
     Write-Host "> $FilePath $($Arguments -join ' ')" -ForegroundColor Cyan
+    $global:LASTEXITCODE = 0
     & $FilePath @Arguments
-    if ($LASTEXITCODE -ne 0) { throw "Command failed with exit code $LASTEXITCODE : $FilePath" }
+    $commandExitCode = $LASTEXITCODE
+    if ($commandExitCode -ne 0) { throw "Command failed with exit code $commandExitCode : $FilePath" }
 }
 $root=$PSScriptRoot
 $buildPath=Join-Path $root $BuildDirectory
@@ -33,7 +35,7 @@ if (!$SkipQemuDownload) {
     $fetch=Join-Path $root 'scripts/Fetch-QemuRuntime.ps1'
     if (!(Test-Path $fetch)) { throw 'scripts/Fetch-QemuRuntime.ps1 not found.' }
     & $fetch -RepositoryRoot $root
-    if ($LASTEXITCODE -ne 0) { throw 'QEMU runtime download/staging failed.' }
+    if (!$?) { throw 'QEMU runtime download/staging failed.' }
 }
 $qemu=Join-Path $root 'Dependencies/Qemu/qemu-system-x86_64.dll'
 $runtime=Join-Path $root 'Dependencies/Runtime'
@@ -49,7 +51,7 @@ if (!$SkipAssets) {
     $assetScript=Join-Path $root 'scripts/Make-Assets.ps1'
     if (!(Test-Path $assetScript)) { throw 'scripts/Make-Assets.ps1 not found.' }
     & $assetScript
-    if ($LASTEXITCODE -ne 0) { throw 'Asset generation failed.' }
+    if (!$?) { throw 'Asset generation failed.' }
 }
 $packageDir=Join-Path $outPath 'MSBuildPackage'
 New-Item -ItemType Directory -Force -Path $packageDir | Out-Null
