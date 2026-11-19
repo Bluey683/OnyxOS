@@ -130,3 +130,7 @@ See [VM Engine documentation](docs/VM-ENGINE.md). This is not yet a bootable
 virtual machine: the QEMU UWP host DLL/API, UEFI firmware, framebuffer, audio,
 input, networking, disk creation, and VM lifecycle controls still need to be
 integrated. No successful build or guest boot has been verified yet.
+
+## VM devices
+
+- [Audio, keyboard, mouse, Xbox controller and network integration](docs/VM-DEVICES.md)
