@@ -1,6 +1,6 @@
 #pragma once
 
-#include "GuestPage.g.h"
+#include "src/GuestPage.g.h"
 
 namespace OnyxOS
 {
