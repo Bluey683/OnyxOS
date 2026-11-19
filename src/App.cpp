@@ -15,7 +15,7 @@ using namespace winrt;
 using namespace Windows::ApplicationModel::Core;
 using namespace Windows::UI::Core;
 
-struct OnyxOSView final : implements<OnyxOSView, IFrameworkView>
+struct OnyxOSView : implements<OnyxOSView, IFrameworkView>
 {
     void Initialize(CoreApplicationView const&) {}
     void SetWindow(CoreWindow const& window)
