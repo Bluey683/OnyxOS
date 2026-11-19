@@ -3,6 +3,8 @@
 #include <winrt/Windows.Networking.h>
 #include <winrt/Windows.Networking.BackgroundTransfer.h>
 #include <winrt/Windows.Storage.h>
+#include <winrt/Windows.Storage.FileProperties.h>
+#include <winerror.h>
 #include <array>
 using namespace winrt;
 using namespace Windows::Foundation;
