@@ -100,7 +100,7 @@ jobs:
           name: OnyxOS-Xbox-UWP-x64-Signed
           path: |
             artifacts/OnyxOS-x64.appx
-            artifacts/Microsoft.VCLibs.x64.14.00.Desktop.appx
+            artifacts/Microsoft.VCLibs.x64.14.00.appx
             artifacts/OnyxOS-signing.cer
           if-no-files-found: error
           retention-days: 14
