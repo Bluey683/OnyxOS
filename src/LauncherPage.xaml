@@ -21,7 +21,8 @@
             <Setter Property="MinHeight" Value="142"/>
         </Style>
     </Page.Resources>
-\n    <Grid Padding="32">
+
+    <Grid Padding="32">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
