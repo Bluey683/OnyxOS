@@ -1,6 +1,7 @@
 #include <windows.h>
 #include <collection.h>
 #include <ppltasks.h>
+#include <windows.applicationmodel.activation.h>
 
 using namespace Platform;
 using namespace Windows::UI;
@@ -42,7 +43,7 @@ public:
     }
 
 protected:
-    virtual void OnLaunched(LaunchActivatedEventArgs^ args) override
+    virtual void OnLaunched(Windows::ApplicationModel::Activation::LaunchActivatedEventArgs^ args) override
     {
         auto window = Window::Current;
 
