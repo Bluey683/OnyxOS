@@ -80,15 +80,15 @@ Invoke-CheckedCommand -FilePath $msbuild -Arguments @(
 # Use the APPX emitted by the official UWP packaging targets. Do not stage
 # files manually: MSBuild must generate the XBF files, PRI index, manifest
 # metadata, and package layout as one consistent deployment unit.
-$generatedAppx = Get-ChildItem -Path $packageDirectory -Filter '*.appx' -File -Recurse |
+$generatedAppx = Get-ChildItem -Path $packageDirectory -File -Recurse |`n    Where-Object { $_.Extension -in @('.appx', '.msix') } |
     Where-Object { $_.Name -notmatch 'VCLibs|Dependencies' } |
     Sort-Object LastWriteTime -Descending |
     Select-Object -First 1
 if (-not $generatedAppx) {
-    Get-ChildItem -Path $buildPath -Filter '*.appx' -File -Recurse | ForEach-Object {
+    Get-ChildItem -Path $buildPath -File -Recurse | Where-Object { $_.Extension -in @('.appx', '.msix') } | ForEach-Object {
         Write-Host "Found package candidate: $($_.FullName)"
     }
-    throw "Native MSBuild UWP packaging did not produce an APPX in $packageDirectory."
+    throw "Native MSBuild UWP packaging did not produce an APPX/MSIX in $packageDirectory."
 }
 $appxPath = Join-Path $outputPath 'OnyxOS-x64.appx'
 Copy-Item $generatedAppx.FullName $appxPath -Force
