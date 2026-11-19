@@ -4,7 +4,9 @@
 #include <string>
 #include <vector>
 
-namespace onyx::vm
+namespace onyx
+{
+namespace vm
 {
     enum class GuestOperatingSystem
     {
@@ -47,4 +49,5 @@ namespace onyx::vm
     VmConfiguration CreateProfile(const std::string& profileId);
     ValidationResult Validate(const VmConfiguration& configuration);
     std::vector<std::string> BuildQemuArguments(const VmConfiguration& configuration);
+}
 }
