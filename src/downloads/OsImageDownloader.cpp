@@ -22,15 +22,15 @@ const std::array<OsImageSource,5> Sources{{
 const OsImageSource* FindImageSource(const std::string& id) noexcept { for(const auto& s:Sources)if(s.profileId==id)return &s;return nullptr; }
 wf::IAsyncOperation<ws::StorageFile> OsImageDownloader::DownloadOfficialIsoAsync(const std::string& id,ws::StorageFolder folder) {
 const auto* source=FindImageSource(id);
-if(!source)throw hresult_invalid_argument(L"No official ISO source for this profile.");
+if(!source)throw winrt::hresult_invalid_argument(L"No official ISO source for this profile.");
 if(source->kind!=ImageSourceKind::DirectIso||source->url.empty())
-throw hresult_error(E_NOTIMPL,L"Microsoft requires edition/language selection on its official download page. Open the page and select the ISO.");
+throw winrt::hresult_error(E_NOTIMPL,L"Microsoft requires edition/language selection on its official download page. Open the page and select the ISO.");
 auto file=co_await folder.CreateFileAsync(winrt::hstring(source->fileName),ws::CreationCollisionOption::ReplaceExisting);
 wnbt::BackgroundDownloader downloader;
 auto op=downloader.CreateDownload(wf::Uri(winrt::hstring(source->url)),file);
 co_await op.StartAsync();
 auto props=co_await file.GetBasicPropertiesAsync();
-if(props.Size()<65536){co_await file.DeleteAsync();throw hresult_error(E_FAIL,L"Downloaded file is too small to be a valid installer ISO.");}
+if(props.Size()<65536){co_await file.DeleteAsync();throw winrt::hresult_error(E_FAIL,L"Downloaded file is too small to be a valid installer ISO.");}
 co_return file;
 }
 }
