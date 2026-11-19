@@ -34,8 +34,9 @@ function Invoke-CheckedCommand {
 
     Write-Host "> $FilePath $($Arguments -join ' ')" -ForegroundColor Cyan
     & $FilePath @Arguments
-    if ($LASTEXITCODE -ne 0) {
-        throw "Command failed with exit code $LASTEXITCODE : $FilePath"
+    $commandSucceeded = $?
+    if (-not $commandSucceeded) {
+        throw "Command failed: $FilePath"
     }
 }
 
