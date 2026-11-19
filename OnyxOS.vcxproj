@@ -105,11 +105,11 @@
     <Page Include="src\MainPage.xaml"><Generator>MSBuild:Compile</Generator><SubType>Designer</SubType></Page>
     <Page Include="src\GuestPage.xaml"><Generator>MSBuild:Compile</Generator><SubType>Designer</SubType></Page>
     <AppxManifest Include="Package.appxmanifest" />
-    <Content Include="Assets\\StoreLogo.png" />
-    <Content Include="Assets\\Square150x150Logo.png" />
-    <Content Include="Assets\\Square44x44Logo.png" />
-    <Content Include="Assets\\Wide310x150Logo.png" />
-    <Content Include="Assets\\SplashScreen.png" />
+    <Image Include="Assets\\StoreLogo.png" />
+    <Image Include="Assets\\Square150x150Logo.png" />
+    <Image Include="Assets\\Square44x44Logo.png" />
+    <Image Include="Assets\\Wide310x150Logo.png" />
+    <Image Include="Assets\\SplashScreen.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />
