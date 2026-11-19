@@ -57,23 +57,34 @@ jobs:
           }
           else {
             Write-Host 'No persistent PFX configured; generating a temporary development certificate for this build.'
-            # Avoid New-SelfSignedCertificate here: it stalled for nearly an hour on the hosted runner.
-            $openssl = (Get-Command openssl.exe -ErrorAction Stop).Source
-            $keyPath = Join-Path $env:RUNNER_TEMP 'OnyxOS-signing-key.pem'
-            $pemPath = Join-Path $env:RUNNER_TEMP 'OnyxOS-signing-cert.pem'
+            # Generate the certificate in-process with .NET; no external process or interactive prompt.
             $passwordText = [Guid]::NewGuid().ToString('N')
-
-            & $openssl req -x509 -newkey rsa:2048 -sha256 -nodes -keyout $keyPath -out $pemPath -days 730 -subj '/CN=Bluey683' -addext 'keyUsage=digitalSignature' -addext 'extendedKeyUsage=codeSigning'
-            if ($LASTEXITCODE -ne 0) { throw "OpenSSL certificate generation failed (exit code $LASTEXITCODE)." }
-
-            & $openssl pkcs12 -export -out $pfxPath -inkey $keyPath -in $pemPath -passout "pass:$passwordText"
-            if ($LASTEXITCODE -ne 0) { throw "OpenSSL PFX export failed (exit code $LASTEXITCODE)." }
+            $rsa = [System.Security.Cryptography.RSA]::Create(2048)
+            $request = [System.Security.Cryptography.X509Certificates.CertificateRequest]::new(
+              'CN=Bluey683',
+              $rsa,
+              [System.Security.Cryptography.HashAlgorithmName]::SHA256,
+              [System.Security.Cryptography.RSASignaturePadding]::Pkcs1
+            )
+            $keyUsage = [System.Security.Cryptography.X509Certificates.X509KeyUsageExtension]::new(
+              [System.Security.Cryptography.X509Certificates.X509KeyUsageFlags]::DigitalSignature,
+              $false
+            )
+            $request.CertificateExtensions.Add($keyUsage)
+            $ekuOids = [System.Security.Cryptography.OidCollection]::new()
+            [void]$ekuOids.Add([System.Security.Cryptography.Oid]::new('1.3.6.1.5.5.7.3.3'))
+            $eku = [System.Security.Cryptography.X509Certificates.X509EnhancedKeyUsageExtension]::new($ekuOids, $false)
+            $request.CertificateExtensions.Add($eku)
+            $generatedCert = $request.CreateSelfSigned([DateTimeOffset]::UtcNow.AddMinutes(-5), [DateTimeOffset]::UtcNow.AddYears(2))
+            $pfxBytes = $generatedCert.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Pfx, $passwordText)
+            [IO.File]::WriteAllBytes($pfxPath, $pfxBytes)
+            $generatedCert.Dispose()
+            $rsa.Dispose()
 
             $password = ConvertTo-SecureString $passwordText -AsPlainText -Force
             $imported = Import-PfxCertificate -FilePath $pfxPath -CertStoreLocation 'Cert:\CurrentUser\My' -Password $password
             $cert = $imported | Where-Object { $_.HasPrivateKey } | Select-Object -First 1
             if (-not $cert) { throw 'The generated PFX has no accessible private key.' }
-            Remove-Item $keyPath, $pemPath -Force
           }
 
           Export-Certificate -Cert $cert -FilePath $cerPath | Out-Null
