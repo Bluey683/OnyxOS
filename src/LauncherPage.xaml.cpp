@@ -1,4 +1,3 @@
-#include "pch.h"
 #include "LauncherPage.xaml.h"
 #if __has_include("LauncherPage.g.cpp")
 #include "LauncherPage.g.cpp"
