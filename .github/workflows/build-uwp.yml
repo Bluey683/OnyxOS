@@ -30,7 +30,7 @@ jobs:
         shell: pwsh
         run: ./Build.ps1 -Mode GitHubActions -Configuration Release -Architecture x64
 
-      - name: Sign APPX (fast, without certificate-store imports)
+      - name: Sign APPX (trust development certificate and verify)
         if: github.event_name != 'pull_request'
         timeout-minutes: 5
         shell: pwsh
@@ -72,6 +72,11 @@ jobs:
               [System.Security.Cryptography.X509Certificates.X509KeyUsageExtension]::new(
                 [System.Security.Cryptography.X509Certificates.X509KeyUsageFlags]::DigitalSignature, $false
               )
+            )
+            $ekuOids = [System.Security.Cryptography.OidCollection]::new()
+            [void]$ekuOids.Add([System.Security.Cryptography.Oid]::new('1.3.6.1.5.5.7.3.3'))
+            $request.CertificateExtensions.Add(
+              [System.Security.Cryptography.X509Certificates.X509EnhancedKeyUsageExtension]::new($ekuOids, $false)
             )
             $generatedCert = $request.CreateSelfSigned(
               [DateTimeOffset]::UtcNow.AddMinutes(-5),
