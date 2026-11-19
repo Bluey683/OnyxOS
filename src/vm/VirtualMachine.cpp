@@ -71,6 +71,13 @@ namespace onyx::vm
         add("-cdrom", configuration.isoPath);
         add("-boot", "order=d,menu=on");
 
+        // QEMU UWP host audio backend: route guest HDA output through XAudio2.
+        add("-audiodev", "xaudio2,id=audio0");
+        args.emplace_back("-device");
+        args.emplace_back("intel-hda");
+        args.emplace_back("-device");
+        args.emplace_back("hda-duplex,audiodev=audio0");
+
         if (configuration.enableVirtioGraphics)
         {
             args.emplace_back("-device");
@@ -91,7 +98,8 @@ namespace onyx::vm
         {
             add("-netdev", "user,id=onyxnet0");
             args.emplace_back("-device");
-            args.emplace_back("virtio-net-pci,netdev=onyxnet0");
+            // e1000e has broad in-box driver support in Windows and Linux guests.
+            args.emplace_back("e1000e,netdev=onyxnet0");
         }
 
         // UEFI firmware is deliberately not guessed. The runtime integration
