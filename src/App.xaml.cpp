@@ -102,11 +102,22 @@ namespace OnyxOS
                 button->BorderThickness = Thickness(1);
 
                 button->Click += ref new RoutedEventHandler(
-                    [status, name](Object^, RoutedEventArgs^)
+                    [status, name, profileId](Object^, RoutedEventArgs^)
                     {
-                        status->Text = L"Selecionado: " + name +
-                            L"\nO mecanismo QEMU ainda precisa ser integrado.";
-                        OnyxLogger::App(L"Profile selected: " + name);
+                        auto config = onyx::vm::CreateProfile(profileId);
+                        if (!config.enabled)
+                        {
+                            status->Text = L"Selecionado: " + name + L"\\nPerfil experimental indisponível para inicialização.";
+                            OnyxLogger::App(L"Disabled experimental profile selected: " + name);
+                            return;
+                        }
+                        std::wstring details = L"Selecionado: " + std::wstring(name->Data()) +
+                            L"\\nVídeo: " + std::to_wstring(config.displayWidth) + L"x" + std::to_wstring(config.displayHeight) +
+                            L" @ " + std::to_wstring(config.displayRefreshHz) + L" Hz" +
+                            L"\\nMemória: " + std::to_wstring(config.memoryMB) + L" MB | CPU: " + std::to_wstring(config.cpuCount) +
+                            L"\\nAguardando ISO e disco virtual. QEMU/D3D ainda não iniciados.";
+                        status->Text = ref new String(details.c_str());
+                        OnyxLogger::App(L"OS profile selected; VM/display defaults loaded: " + name);
                     });
                 profiles->Children->Append(button);
             }
