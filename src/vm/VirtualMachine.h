@@ -29,6 +29,9 @@ namespace onyx::vm
         bool enableVirtioGraphics{ true };
         bool enableUsbInput{ true };
         bool enabled{ true };
+        std::uint32_t displayWidth{ 1280 };
+        std::uint32_t displayHeight{ 720 };
+        std::uint32_t displayRefreshHz{ 60 };
     };
 
     struct ValidationResult
@@ -40,6 +43,8 @@ namespace onyx::vm
     // Builds arguments for the QEMU UWP host API. It does not launch a process.
     // Firmware and host-specific audio/video callbacks must be configured by
     // the QEMU integration layer after the matching runtime is loaded.
+    // Returns the machine and display defaults selected for an OS profile.
+    VmConfiguration CreateProfile(const std::string& profileId);
     ValidationResult Validate(const VmConfiguration& configuration);
     std::vector<std::string> BuildQemuArguments(const VmConfiguration& configuration);
 }
