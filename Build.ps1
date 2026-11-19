@@ -71,6 +71,20 @@ if (!$appx) { throw "MSBuild did not produce an APPX/MSIX in $packageDir." }
 $finalAppx=Join-Path $outPath 'OnyxOS-x64.appx'
 Copy-Item -LiteralPath $appx.FullName -Destination $finalAppx -Force
 Add-Type -AssemblyName System.IO.Compression.FileSystem
+
+# MSBuild can omit wildcard Content items from UWP package layouts. Inject the
+# staged QEMU binaries explicitly before validating the final unsigned APPX.
+$zipUpdate=[IO.Compression.ZipFile]::Open($finalAppx,[IO.Compression.ZipArchiveMode]::Update)
+try {
+    foreach ($file in @((Get-Item -LiteralPath $qemu)) + $runtimeFiles) {
+        $existing=$zipUpdate.GetEntry($file.Name)
+        if ($existing) { $existing.Delete() }
+        [void][IO.Compression.ZipFileExtensions]::CreateEntryFromFile(
+            $zipUpdate,$file.FullName,$file.Name,[IO.Compression.CompressionLevel]::NoCompression
+        )
+    }
+} finally { $zipUpdate.Dispose() }
+
 $zip=[IO.Compression.ZipFile]::OpenRead($finalAppx)
 try {
     $entries=@{}
