@@ -30,7 +30,7 @@ jobs:
         shell: pwsh
         run: ./Build.ps1 -Mode GitHubActions -Configuration Release -Architecture x64
 
-      - name: Sign APPX (trust development certificate and verify)
+      - name: Sign APPX
         if: github.event_name != 'pull_request'
         timeout-minutes: 5
         shell: pwsh
@@ -44,15 +44,15 @@ jobs:
 
           $pfxPath = Join-Path $env:RUNNER_TEMP 'OnyxOS-signing.pfx'
           $cerPath = Join-Path $PWD 'artifacts/OnyxOS-signing.cer'
-          Write-Host 'SIGN 1/5: preparing certificate'
+          $persistentCertificate = -not [string]::IsNullOrWhiteSpace($env:ONYXOS_SIGNING_PFX_BASE64) -and
+            -not [string]::IsNullOrWhiteSpace($env:ONYXOS_SIGNING_PFX_PASSWORD)
 
-          if (-not [string]::IsNullOrWhiteSpace($env:ONYXOS_SIGNING_PFX_BASE64) -and
-              -not [string]::IsNullOrWhiteSpace($env:ONYXOS_SIGNING_PFX_PASSWORD)) {
+          Write-Host 'SIGN 1/4: preparing certificate'
+          if ($persistentCertificate) {
             [IO.File]::WriteAllBytes($pfxPath, [Convert]::FromBase64String($env:ONYXOS_SIGNING_PFX_BASE64))
             $passwordText = $env:ONYXOS_SIGNING_PFX_PASSWORD
             $cert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new(
-              $pfxPath,
-              $passwordText,
+              $pfxPath, $passwordText,
               [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable
             )
             if (-not $cert.HasPrivateKey) { throw 'Configured PFX has no private key.' }
@@ -82,11 +82,10 @@ jobs:
               [DateTimeOffset]::UtcNow.AddMinutes(-5),
               [DateTimeOffset]::UtcNow.AddYears(2)
             )
-            $pfxBytes = $generatedCert.Export(
-              [System.Security.Cryptography.X509Certificates.X509ContentType]::Pfx,
-              $passwordText
+            [IO.File]::WriteAllBytes(
+              $pfxPath,
+              $generatedCert.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Pfx, $passwordText)
             )
-            [IO.File]::WriteAllBytes($pfxPath, $pfxBytes)
             $cert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new(
               $pfxPath, $passwordText,
               [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable
@@ -96,13 +95,13 @@ jobs:
             if (-not $cert.HasPrivateKey) { throw 'Generated certificate has no private key.' }
           }
 
-          Write-Host 'SIGN 2/5: exporting public certificate'
+          Write-Host 'SIGN 2/4: exporting public certificate'
           [IO.File]::WriteAllBytes(
             $cerPath,
             $cert.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Cert)
           )
 
-          Write-Host 'SIGN 3/5: locating Windows SDK SignTool'
+          Write-Host 'SIGN 3/4: locating Windows SDK SignTool'
           $sdkBin = Join-Path ${env:ProgramFiles(x86)} 'Windows Kits/10/bin'
           $signToolPath = Get-ChildItem -Path $sdkBin -Directory -ErrorAction Stop |
             Sort-Object Name -Descending |
@@ -111,21 +110,22 @@ jobs:
             Select-Object -First 1
           if (-not $signToolPath) { throw "SignTool.exe was not found under $sdkBin." }
 
-          Write-Host 'SIGN 4/6: trusting the self-signed development certificate'
-          Import-Certificate -FilePath $cerPath -CertStoreLocation 'Cert:\CurrentUser\Root' | Out-Null
-          Import-Certificate -FilePath $cerPath -CertStoreLocation 'Cert:\CurrentUser\TrustedPeople' | Out-Null
-
-          Write-Host 'SIGN 5/6: signing APPX'
+          Write-Host 'SIGN 4/4: signing APPX'
           & $signToolPath sign /fd SHA256 /f $pfxPath /p $passwordText /v $appx
           if ($LASTEXITCODE -ne 0) { throw "SignTool signing failed: exit code $LASTEXITCODE" }
 
-          Write-Host 'SIGN 6/6: verifying signature'
-          & $signToolPath verify /pa /v $appx
-          if ($LASTEXITCODE -ne 0) { throw "SignTool verification failed: exit code $LASTEXITCODE" }
+          if ($persistentCertificate) {
+            Write-Host 'Verifying APPX signature with the configured trusted certificate chain'
+            & $signToolPath verify /pa /v $appx
+            if ($LASTEXITCODE -ne 0) { throw "SignTool verification failed: exit code $LASTEXITCODE" }
+          }
+          else {
+            Write-Warning 'Temporary self-signed certificate: Windows trust-chain verification is skipped. Install artifacts/OnyxOS-signing.cer on the target Xbox before installing the APPX.'
+          }
 
           Remove-Item $pfxPath -Force
           $cert.Dispose()
-          Write-Host 'APPX signed and signature verified.'
+          Write-Host 'APPX signing step completed.'
       - name: Upload signed OnyxOS package and public certificate
         if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
