@@ -52,7 +52,7 @@ namespace OnyxOS
             if (file == INVALID_HANDLE_VALUE)
             {
                 wchar_t error[128]{};
-                swprintf_s(error, L"[OnyxOS] Cannot open log file (error %lu).\\n", GetLastError());
+                swprintf_s(error, L"[OnyxOS] Cannot open log file (error %lu).\n", GetLastError());
                 OutputDebugStringW(error);
             }
             else
@@ -67,7 +67,7 @@ namespace OnyxOS
                 if (!WriteAll(file, line->Data(), line->Length() * sizeof(wchar_t)))
                 {
                     wchar_t error[128]{};
-                    swprintf_s(error, L"[OnyxOS] Cannot write log file (error %lu).\\n", GetLastError());
+                    swprintf_s(error, L"[OnyxOS] Cannot write log file (error %lu).\n", GetLastError());
                     OutputDebugStringW(error);
                 }
                 FlushFileBuffers(file);
@@ -75,7 +75,7 @@ namespace OnyxOS
         }
         catch (Exception^ ex)
         {
-            OutputDebugStringW((L"[OnyxOS] Log storage exception: " + ex->Message + L"\\n")->Data());
+            OutputDebugStringW((L"[OnyxOS] Log storage exception: " + ex->Message + L"\n")->Data());
         }
 
         if (file != INVALID_HANDLE_VALUE)
