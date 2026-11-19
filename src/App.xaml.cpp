@@ -2,6 +2,7 @@
 #include "OnyxLogger.h"
 
 using namespace Platform;
+using namespace Windows::UI;
 using namespace Windows::UI::Xaml;
 using namespace Windows::UI::Xaml::Controls;
 using namespace Windows::UI::Xaml::Media;
@@ -10,12 +11,9 @@ namespace OnyxOS
 {
     App::App()
     {
-        // Deliberately do not call InitializeComponent here. The Xbox log
-        // proves that loading App.xaml currently throws E_FAIL before launch.
-        // This diagnostic build starts the UWP Application without loading
-        // any XAML resource dictionary so we can isolate the failing layer.
+        // Keep App.xaml out of the startup path: Xbox confirmed that its
+        // InitializeComponent call fails before the application can launch.
         OnyxLogger::App(L"App constructor entered; App.xaml loading bypassed.");
-
         UnhandledException += ref new UnhandledExceptionEventHandler(
             this, &App::OnUnhandledException);
         OnyxLogger::App(L"Unhandled-exception logger registered.");
@@ -29,52 +27,105 @@ namespace OnyxOS
     void App::OnLaunched(
         Windows::ApplicationModel::Activation::LaunchActivatedEventArgs^)
     {
-        OnyxLogger::App(L"OnLaunched entered; building diagnostic UI in C++.");
+        OnyxLogger::App(L"OnLaunched entered; building native C++ launcher UI.");
         try
         {
             auto window = Window::Current;
             auto root = ref new Grid();
-            root->Background = ref new SolidColorBrush(Windows::UI::Colors::Black);
+            root->Background = ref new SolidColorBrush(ColorHelper::FromArgb(255, 11, 16, 24));
+            root->Padding = Thickness(32);
 
-            auto stack = ref new StackPanel();
-            stack->VerticalAlignment = VerticalAlignment::Center;
-            stack->HorizontalAlignment = HorizontalAlignment::Center;
-            stack->Spacing = 18;
+            auto layout = ref new StackPanel();
+            layout->Spacing = 18;
 
-            auto title = ref new TextBlock();
-            title->Text = L"ONYXOS";
-            title->Foreground = ref new SolidColorBrush(Windows::UI::Colors::White);
-            title->FontSize = 42;
-            title->FontWeight = Windows::UI::Text::FontWeights::Bold;
-            title->HorizontalAlignment = HorizontalAlignment::Center;
-            stack->Children->Append(title);
+            auto heading = ref new TextBlock();
+            heading->Text = L"ONYXOS";
+            heading->FontSize = 34;
+            heading->FontWeight = Windows::UI::Text::FontWeights::Bold;
+            heading->Foreground = ref new SolidColorBrush(Colors::White);
+            layout->Children->Append(heading);
+
+            auto subtitle = ref new TextBlock();
+            subtitle->Text = L"VIRTUAL MACHINE CENTER";
+            subtitle->FontSize = 13;
+            subtitle->Foreground = ref new SolidColorBrush(ColorHelper::FromArgb(255, 139, 154, 175));
+            layout->Children->Append(subtitle);
+
+            auto prompt = ref new TextBlock();
+            prompt->Text = L"Escolha seu sistema";
+            prompt->FontSize = 25;
+            prompt->Margin = Thickness(0, 18, 0, 0);
+            prompt->Foreground = ref new SolidColorBrush(Colors::White);
+            layout->Children->Append(prompt);
+
+            auto hint = ref new TextBlock();
+            hint->Text = L"Selecione um perfil para preparar sua maquina virtual.";
+            hint->FontSize = 15;
+            hint->Foreground = ref new SolidColorBrush(ColorHelper::FromArgb(255, 154, 169, 188));
+            layout->Children->Append(hint);
 
             auto status = ref new TextBlock();
-            status->Text = L"Aplicativo iniciado.\nDiagnostico: XAML de inicializacao ignorado temporariamente.";
-            status->Foreground = ref new SolidColorBrush(Windows::UI::Colors::LightGreen);
-            status->FontSize = 20;
-            status->TextAlignment = TextAlignment::Center;
+            status->Text = L"Nenhum sistema selecionado.";
+            status->FontSize = 17;
             status->TextWrapping = TextWrapping::Wrap;
-            status->MaxWidth = 900;
-            stack->Children->Append(status);
+            status->Margin = Thickness(0, 12, 0, 0);
+            status->Foreground = ref new SolidColorBrush(ColorHelper::FromArgb(255, 229, 184, 95));
+            layout->Children->Append(status);
 
-            auto detail = ref new TextBlock();
-            detail->Text = L"Esta tela confirma que o processo e a janela UWP permanecem ativos.\nA tela principal sera reativada depois de isolar o erro XAML.";
-            detail->Foreground = ref new SolidColorBrush(Windows::UI::Colors::White);
-            detail->FontSize = 16;
-            detail->TextAlignment = TextAlignment::Center;
-            detail->TextWrapping = TextWrapping::Wrap;
-            detail->MaxWidth = 900;
-            stack->Children->Append(detail);
+            auto profiles = ref new StackPanel();
+            profiles->Spacing = 8;
+            profiles->Margin = Thickness(0, 8, 0, 0);
 
-            root->Children->Append(stack);
+            const wchar_t* names[] = {
+                L"Windows 10", L"Windows 11", L"Debian",
+                L"Ubuntu", L"Arch Linux", L"macOS (experimental)"
+            };
+
+            for (int i = 0; i < 6; ++i)
+            {
+                String^ name = ref new String(names[i]);
+                auto button = ref new Button();
+                button->Content = name;
+                button->Tag = name;
+                button->HorizontalAlignment = HorizontalAlignment::Stretch;
+                button->HorizontalContentAlignment = HorizontalAlignment::Left;
+                button->MinHeight = 58;
+                button->Padding = Thickness(18, 10, 18, 10);
+                button->Background = ref new SolidColorBrush(ColorHelper::FromArgb(255, 20, 32, 49));
+                button->Foreground = ref new SolidColorBrush(Colors::White);
+                button->BorderBrush = ref new SolidColorBrush(ColorHelper::FromArgb(255, 41, 59, 80));
+                button->BorderThickness = Thickness(1);
+
+                button->Click += ref new RoutedEventHandler(
+                    [status, name](Object^, RoutedEventArgs^)
+                    {
+                        status->Text = L"Selecionado: " + name +
+                            L"\nO mecanismo QEMU ainda precisa ser integrado.";
+                        OnyxLogger::App(L"Profile selected: " + name);
+                    });
+                profiles->Children->Append(button);
+            }
+
+            auto scroll = ref new ScrollViewer();
+            scroll->VerticalScrollBarVisibility = ScrollBarVisibility::Auto;
+            scroll->Content = profiles;
+            layout->Children->Append(scroll);
+
+            auto footer = ref new TextBlock();
+            footer->Text = L"ONYXOS  |  QEMU HOST  |  ISO / VHDX / CONFIGURACOES";
+            footer->FontSize = 11;
+            footer->Margin = Thickness(0, 12, 0, 0);
+            footer->Foreground = ref new SolidColorBrush(ColorHelper::FromArgb(255, 101, 117, 138));
+            layout->Children->Append(footer);
+
+            root->Children->Append(layout);
             window->Content = root;
             window->Activate();
-            OnyxLogger::App(L"Diagnostic window activated successfully; MainPage navigation intentionally skipped.");
+            OnyxLogger::App(L"Native launcher UI activated successfully; XAML pages are bypassed.");
         }
         catch (Exception^ ex)
         {
-            OnyxLogger::App(L"DIAGNOSTIC WINDOW FAILURE: " + ex->Message);
+            OnyxLogger::App(L"NATIVE LAUNCHER UI FAILURE: " + ex->Message);
             throw;
         }
     }
