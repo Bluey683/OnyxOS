@@ -1,5 +1,4 @@
 #include "LauncherPage.xaml.h"
-#include "LogsPage.xaml.h"
 #include "OnyxLogger.h"
 
 using namespace Platform;
@@ -41,13 +40,5 @@ namespace OnyxOS
         OnyxLogger::Qemu(L"Launch requested, but VM startup is not connected yet.");
         StatusText->Text = L"A inicialização de máquinas virtuais ainda não está implementada.";
         LaunchButton->IsEnabled = false;
-    }
-
-    void LauncherPage::LogsButton_Click(Object^, RoutedEventArgs^)
-    {
-        OnyxLogger::App(L"Opening in-app diagnostics.");
-        auto frame = dynamic_cast<Frame^>(Window::Current->Content);
-        if (frame != nullptr && !frame->Navigate(LogsPage::typeid))
-            OnyxLogger::App(L"ERROR: navigation to LogsPage returned false.");
     }
 }
