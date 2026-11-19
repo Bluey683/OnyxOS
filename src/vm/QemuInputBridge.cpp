@@ -1,5 +1,6 @@
 #include "QemuInputBridge.h"
 #include <cmath>
+#include <algorithm>
 #include <winrt/Windows.Gaming.Input.h>
 
 using namespace winrt;
@@ -30,8 +31,10 @@ namespace onyx::vm
         if (mapped) { m_host.SendKeyNumber(mapped, down); m_host.WakeMainLoop(); }
     }
 
-    void QemuInputBridge::SendPointerPosition(float x, float y) noexcept
+    void QemuInputBridge::SendPointerPosition(float x, float y, float width, float height) noexcept
     {
+        m_surfaceWidth=(width>1?width:1920); m_surfaceHeight=(height>1?height:1080);
+        m_gamepadX=x; m_gamepadY=y;
         if (!m_havePointer) { m_lastX=x; m_lastY=y; m_havePointer=true; return; }
         const int dx=static_cast<int>(std::lround(x-m_lastX));
         const int dy=static_cast<int>(std::lround(y-m_lastY));
@@ -39,7 +42,7 @@ namespace onyx::vm
         if (dx || dy)
         {
             if (!m_host.SendPointerRelative(dx,dy))
-                m_host.SendPointerAbsolute(static_cast<int>(x),static_cast<int>(y),1920,1080);
+                m_host.SendPointerAbsolute(static_cast<int>(x),static_cast<int>(y),static_cast<int>(m_surfaceWidth),static_cast<int>(m_surfaceHeight));
             m_host.WakeMainLoop();
         }
     }
@@ -71,8 +74,8 @@ namespace onyx::vm
 
         const bool left=(bits&mask(GamepadButtons::X))!=0;
         const bool right=(bits&mask(GamepadButtons::Y))!=0;
-        if(left!=m_left){SendPointerButton(1,left);m_left=left;}
-        if(right!=m_right){SendPointerButton(3,right);m_right=right;}
+        if(left!=m_left){SendPointerButton(0,left);m_left=left;}
+        if(right!=m_right){SendPointerButton(2,right);m_right=right;}
 
         constexpr double deadzone=0.18;
         const auto scale=[deadzone](double v)
@@ -86,7 +89,7 @@ namespace onyx::vm
         if(dx||dy)
         {
             if(!m_host.SendPointerRelative(dx,dy))
-                m_host.SendPointerAbsolute(960+dx,540+dy,1920,1080);
+                m_gamepadX=std::clamp(m_gamepadX+dx,0.0f,m_surfaceWidth-1.0f); m_gamepadY=std::clamp(m_gamepadY+dy,0.0f,m_surfaceHeight-1.0f); m_host.SendPointerAbsolute(static_cast<int>(m_gamepadX),static_cast<int>(m_gamepadY),static_cast<int>(m_surfaceWidth),static_cast<int>(m_surfaceHeight));
             m_host.WakeMainLoop();
         }
         m_previousButtons=bits;
@@ -101,8 +104,8 @@ namespace onyx::vm
         release(GamepadButtons::DPadUp,273); release(GamepadButtons::DPadDown,274);
         release(GamepadButtons::DPadLeft,276); release(GamepadButtons::DPadRight,275);
         release(GamepadButtons::A,13); release(GamepadButtons::B,27);
-        if(m_left)SendPointerButton(1,false);
-        if(m_right)SendPointerButton(3,false);
+        if(m_left)SendPointerButton(0,false);
+        if(m_right)SendPointerButton(2,false);
         if(m_middle)SendPointerButton(2,false);
         m_left=m_right=m_middle=false; m_previousButtons=0;
     }
