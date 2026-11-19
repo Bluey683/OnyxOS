@@ -1,4 +1,5 @@
 #include <windows.h>
+#include <cstdint>
 #include <winrt/base.h>
 #include <winrt/Windows.Foundation.h>
 #include <winrt/Windows.UI.h>
