@@ -69,8 +69,14 @@
     <ClCompile Include="src\\vm\\QemuInputBridge.cpp"><CompileAsWinRT>false</CompileAsWinRT><LanguageStandard>stdcpp20</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
     <ClCompile Include="src\\vm\\VhdxProvisioner.cpp"><CompileAsWinRT>false</CompileAsWinRT><LanguageStandard>stdcpp20</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
     <ClCompile Include="src\\downloads\\OsImageDownloader.cpp"><CompileAsWinRT>false</CompileAsWinRT><LanguageStandard>stdcpp20</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
-    <ClCompile Include="src\LauncherPage.xaml.cpp"><CompileAsWinRT>true</CompileAsWinRT><LanguageStandard>stdcpp14</LanguageStandard><ConformanceMode>false</ConformanceMode><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
-    <ClCompile Include="src\GuestPage.xaml.cpp"><CompileAsWinRT>true</CompileAsWinRT><LanguageStandard>stdcpp14</LanguageStandard><ConformanceMode>false</ConformanceMode><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
+    <ClCompile Include="src\LauncherPage.xaml.cpp">
+      <DependentUpon>LauncherPage.xaml</DependentUpon>
+      <CompileAsWinRT>true</CompileAsWinRT><LanguageStandard>stdcpp14</LanguageStandard><ConformanceMode>false</ConformanceMode><PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="src\GuestPage.xaml.cpp">
+      <DependentUpon>GuestPage.xaml</DependentUpon>
+      <CompileAsWinRT>true</CompileAsWinRT><LanguageStandard>stdcpp14</LanguageStandard><ConformanceMode>false</ConformanceMode><PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\vm\VirtualMachine.h" />
@@ -78,8 +84,8 @@
     <ClInclude Include="src\vm\QemuInputBridge.h" />
     <ClInclude Include="src\vm\VhdxProvisioner.h" />
     <ClInclude Include="src\downloads\OsImageDownloader.h" />
-    <ClInclude Include="src\LauncherPage.xaml.h" />
-    <ClInclude Include="src\GuestPage.xaml.h" />
+    <ClInclude Include="src\LauncherPage.xaml.h"><DependentUpon>LauncherPage.xaml</DependentUpon></ClInclude>
+    <ClInclude Include="src\GuestPage.xaml.h"><DependentUpon>GuestPage.xaml</DependentUpon></ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Page Include="src\LauncherPage.xaml"><Generator>MSBuild:Compile</Generator><SubType>Designer</SubType></Page>
