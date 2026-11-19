@@ -41,6 +41,11 @@
       "backend": "xaudio2",
       "controller": "intel-hda",
       "codec": "hda-duplex"
+    },
+    "acceleration": {
+      "engine": "tcg",
+      "thread": "multi",
+      "description": "QEMU software emulation"
     }
   },
   "profiles": [
@@ -66,7 +71,11 @@
         "Xbox controller mapped to guest keys and pointer"
       ],
       "notes": "Requires bootable Windows 10 x64 ISO. 3 GB is a constrained starting profile.",
-      "audio": "XAudio2 / Intel HDA"
+      "audio": "XAudio2 / Intel HDA",
+      "diskFormat": "vhdx",
+      "diskSizeGB": 80,
+      "isoFallback": "official-download-catalog",
+      "diskFallback": "create-vhdx-when-creator-is-available"
     },
     {
       "id": "windows-11",
@@ -92,7 +101,11 @@
       "tpm": "Not configured",
       "secureBoot": "Not configured",
       "notes": "TPM 2.0 and Secure Boot emulation are not configured; standard Windows 11 installer may refuse to install.",
-      "audio": "XAudio2 / Intel HDA"
+      "audio": "XAudio2 / Intel HDA",
+      "diskFormat": "vhdx",
+      "diskSizeGB": 80,
+      "isoFallback": "official-download-catalog",
+      "diskFallback": "create-vhdx-when-creator-is-available"
     },
     {
       "id": "debian",
@@ -116,7 +129,11 @@
         "Xbox controller mapped to guest keys and pointer"
       ],
       "notes": "Use official Debian amd64 ISO.",
-      "audio": "XAudio2 / Intel HDA"
+      "audio": "XAudio2 / Intel HDA",
+      "diskFormat": "vhdx",
+      "diskSizeGB": 64,
+      "isoFallback": "official-download-catalog",
+      "diskFallback": "create-vhdx-when-creator-is-available"
     },
     {
       "id": "ubuntu",
@@ -140,7 +157,11 @@
         "Xbox controller mapped to guest keys and pointer"
       ],
       "notes": "Use official Ubuntu amd64 ISO.",
-      "audio": "XAudio2 / Intel HDA"
+      "audio": "XAudio2 / Intel HDA",
+      "diskFormat": "vhdx",
+      "diskSizeGB": 64,
+      "isoFallback": "official-download-catalog",
+      "diskFallback": "create-vhdx-when-creator-is-available"
     },
     {
       "id": "arch-linux",
@@ -164,7 +185,11 @@
         "Xbox controller mapped to guest keys and pointer"
       ],
       "notes": "Use official Arch Linux x86_64 ISO.",
-      "audio": "XAudio2 / Intel HDA"
+      "audio": "XAudio2 / Intel HDA",
+      "diskFormat": "vhdx",
+      "diskSizeGB": 64,
+      "isoFallback": "official-download-catalog",
+      "diskFallback": "create-vhdx-when-creator-is-available"
     },
     {
       "id": "macos",
@@ -189,7 +214,11 @@
         "Xbox controller mapped to guest keys and pointer"
       ],
       "notes": "Disabled placeholder. Apple firmware, hardware compatibility and licensing are unresolved; no image or firmware is included.",
-      "audio": "XAudio2 / Intel HDA"
+      "audio": "XAudio2 / Intel HDA",
+      "diskFormat": "vhdx",
+      "diskSizeGB": 64,
+      "isoFallback": "official-download-catalog",
+      "diskFallback": "create-vhdx-when-creator-is-available"
     }
   ]
 }
