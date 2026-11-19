@@ -84,8 +84,9 @@ New-Item -ItemType Directory -Force -Path $stagePath | Out-Null
 Copy-Item $manifestPath (Join-Path $stagePath 'AppxManifest.xml')
 Copy-Item $assetsPath (Join-Path $stagePath 'Assets') -Recurse -Force
 
-$executableNames = @('OnyxOS-Launcher.exe','OnyxOS-Windows10.exe','OnyxOS-Windows11.exe','OnyxOS-Debian.exe','OnyxOS-Ubuntu.exe','OnyxOS-ArchLinux.exe','OnyxOS-macOS.exe')
-foreach ($name in $executableNames) { Copy-Item $builtExecutable (Join-Path $stagePath $name) -Force }
+# Keep a single registered launcher executable. OS profiles are selected inside the launcher,
+# not exposed as separate Xbox Start menu applications.
+Copy-Item $builtExecutable (Join-Path $stagePath 'OnyxOS.exe') -Force
 
 Get-ChildItem -Path (Split-Path $builtExecutable) -Filter '*.dll' -File -ErrorAction SilentlyContinue |
     ForEach-Object { Copy-Item $_.FullName (Join-Path $stagePath $_.Name) -Force }
