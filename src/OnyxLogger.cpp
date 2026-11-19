@@ -46,8 +46,10 @@ namespace OnyxOS
         try
         {
             String^ fullPath = ApplicationData::Current->LocalFolder->Path + L"\\" + fileName;
-            file = CreateFileW(fullPath->Data(), FILE_APPEND_DATA, FILE_SHARE_READ | FILE_SHARE_WRITE,
-                nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+            CREATEFILE2_EXTENDED_PARAMETERS createParams{};
+            createParams.dwSize = sizeof(createParams);
+            file = CreateFile2FromAppW(fullPath->Data(), FILE_APPEND_DATA,
+                FILE_SHARE_READ | FILE_SHARE_WRITE, OPEN_ALWAYS, &createParams);
 
             if (file == INVALID_HANDLE_VALUE)
             {
