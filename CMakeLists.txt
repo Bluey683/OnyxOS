@@ -23,6 +23,8 @@ foreach(app IN LISTS ONYXOS_APPS)
     src/vm/VirtualMachine.cpp
     src/vm/QemuHostAdapter.cpp
     src/vm/QemuInputBridge.cpp
+    src/vm/VhdxProvisioner.cpp
+    src/downloads/OsImageDownloader.cpp
   )
   target_compile_features(${app} PRIVATE cxx_std_20)
   target_compile_definitions(${app} PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX UNICODE _UNICODE)
