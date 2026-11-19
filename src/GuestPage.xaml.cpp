@@ -1,4 +1,3 @@
-#include "pch.h"
 #include "GuestPage.xaml.h"
 
 using namespace Platform;
