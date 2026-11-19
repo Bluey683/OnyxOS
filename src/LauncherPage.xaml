@@ -7,7 +7,21 @@
     mc:Ignorable="d"
     Background="#0B1018">
 
-    <Grid Padding="32">
+    <Page.Resources>
+        <Style x:Key="ProfileCardStyle" TargetType="Button">
+            <Setter Property="Background" Value="#142031"/>
+            <Setter Property="Foreground" Value="#F4F7FB"/>
+            <Setter Property="BorderBrush" Value="#293B50"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="14"/>
+            <Setter Property="Padding" Value="20"/>
+            <Setter Property="Margin" Value="0,0,14,14"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="MinHeight" Value="142"/>
+        </Style>
+    </Page.Resources>
+\n    <Grid Padding="32">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -141,18 +155,4 @@
         </Grid>
     </Grid>
 
-    <Page.Resources>
-        <Style x:Key="ProfileCardStyle" TargetType="Button">
-            <Setter Property="Background" Value="#142031"/>
-            <Setter Property="Foreground" Value="#F4F7FB"/>
-            <Setter Property="BorderBrush" Value="#293B50"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="14"/>
-            <Setter Property="Padding" Value="20"/>
-            <Setter Property="Margin" Value="0,0,14,14"/>
-            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="MinHeight" Value="142"/>
-        </Style>
-    </Page.Resources>
 </Page>
