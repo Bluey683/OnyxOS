@@ -68,7 +68,7 @@ Invoke-CheckedCommand -FilePath $msbuild -Arguments @(
     "/p:IntDir=$(Join-Path $buildPath "obj/$Architecture/$Configuration/")"
 )
 
-$builtExecutable = Join-Path $buildPath "$Architecture/$Configuration/OnyxOS.exe"
+$builtExecutable = Join-Path $buildPath "$Architecture/$Configuration/OnyxOS/OnyxOS.exe"
 if (-not (Test-Path $builtExecutable)) { throw "MSBuild output not found: $builtExecutable" }
 
 $sdkBinRoot = Join-Path ${env:ProgramFiles(x86)} 'Windows Kits/10/bin'
