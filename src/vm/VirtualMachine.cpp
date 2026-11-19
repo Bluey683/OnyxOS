@@ -26,6 +26,39 @@ namespace onyx::vm
         }
     }
 
+    VmConfiguration CreateProfile(const std::string& profileId)
+    {
+        VmConfiguration c;
+        c.id = profileId;
+        c.enableNetwork = true;
+        c.enableUsbInput = true;
+        c.enableVirtioGraphics = true;
+        c.displayWidth = 1280;
+        c.displayHeight = 720;
+        c.displayRefreshHz = 60;
+        if (profileId == "windows10") {
+            c.name = "Windows 10"; c.operatingSystem = GuestOperatingSystem::Windows;
+            c.memoryMB = 3072; c.cpuCount = 2; c.displayWidth = 1366; c.displayHeight = 768;
+        } else if (profileId == "windows11") {
+            c.name = "Windows 11"; c.operatingSystem = GuestOperatingSystem::Windows;
+            c.memoryMB = 4096; c.cpuCount = 2; c.displayWidth = 1920; c.displayHeight = 1080;
+        } else if (profileId == "debian") {
+            c.name = "Debian"; c.operatingSystem = GuestOperatingSystem::Linux;
+            c.memoryMB = 2048; c.cpuCount = 2; c.displayWidth = 1280; c.displayHeight = 720;
+        } else if (profileId == "ubuntu") {
+            c.name = "Ubuntu"; c.operatingSystem = GuestOperatingSystem::Linux;
+            c.memoryMB = 3072; c.cpuCount = 2; c.displayWidth = 1366; c.displayHeight = 768;
+        } else if (profileId == "arch") {
+            c.name = "Arch Linux"; c.operatingSystem = GuestOperatingSystem::Linux;
+            c.memoryMB = 2048; c.cpuCount = 2; c.displayWidth = 1280; c.displayHeight = 720;
+        } else if (profileId == "macos") {
+            c.name = "macOS (experimental)"; c.operatingSystem = GuestOperatingSystem::MacOS;
+            c.memoryMB = 4096; c.cpuCount = 2; c.displayWidth = 1280; c.displayHeight = 720;
+            c.enabled = false;
+        } else { c.enabled = false; }
+        return c;
+    }
+
     ValidationResult Validate(const VmConfiguration& configuration)
     {
         if (!configuration.enabled)
@@ -46,6 +79,8 @@ namespace onyx::vm
             return { false, "A memória deve estar entre 512 MB e 262144 MB." };
         if (configuration.cpuCount < 1 || configuration.cpuCount > 64)
             return { false, "A quantidade de CPUs deve estar entre 1 e 64." };
+        if (configuration.displayWidth < 640 || configuration.displayWidth > 3840 || configuration.displayHeight < 480 || configuration.displayHeight > 2160 || configuration.displayRefreshHz < 30 || configuration.displayRefreshHz > 120)
+            return { false, "A resolução ou taxa de atualização do vídeo é inválida." };
         return { true, "Perfil validado. A inicialização ainda depende da integração da API QEMU UWP." };
     }
 
@@ -67,6 +102,7 @@ namespace onyx::vm
         add("-cpu", configuration.cpuModel);
         add("-m", std::to_string(configuration.memoryMB));
         add("-smp", std::to_string(configuration.cpuCount));
+        add("-display", "none"); // The host renderer presents the guest framebuffer.
         add("-drive", "file=" + configuration.diskPath + ",if=virtio,format=vhdx");
         add("-cdrom", configuration.isoPath);
         add("-boot", "order=d,menu=on");
