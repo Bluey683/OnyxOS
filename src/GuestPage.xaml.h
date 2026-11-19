@@ -4,7 +4,7 @@
 
 namespace OnyxOS
 {
-    public ref class GuestPage sealed
+    public ref class GuestPage sealed : public Windows::UI::Xaml::Controls::Page
     {
     public:
         GuestPage();
