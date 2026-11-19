@@ -12,7 +12,7 @@ This repository targets one Xbox UWP application and one APPX package. The Launc
 
 ## Not implemented yet
 
-- Launcher user interface and OS selection.
+- XAML Launcher page scaffold and profile selection UI source (not yet wired into the app or compiled by the current CMake workflow).
 - QEMU DLL, matching headers, dependent DLLs, firmware and license notices.
 - QEMU API adapter, VM configuration, ISO picker and persistent disk management.
 - HLSL renderer, optional GLSL backend, XAudio2 audio output.
