@@ -12,9 +12,9 @@ using namespace Windows::Storage;
 namespace onyx::downloads {
 namespace {
 const std::array<OsImageSource,5> Sources{{
-{"debian",L"debian-amd64-netinst.iso",L"https://cloudfront.debian.net/debian-cd/current/amd64/iso-cd/debian-amd64-netinst.iso",L"https://www.debian.org/download",ImageSourceKind::DirectIso},
-{"ubuntu",L"ubuntu-desktop-amd64.iso",L"https://releases.ubuntu.com/26.04/ubuntu-26.04.1-desktop-amd64.iso",L"https://ubuntu.com/download/desktop",ImageSourceKind::DirectIso},
-{"arch-linux",L"archlinux-x86_64.iso",L"https://geo.mirror.pkgbuild.com/iso/latest/archlinux-x86_64.iso",L"https://archlinux.org/download/",ImageSourceKind::DirectIso},
+{"debian",L"debian.iso",L"https://cloudfront.debian.net/debian-cd/current/amd64/iso-cd/debian-13.7.0-amd64-netinst.iso",L"https://www.debian.org/download",ImageSourceKind::DirectIso},
+{"ubuntu",L"ubuntu.iso",L"https://releases.ubuntu.com/26.04/ubuntu-26.04.1-desktop-amd64.iso",L"https://ubuntu.com/download/desktop",ImageSourceKind::DirectIso},
+{"arch-linux",L"archlinux.iso",L"https://geo.mirror.pkgbuild.com/iso/latest/archlinux-x86_64.iso",L"https://archlinux.org/download/",ImageSourceKind::DirectIso},
 {"windows-10",L"windows-10.iso",L"",L"https://www.microsoft.com/software-download/windows10ISO",ImageSourceKind::MicrosoftDownloadPage},
 {"windows-11",L"windows-11.iso",L"",L"https://www.microsoft.com/software-download/windows11",ImageSourceKind::MicrosoftDownloadPage}
 }};
