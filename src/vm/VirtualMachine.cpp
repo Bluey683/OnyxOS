@@ -3,7 +3,9 @@
 #include <algorithm>
 #include <cctype>
 
-namespace onyx::vm
+namespace onyx
+{
+namespace vm
 {
     namespace
     {
@@ -142,4 +144,5 @@ namespace onyx::vm
         // must locate a compatible packaged firmware image before VM startup.
         return args;
     }
+}
 }
