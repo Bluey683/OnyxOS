@@ -12,5 +12,9 @@ namespace OnyxOS
     protected:
         virtual void OnLaunched(
             Windows::ApplicationModel::Activation::LaunchActivatedEventArgs^ args) override;
+
+    private:
+        void OnUnhandledException(Platform::Object^ sender,
+            Windows::UI::Xaml::UnhandledExceptionEventArgs^ args);
     };
 }
