@@ -59,8 +59,7 @@ jobs:
           Export-PfxCertificate -Cert $cert -FilePath $pfxPath -Password $password | Out-Null
           Export-Certificate -Cert $cert -FilePath $cerPath | Out-Null
 
-          # Trust this ephemeral signer on the disposable GitHub runner so SignTool
-          # can validate the self-signed chain during the verification step.
+          # Trust the temporary signer on this disposable GitHub runner.
           Import-Certificate -FilePath $cerPath -CertStoreLocation 'Cert:\CurrentUser\Root' | Out-Null
           Import-Certificate -FilePath $cerPath -CertStoreLocation 'Cert:\CurrentUser\TrustedPeople' | Out-Null
 
@@ -73,9 +72,8 @@ jobs:
             throw 'SignTool.exe was not found in the installed Windows SDK.'
           }
 
-          # Add a trusted RFC 3161 timestamp. This prevents the package signature
-          # from depending solely on the certificate validity date.
-          & $signTool.FullName sign /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 /f $pfxPath /p $passwordText /v $appx
+          # Sign locally with SHA-256; no external timestamp server is contacted.
+          & $signTool.FullName sign /fd SHA256 /f $pfxPath /p $passwordText /v $appx
           $signExitCode = $LASTEXITCODE
           if ($signExitCode -ne 0) {
             throw "SignTool failed to sign the APPX (exit code $signExitCode)."
