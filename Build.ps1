@@ -97,16 +97,12 @@ if (Test-Path $qemuDll) {
     Write-Host 'Bundled QEMU x86_64 UWP host DLL.' -ForegroundColor Green
 } else { Write-Warning 'QEMU UWP DLL is missing. VM startup will not be available.' }
 
-# Ship the complete dependency tree with the APPX under the predictable Deps folder.
-# Keep runtime DLLs at package root as well, because the Windows loader resolves them by module name.
-$dependenciesPath = Join-Path $repoRoot 'Dependencies'
-$depsStagePath = Join-Path $stagePath 'Deps'
-if (Test-Path $dependenciesPath) {
-    Copy-Item $dependenciesPath $depsStagePath -Recurse -Force
-    Get-ChildItem (Join-Path $dependenciesPath 'Runtime') -Filter '*.dll' -File -ErrorAction SilentlyContinue |
-        ForEach-Object { Copy-Item $_.FullName (Join-Path $stagePath $_.Name) -Force }
-} else {
-    Write-Warning 'Dependencies folder is missing; APPX will not contain Deps.'
+# Copy QEMU runtime DLLs beside the executable; do not create a Deps folder in the app.
+$runtimePath = Join-Path $repoRoot 'Dependencies/Runtime'
+if (Test-Path $runtimePath) {
+    Get-ChildItem $runtimePath -Filter '*.dll' -File | ForEach-Object {
+        Copy-Item $_.FullName (Join-Path $stagePath $_.Name) -Force
+    }
 }
 $firmwarePath = Join-Path $repoRoot 'Dependencies/qemu'
 if (Test-Path $firmwarePath) { Copy-Item $firmwarePath (Join-Path $stagePath 'qemu') -Recurse -Force }
@@ -116,6 +112,16 @@ if (Test-Path $appxPath) { Remove-Item $appxPath -Force }
 Write-Host 'Packaging one APPX containing all seven application entries...' -ForegroundColor Yellow
 Invoke-CheckedCommand -FilePath $makeAppx.FullName -Arguments @('pack','/d',$stagePath,'/p',$appxPath,'/o')
 if (-not (Test-Path $appxPath)) { throw "APPX output was not created: $appxPath" }
+
+# Download the Microsoft-signed x64 C++ UWP Desktop framework required by the manifest.
+$vclibsPath = Join-Path $outputPath 'Microsoft.VCLibs.x64.14.00.Desktop.appx'
+$vclibsUri = 'https://aka.ms/Microsoft.VCLibs.x64.14.00.Desktop.appx'
+Write-Host 'Downloading Microsoft VCLibs x64 framework dependency...' -ForegroundColor Yellow
+Invoke-WebRequest -Uri $vclibsUri -OutFile $vclibsPath -UseBasicParsing
+if (-not (Test-Path $vclibsPath) -or (Get-Item $vclibsPath).Length -lt 100000) {
+    throw 'Microsoft VCLibs x64 framework download is missing or invalid.'
+}
+Write-Host "VCLibs dependency: $vclibsPath" -ForegroundColor Green
 
 Write-Host ''
 Write-Host 'OnyxOS APPX build completed.' -ForegroundColor Green
