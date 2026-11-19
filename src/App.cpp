@@ -44,7 +44,7 @@ namespace
     }
 }
 
-struct OnyxOSApp final :
+struct OnyxOSApp :
     winrt::implements<OnyxOSApp, winrt::Windows::UI::Xaml::ApplicationT<OnyxOSApp>>
 {
     void OnLaunched(
