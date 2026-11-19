@@ -138,3 +138,7 @@ integrated. No successful build or guest boot has been verified yet.
 ## Automatic OS image downloads and VHDX
 
 - [Official ISO download catalog, TCG and VHDX provisioning status](docs/AUTO-OS-DOWNLOAD.md)
+
+## XAML guest display
+
+- [Shared XAML QEMU display for the six OS apps](docs/GUEST-DISPLAY.md)
