@@ -1,4 +1,5 @@
 #include "QemuHostAdapter.h"
+#include "../OnyxNativeLog.h"
 #include <array>
 
 namespace onyx::vm
@@ -8,12 +9,14 @@ namespace onyx::vm
     bool QemuHostAdapter::Load(const std::wstring& dllName)
     {
         Unload();
+        OnyxOS::WriteQemuLogNative(L"Loading packaged QEMU host DLL.");
         m_error.clear();
         m_missing.clear();
         m_module = LoadPackagedLibrary(dllName.c_str(), 0);
         if (!m_module)
         {
             m_error = L"LoadPackagedLibrary falhou. Código Win32: " + std::to_wstring(GetLastError());
+            OnyxOS::WriteQemuLogNative(m_error.c_str());
             return false;
         }
 
@@ -37,6 +40,9 @@ namespace onyx::vm
         if (!m_missing.empty())
         {
             m_error = L"A DLL não corresponde à API QEMU UWP esperada.";
+            OnyxOS::WriteQemuLogNative(m_error.c_str());
+            for (const auto& missing : m_missing)
+                OnyxOS::WriteQemuLogNative(std::wstring(missing.begin(), missing.end()).c_str());
             Unload();
             return false;
         }
@@ -46,6 +52,7 @@ namespace onyx::vm
             if ((m_apiVersion >> 16) != 1)
             {
                 m_error = L"Versão incompatível da API QEMU. Esperada major 1.";
+                OnyxOS::WriteQemuLogNative(m_error.c_str());
                 Unload();
                 return false;
             }
@@ -58,6 +65,7 @@ namespace onyx::vm
         m_pointerButton = reinterpret_cast<PointerButtonFn>(GetProcAddress(m_module, "qemu_host_send_pointer_button"));
         m_wake = reinterpret_cast<WakeFn>(GetProcAddress(m_module, "qemu_host_wake_main_loop"));
         m_compatible = true;
+        OnyxOS::WriteQemuLogNative(L"QEMU host DLL loaded and required exports validated.");
         return true;
     }
 
