@@ -95,6 +95,62 @@ $appxPath = Join-Path $outputPath 'OnyxOS-x64.appx'
 Copy-Item $generatedAppx.FullName $appxPath -Force
 Write-Host "Native UWP package copied to: $appxPath" -ForegroundColor Green
 
+# Do not publish a launcher-only APPX: verify the QEMU host and every runtime
+# dependency are physically present in the final package archive.
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$zip = [System.IO.Compression.ZipFile]::OpenRead($appxPath)
+try {
+    $entries = @{}
+    foreach ($entry in $zip.Entries) { $entries[$entry.FullName.Replace('/', '\\')] = $entry.Length }
+    $qemuEntry = $entries.Keys | Where-Object { $_ -eq 'qemu-system-x86_64.dll' -or $_ -match '\\qemu-system-x86_64\.dll
+
+# Prefer the Microsoft VCLibs package installed with the Windows SDK.
+# This avoids relying on aka.ms redirects returning an HTML/error page in CI.
+$vclibsPath = Join-Path $outputPath 'Microsoft.VCLibs.x64.14.00.appx'
+$programFilesX86 = [Environment]::GetFolderPath('ProgramFilesX86')
+$vclibsCandidates = @(
+    (Join-Path $programFilesX86 'Microsoft SDKs/Windows Kits/10/ExtensionSDKs/Microsoft.VCLibs/14.0/AppX/Retail/x64/Microsoft.VCLibs.x64.14.00.appx'),
+    (Join-Path $env:WindowsSdkDir 'ExtensionSDKs/Microsoft.VCLibs/14.0/AppX/Retail/x64/Microsoft.VCLibs.x64.14.00.appx')
+) | Where-Object { $_ -and (Test-Path $_) }
+$vclibsSource = $vclibsCandidates | Select-Object -First 1
+
+if ($vclibsSource) {
+    Copy-Item -LiteralPath $vclibsSource -Destination $vclibsPath -Force
+    Write-Host "Using SDK-provided Microsoft VCLibs x64 package: $vclibsSource" -ForegroundColor Green
+}
+else {
+    $vclibsUri = 'https://aka.ms/Microsoft.VCLibs.x64.14.00.appx'
+    Write-Host 'SDK VCLibs package not found; downloading Microsoft VCLibs x64 framework...' -ForegroundColor Yellow
+    Invoke-WebRequest -Uri $vclibsUri -OutFile $vclibsPath -UseBasicParsing
+}
+if (-not (Test-Path $vclibsPath) -or (Get-Item $vclibsPath).Length -lt 100000) {
+    throw 'Microsoft VCLibs x64 framework package is missing or invalid.'
+}
+Write-Host "VCLibs dependency: $vclibsPath" -ForegroundColor Green
+
+Write-Host ''
+Write-Host 'OnyxOS APPX build completed.' -ForegroundColor Green
+Write-Host "Package: $appxPath"
+Write-Warning 'The shared UWP launcher scaffold is packaged in all seven entries. Per-OS QEMU boot, guest display, and VHDX creation still require implementation.'
+ } | Select-Object -First 1
+    if (-not $qemuEntry -or $entries[$qemuEntry] -lt 20000000) {
+        throw "QEMU DLL is missing or incomplete inside APPX. Package: $appxPath"
+    }
+    $runtimeFiles = @(Get-ChildItem -LiteralPath (Join-Path $repoRoot 'Dependencies/Runtime') -Filter '*.dll' -File)
+    if ($runtimeFiles.Count -lt 20) { throw "Expected QEMU runtime DLLs were not staged; found $($runtimeFiles.Count)." }
+    $missingRuntime = @()
+    foreach ($runtimeFile in $runtimeFiles) {
+        $expected = $runtimeFile.Name
+        $found = $entries.Keys | Where-Object { $_ -eq $expected -or $_ -match ("\\{0}$" -f [regex]::Escape($expected)) } | Select-Object -First 1
+        if (-not $found -or $entries[$found] -ne $runtimeFile.Length) { $missingRuntime += $expected }
+    }
+    if ($missingRuntime.Count -gt 0) {
+        throw ("APPX is missing QEMU runtime dependencies: " + ($missingRuntime -join ', '))
+    }
+    Write-Host "Verified QEMU DLL ($($entries[$qemuEntry]) bytes) and $($runtimeFiles.Count) runtime DLLs inside APPX." -ForegroundColor Green
+}
+finally { $zip.Dispose() }
+
 # Prefer the Microsoft VCLibs package installed with the Windows SDK.
 # This avoids relying on aka.ms redirects returning an HTML/error page in CI.
 $vclibsPath = Join-Path $outputPath 'Microsoft.VCLibs.x64.14.00.appx'
