@@ -28,7 +28,7 @@ struct OnyxOSView final : implements<OnyxOSView, IFrameworkView>
         m_window.KeyUp([this](CoreWindow const&,KeyEventArgs const& e)
         { if(m_input)m_input->SendVirtualKey(static_cast<int>(e.VirtualKey()),false); });
         m_window.PointerMoved([this](CoreWindow const&,PointerEventArgs const& e)
-        { if(m_input){auto p=e.CurrentPoint().Position();m_input->SendPointerPosition(p.X,p.Y);} });
+        { if(m_input){auto p=e.CurrentPoint().Position();auto b=m_window.Bounds();m_input->SendPointerPosition(p.X,p.Y,b.Width,b.Height);} });
         m_window.PointerPressed([this](CoreWindow const&,PointerEventArgs const& e)
         {
             if(!m_input)return; auto p=e.CurrentPoint().Properties();
