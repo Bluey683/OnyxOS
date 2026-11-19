@@ -1,27 +1,20 @@
 #include "App.xaml.h"
-#include "MainPage.xaml.h"
 #include "OnyxLogger.h"
 
 using namespace Platform;
 using namespace Windows::UI::Xaml;
 using namespace Windows::UI::Xaml::Controls;
+using namespace Windows::UI::Xaml::Media;
 
 namespace OnyxOS
 {
     App::App()
     {
-        OnyxLogger::App(L"App constructor entered.");
-        try
-        {
-            InitializeComponent();
-            OnyxLogger::App(L"Application XAML initialized.");
-        }
-        catch (Exception^ ex)
-        {
-            OnyxLogger::App(L"APP XAML INITIALIZATION FAILURE (continuing with runtime fallback): " + ex->Message);
-            OutputDebugStringW((L"[OnyxOS] App XAML initialization failed; continuing: " + ex->Message + L"\n")->Data());
-            // Keep the process alive so OnLaunched can show a diagnostic fallback.
-        }
+        // Deliberately do not call InitializeComponent here. The Xbox log
+        // proves that loading App.xaml currently throws E_FAIL before launch.
+        // This diagnostic build starts the UWP Application without loading
+        // any XAML resource dictionary so we can isolate the failing layer.
+        OnyxLogger::App(L"App constructor entered; App.xaml loading bypassed.");
 
         UnhandledException += ref new UnhandledExceptionEventHandler(
             this, &App::OnUnhandledException);
@@ -36,59 +29,53 @@ namespace OnyxOS
     void App::OnLaunched(
         Windows::ApplicationModel::Activation::LaunchActivatedEventArgs^)
     {
-        OnyxLogger::App(L"OnLaunched entered.");
+        OnyxLogger::App(L"OnLaunched entered; building diagnostic UI in C++.");
         try
         {
             auto window = Window::Current;
-            auto frame = dynamic_cast<Frame^>(window->Content);
-            if (frame == nullptr)
-            {
-                OnyxLogger::App(L"Creating root navigation frame.");
-                frame = ref new Frame();
-                window->Content = frame;
-            }
+            auto root = ref new Grid();
+            root->Background = ref new SolidColorBrush(Windows::UI::Colors::Black);
 
-            if (frame->Content == nullptr)
-            {
-                OnyxLogger::App(L"Navigating to MainPage.");
-                if (!frame->Navigate(MainPage::typeid))
-                    OnyxLogger::App(L"ERROR: navigation to MainPage returned false.");
-            }
+            auto stack = ref new StackPanel();
+            stack->VerticalAlignment = VerticalAlignment::Center;
+            stack->HorizontalAlignment = HorizontalAlignment::Center;
+            stack->Spacing = 18;
 
+            auto title = ref new TextBlock();
+            title->Text = L"ONYXOS";
+            title->Foreground = ref new SolidColorBrush(Windows::UI::Colors::White);
+            title->FontSize = 42;
+            title->FontWeight = Windows::UI::Text::FontWeights::Bold;
+            title->HorizontalAlignment = HorizontalAlignment::Center;
+            stack->Children->Append(title);
+
+            auto status = ref new TextBlock();
+            status->Text = L"Aplicativo iniciado.\nDiagnostico: XAML de inicializacao ignorado temporariamente.";
+            status->Foreground = ref new SolidColorBrush(Windows::UI::Colors::LightGreen);
+            status->FontSize = 20;
+            status->TextAlignment = TextAlignment::Center;
+            status->TextWrapping = TextWrapping::Wrap;
+            status->MaxWidth = 900;
+            stack->Children->Append(status);
+
+            auto detail = ref new TextBlock();
+            detail->Text = L"Esta tela confirma que o processo e a janela UWP permanecem ativos.\nA tela principal sera reativada depois de isolar o erro XAML.";
+            detail->Foreground = ref new SolidColorBrush(Windows::UI::Colors::White);
+            detail->FontSize = 16;
+            detail->TextAlignment = TextAlignment::Center;
+            detail->TextWrapping = TextWrapping::Wrap;
+            detail->MaxWidth = 900;
+            stack->Children->Append(detail);
+
+            root->Children->Append(stack);
+            window->Content = root;
             window->Activate();
-            OnyxLogger::App(L"Main window activated.");
+            OnyxLogger::App(L"Diagnostic window activated successfully; MainPage navigation intentionally skipped.");
         }
         catch (Exception^ ex)
         {
-            // Do not let a page/XAML navigation failure terminate the process.
-            // Keep a visible diagnostic screen so the Xbox app does not return
-            // to Home immediately and the failure can be identified.
-            OnyxLogger::App(L"LAUNCH FAILURE: " + ex->Message);
-            OutputDebugStringW((L"[OnyxOS] LAUNCH FAILURE: " + ex->Message + L"\n")->Data());
-
-            try
-            {
-                auto fallback = ref new Grid();
-                fallback->Background = ref new Windows::UI::Xaml::Media::SolidColorBrush(
-                    Windows::UI::Colors::Black);
-
-                auto message = ref new TextBlock();
-                message->Text = L"OnyxOS iniciou, mas a tela principal falhou.\n\n" + ex->Message;
-                message->Foreground = ref new Windows::UI::Xaml::Media::SolidColorBrush(
-                    Windows::UI::Colors::White);
-                message->FontSize = 22;
-                message->TextWrapping = Windows::UI::Xaml::TextWrapping::Wrap;
-                message->Margin = Windows::UI::Xaml::Thickness(32);
-                message->VerticalAlignment = Windows::UI::Xaml::VerticalAlignment::Center;
-
-                fallback->Children->Append(message);
-                Window::Current->Content = fallback;
-                Window::Current->Activate();
-            }
-            catch (...)
-            {
-                OutputDebugStringW(L"[OnyxOS] Failed to create fallback diagnostic screen.\n");
-            }
+            OnyxLogger::App(L"DIAGNOSTIC WINDOW FAILURE: " + ex->Message);
+            throw;
         }
     }
 }
@@ -96,14 +83,13 @@ namespace OnyxOS
 [MTAThread]
 int main(Array<String^>^)
 {
-    OutputDebugStringW(L"[OnyxOS][APP] main() entered.\n");
+    OutputDebugStringW(L"[OnyxOS][APP] main() entered.\\n");
     try
     {
-        OutputDebugStringW(L"[OnyxOS][APP] Entering Application::Start.\n");
+        OutputDebugStringW(L"[OnyxOS][APP] Entering Application::Start.\\n");
         Application::Start(ref new ApplicationInitializationCallback(
             [](ApplicationInitializationCallbackParams^)
             {
-                // ApplicationData::Current is accessed only after UWP activation.
                 OnyxOS::OnyxLogger::App(L"Application initialization callback entered.");
                 auto app = ref new OnyxOS::App();
             }));
@@ -118,7 +104,7 @@ int main(Array<String^>^)
     {
         OnyxOS::OnyxLogger::App(L"FATAL C++ EXCEPTION IN main.");
         OutputDebugStringA(ex.what());
-        OutputDebugStringA("\n");
+        OutputDebugStringA("\\n");
         return -2;
     }
     catch (...)
