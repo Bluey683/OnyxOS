@@ -82,8 +82,8 @@
     <ClInclude Include="src\GuestPage.xaml.h" />
   </ItemGroup>
   <ItemGroup>
-    <Page Include="src\LauncherPage.xaml" />
-    <Page Include="src\GuestPage.xaml" />
+    <Page Include="src\LauncherPage.xaml"><Generator>MSBuild:Compile</Generator><SubType>Designer</SubType></Page>
+    <Page Include="src\GuestPage.xaml"><Generator>MSBuild:Compile</Generator><SubType>Designer</SubType></Page>
     <AppxManifest Include="Package.appxmanifest" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
