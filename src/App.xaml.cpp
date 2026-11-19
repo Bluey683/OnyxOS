@@ -18,8 +18,9 @@ namespace OnyxOS
         }
         catch (Exception^ ex)
         {
-            OnyxLogger::App(L"APP XAML INITIALIZATION FAILURE: " + ex->Message);
-            throw;
+            OnyxLogger::App(L"APP XAML INITIALIZATION FAILURE (continuing with runtime fallback): " + ex->Message);
+            OutputDebugStringW((L"[OnyxOS] App XAML initialization failed; continuing: " + ex->Message + L"\n")->Data());
+            // Keep the process alive so OnLaunched can show a diagnostic fallback.
         }
 
         UnhandledException += ref new UnhandledExceptionEventHandler(
