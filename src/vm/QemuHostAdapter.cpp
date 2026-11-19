@@ -1,113 +1,88 @@
 #include "QemuHostAdapter.h"
-
 #include <array>
-#include <sstream>
 
 namespace onyx::vm
 {
-    namespace
-    {
-        using GetApiVersionFn = std::uint32_t(__cdecl*)();
-
-        constexpr std::array<const char*, 15> RequiredExports{
-            "qemu_host_init",
-            "qemu_host_start",
-            "qemu_host_main_loop_step",
-            "qemu_host_request_shutdown",
-            "qemu_host_reset",
-            "qemu_host_join",
-            "qemu_host_cleanup",
-            "qemu_host_send_key_number",
-            "qemu_host_send_key_qcode",
-            "qemu_host_send_pointer_abs",
-            "qemu_host_send_pointer_button",
-            "qemu_host_is_initialized",
-            "qemu_host_is_running",
-            "qemu_host_register_video_callback",
-            "qemu_host_set_video_callback"
-        };
-    }
-
-    QemuHostAdapter::~QemuHostAdapter()
-    {
-        Unload();
-    }
+    QemuHostAdapter::~QemuHostAdapter() { Unload(); }
 
     bool QemuHostAdapter::Load(const std::wstring& dllName)
     {
         Unload();
         m_error.clear();
         m_missing.clear();
-
         m_module = LoadPackagedLibrary(dllName.c_str(), 0);
         if (!m_module)
         {
-            const DWORD error = GetLastError();
-            m_error = L"LoadPackagedLibrary falhou. Código Win32: " + std::to_wstring(error);
+            m_error = L"LoadPackagedLibrary falhou. Código Win32: " + std::to_wstring(GetLastError());
             return false;
         }
 
-        const auto versionFn = reinterpret_cast<GetApiVersionFn>(
-            GetProcAddress(m_module, "qemu_host_get_api_version"));
-
-        // Validate the stable lifecycle/input ABI names before declaring the DLL usable.
-        const std::array<const char*, 13> mandatory{
+        using VersionFn = std::uint32_t(*)();
+        auto version = reinterpret_cast<VersionFn>(GetProcAddress(m_module, "qemu_host_get_api_version"));
+        const std::array<const char*, 13> required{
             "qemu_host_init", "qemu_host_start", "qemu_host_main_loop_step",
             "qemu_host_request_shutdown", "qemu_host_reset", "qemu_host_join",
             "qemu_host_cleanup", "qemu_host_send_key_number", "qemu_host_send_key_qcode",
             "qemu_host_send_pointer_abs", "qemu_host_send_pointer_button",
             "qemu_host_is_initialized", "qemu_host_is_running"
         };
+        for (auto name : required)
+            if (!GetProcAddress(m_module, name)) m_missing.emplace_back(name);
 
-        for (const char* name : mandatory)
-        {
-            if (!GetProcAddress(m_module, name))
-                m_missing.emplace_back(name);
-        }
-
-        const bool hasVideoCallback =
-            GetProcAddress(m_module, "qemu_host_register_video_callback") != nullptr ||
-            GetProcAddress(m_module, "qemu_host_set_video_callback") != nullptr;
-
-        if (!hasVideoCallback)
-            m_missing.emplace_back("qemu_host_register_video_callback OR qemu_host_set_video_callback");
+        if (!GetProcAddress(m_module, "qemu_host_register_video_callback") &&
+            !GetProcAddress(m_module, "qemu_host_set_video_callback") &&
+            !GetProcAddress(m_module, "qemu_host_register_video_update_callback"))
+            m_missing.emplace_back("QEMU video callback registration");
 
         if (!m_missing.empty())
         {
-            m_error = L"A DLL foi carregada, mas não corresponde à API de host QEMU esperada.";
+            m_error = L"A DLL não corresponde à API QEMU UWP esperada.";
             Unload();
             return false;
         }
-
-        if (versionFn)
+        if (version)
         {
-            m_apiVersion = versionFn();
-            const std::uint32_t major = m_apiVersion >> 16;
-            if (major != 1)
+            m_apiVersion = version();
+            if ((m_apiVersion >> 16) != 1)
             {
-                m_error = L"Versão incompatível da API QEMU. Esperada API major 1.";
+                m_error = L"Versão incompatível da API QEMU. Esperada major 1.";
                 Unload();
                 return false;
             }
         }
-        else
-        {
-            // Legacy host DLL: exports were checked, but its ABI version is inferred.
-            m_apiVersion = 0;
-        }
 
+        m_keyNumber = reinterpret_cast<KeyFn>(GetProcAddress(m_module, "qemu_host_send_key_number"));
+        m_keyQcode = reinterpret_cast<KeyFn>(GetProcAddress(m_module, "qemu_host_send_key_qcode"));
+        m_pointerRel = reinterpret_cast<PointerRelFn>(GetProcAddress(m_module, "qemu_host_send_pointer_rel"));
+        m_pointerAbs = reinterpret_cast<PointerAbsFn>(GetProcAddress(m_module, "qemu_host_send_pointer_abs"));
+        m_pointerButton = reinterpret_cast<PointerButtonFn>(GetProcAddress(m_module, "qemu_host_send_pointer_button"));
+        m_wake = reinterpret_cast<WakeFn>(GetProcAddress(m_module, "qemu_host_wake_main_loop"));
         m_compatible = true;
         return true;
     }
 
     void QemuHostAdapter::Unload() noexcept
     {
-        if (m_module)
-        {
-            FreeLibrary(m_module);
-            m_module = nullptr;
-        }
-        m_compatible = false;
-        m_apiVersion = 0;
+        if (m_module) FreeLibrary(m_module);
+        m_module = nullptr; m_compatible = false; m_apiVersion = 0;
+        m_keyNumber = nullptr; m_keyQcode = nullptr; m_pointerRel = nullptr;
+        m_pointerAbs = nullptr; m_pointerButton = nullptr; m_wake = nullptr;
+    }
+
+    bool QemuHostAdapter::SendKeyNumber(int key, bool down) const noexcept
+    { return m_compatible && m_keyNumber && m_keyNumber(key, down) == 0; }
+    bool QemuHostAdapter::SendKeyQcode(int key, bool down) const noexcept
+    { return m_compatible && m_keyQcode && m_keyQcode(key, down) == 0; }
+    bool QemuHostAdapter::SendPointerRelative(int x, int y) const noexcept
+    { return m_compatible && m_pointerRel && m_pointerRel(x, y) == 0; }
+    bool QemuHostAdapter::SendPointerAbsolute(int x, int y, int w, int h) const noexcept
+    { return m_compatible && m_pointerAbs && m_pointerAbs(x, y, w, h) == 0; }
+    bool QemuHostAdapter::SendPointerButton(int button, bool down) const noexcept
+    { return m_compatible && m_pointerButton && m_pointerButton(button, down) == 0; }
+    bool QemuHostAdapter::WakeMainLoop() const noexcept
+    {
+        if (!m_compatible || !m_wake) return false;
+        m_wake();
+        return true;
     }
 }
