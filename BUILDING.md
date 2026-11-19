@@ -29,6 +29,24 @@ These are seven launch entries, not seven separate APPX installers. All seven cu
 
 Pushes and pull requests targeting `main` also trigger the workflow. A successful workflow run is required before treating the APPX as a usable build; this workflow has not yet been confirmed by a successful run.
 
+## Build with Build.ps1
+
+The root `Build.ps1` script performs asset generation, CMake configuration, compilation, and APPX packaging in one command.
+
+Run in a Developer PowerShell for Visual Studio 2022:
+
+```powershell
+.\\Build.ps1 -Mode PC
+```
+
+For a clean rebuild:
+
+```powershell
+.\\Build.ps1 -Mode PC -Clean
+```
+
+GitHub Actions uses the same script with `-Mode GitHubActions`. The mode labels identify the build environment; both currently produce the same unsigned x64 APPX. You can override the SDK version with `-WindowsSdkVersion` if a different compatible SDK is installed.
+
 ## Build locally on Windows
 
 ### Requirements
