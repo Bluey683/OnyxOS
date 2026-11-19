@@ -117,3 +117,16 @@ Start here: [Tests/README.md](Tests/README.md).
 ## License
 
 This repository's license and the licenses of all bundled dependencies must be reviewed before redistribution. QEMU and other third-party components retain their respective licenses.
+
+
+## VM Engine (initial implementation)
+
+The repository now includes a shared C++ VM configuration layer in
+`src/vm/VirtualMachine.h/.cpp`. It validates guest settings and generates
+starter QEMU arguments for the configured ISO and VHDX paths. All seven app
+entry targets compile this module.
+
+See [VM Engine documentation](docs/VM-ENGINE.md). This is not yet a bootable
+virtual machine: the QEMU UWP host DLL/API, UEFI firmware, framebuffer, audio,
+input, networking, disk creation, and VM lifecycle controls still need to be
+integrated. No successful build or guest boot has been verified yet.
