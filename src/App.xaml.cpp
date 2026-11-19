@@ -59,8 +59,35 @@ namespace OnyxOS
         }
         catch (Exception^ ex)
         {
+            // Do not let a page/XAML navigation failure terminate the process.
+            // Keep a visible diagnostic screen so the Xbox app does not return
+            // to Home immediately and the failure can be identified.
             OnyxLogger::App(L"LAUNCH FAILURE: " + ex->Message);
-            throw;
+            OutputDebugStringW((L"[OnyxOS] LAUNCH FAILURE: " + ex->Message + L"\\n")->Data());
+
+            try
+            {
+                auto fallback = ref new Grid();
+                fallback->Background = ref new Windows::UI::Xaml::Media::SolidColorBrush(
+                    Windows::UI::Colors::Black);
+
+                auto message = ref new TextBlock();
+                message->Text = L"OnyxOS iniciou, mas a tela principal falhou.\\n\\n" + ex->Message;
+                message->Foreground = ref new Windows::UI::Xaml::Media::SolidColorBrush(
+                    Windows::UI::Colors::White);
+                message->FontSize = 22;
+                message->TextWrapping = Windows::UI::Xaml::TextWrapping::Wrap;
+                message->Margin = Windows::UI::Xaml::Thickness(32);
+                message->VerticalAlignment = Windows::UI::Xaml::VerticalAlignment::Center;
+
+                fallback->Children->Append(message);
+                Window::Current->Content = fallback;
+                Window::Current->Activate();
+            }
+            catch (...)
+            {
+                OutputDebugStringW(L"[OnyxOS] Failed to create fallback diagnostic screen.\\n");
+            }
         }
     }
 }
