@@ -114,8 +114,8 @@ Invoke-CheckedCommand -FilePath $makeAppx.FullName -Arguments @('pack','/d',$sta
 if (-not (Test-Path $appxPath)) { throw "APPX output was not created: $appxPath" }
 
 # Download the Microsoft-signed x64 C++ UWP Desktop framework required by the manifest.
-$vclibsPath = Join-Path $outputPath 'Microsoft.VCLibs.x64.14.00.Desktop.appx'
-$vclibsUri = 'https://aka.ms/Microsoft.VCLibs.x64.14.00.Desktop.appx'
+$vclibsPath = Join-Path $outputPath 'Microsoft.VCLibs.x64.14.00.appx'
+$vclibsUri = 'https://aka.ms/Microsoft.VCLibs.x64.14.00.appx'
 Write-Host 'Downloading Microsoft VCLibs x64 framework dependency...' -ForegroundColor Yellow
 Invoke-WebRequest -Uri $vclibsUri -OutFile $vclibsPath -UseBasicParsing
 if (-not (Test-Path $vclibsPath) -or (Get-Item $vclibsPath).Length -lt 100000) {
