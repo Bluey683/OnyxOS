@@ -5,8 +5,13 @@ if(NOT WIN32)
   message(FATAL_ERROR "OnyxOS UWP must be configured with the Windows SDK on Windows.")
 endif()
 
-# Seven launch entries are packaged into ONE APPX. Each entry currently uses
-# the shared UWP host scaffold; profile-specific QEMU activation is a later step.
+# Compile the C++/CX UWP entry point separately. /ZW cannot be combined with
+# the C++20 mode required by the C++/WinRT VM and downloader sources.
+add_library(OnyxAppHost OBJECT src/App.cpp)
+target_compile_features(OnyxAppHost PRIVATE cxx_std_17)
+target_compile_definitions(OnyxAppHost PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX UNICODE _UNICODE)
+target_compile_options(OnyxAppHost PRIVATE /ZW)
+
 set(ONYXOS_APPS
   "OnyxOS-Launcher"
   "OnyxOS-Windows10"
@@ -19,17 +24,15 @@ set(ONYXOS_APPS
 
 foreach(app IN LISTS ONYXOS_APPS)
   add_executable(${app} WIN32
-    src/App.cpp
+    $<TARGET_OBJECTS:OnyxAppHost>
     src/vm/VirtualMachine.cpp
     src/vm/QemuHostAdapter.cpp
     src/vm/QemuInputBridge.cpp
     src/vm/VhdxProvisioner.cpp
     src/downloads/OsImageDownloader.cpp
   )
-  target_compile_features(${app} PRIVATE cxx_std_17)
+  target_compile_features(${app} PRIVATE cxx_std_20)
   target_compile_definitions(${app} PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX UNICODE _UNICODE)
-  # C++/CX (/ZW) is incompatible with /std:c++20; this host uses C++17.
-  target_compile_options(${app} PRIVATE /ZW)
   target_link_libraries(${app} PRIVATE windowsapp)
   set_target_properties(${app} PROPERTIES
     OUTPUT_NAME "${app}"
