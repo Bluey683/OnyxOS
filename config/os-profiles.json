@@ -23,14 +23,25 @@
     "cpuModel": "max",
     "cpuCount": 2,
     "ramMB": 3072,
-    "network": "user-mode NAT",
+    "network": {
+      "mode": "user",
+      "backend": "QEMU user-mode NAT",
+      "adapter": "e1000e",
+      "internetCapability": "internetClient"
+    },
     "graphics": "virtio-vga",
-    "input": [
-      "qemu-xhci",
-      "usb-kbd",
-      "usb-tablet"
-    ],
-    "boot": "ISO first"
+    "input": {
+      "usbController": "qemu-xhci",
+      "keyboard": "usb-kbd",
+      "pointer": "usb-tablet",
+      "hostBridge": "CoreWindow + Windows.Gaming.Input.Gamepad"
+    },
+    "boot": "ISO first",
+    "audio": {
+      "backend": "xaudio2",
+      "controller": "intel-hda",
+      "codec": "hda-duplex"
+    }
   },
   "profiles": [
     {
@@ -47,10 +58,15 @@
       "iso": "ISO/windows-10.iso",
       "disk": "VHDX/windows-10.vhdx",
       "firmware": "UEFI",
-      "network": true,
+      "network": "user-mode NAT via e1000e",
       "graphics": "virtio-vga",
-      "input": "USB keyboard and tablet",
-      "notes": "Requires bootable Windows 10 x64 ISO. 3 GB is a constrained starting profile."
+      "input": [
+        "USB keyboard",
+        "USB tablet mouse",
+        "Xbox controller mapped to guest keys and pointer"
+      ],
+      "notes": "Requires bootable Windows 10 x64 ISO. 3 GB is a constrained starting profile.",
+      "audio": "XAudio2 / Intel HDA"
     },
     {
       "id": "windows-11",
@@ -66,12 +82,17 @@
       "iso": "ISO/windows-11.iso",
       "disk": "VHDX/windows-11.vhdx",
       "firmware": "UEFI",
-      "network": true,
+      "network": "user-mode NAT via e1000e",
       "graphics": "virtio-vga",
-      "input": "USB keyboard and tablet",
+      "input": [
+        "USB keyboard",
+        "USB tablet mouse",
+        "Xbox controller mapped to guest keys and pointer"
+      ],
       "tpm": "Not configured",
       "secureBoot": "Not configured",
-      "notes": "TPM 2.0 and Secure Boot emulation are not configured; standard Windows 11 installer may refuse to install."
+      "notes": "TPM 2.0 and Secure Boot emulation are not configured; standard Windows 11 installer may refuse to install.",
+      "audio": "XAudio2 / Intel HDA"
     },
     {
       "id": "debian",
@@ -87,10 +108,15 @@
       "iso": "ISO/debian.iso",
       "disk": "VHDX/debian.vhdx",
       "firmware": "UEFI",
-      "network": true,
+      "network": "user-mode NAT via e1000e",
       "graphics": "virtio-vga",
-      "input": "USB keyboard and tablet",
-      "notes": "Use official Debian amd64 ISO."
+      "input": [
+        "USB keyboard",
+        "USB tablet mouse",
+        "Xbox controller mapped to guest keys and pointer"
+      ],
+      "notes": "Use official Debian amd64 ISO.",
+      "audio": "XAudio2 / Intel HDA"
     },
     {
       "id": "ubuntu",
@@ -106,10 +132,15 @@
       "iso": "ISO/ubuntu.iso",
       "disk": "VHDX/ubuntu.vhdx",
       "firmware": "UEFI",
-      "network": true,
+      "network": "user-mode NAT via e1000e",
       "graphics": "virtio-vga",
-      "input": "USB keyboard and tablet",
-      "notes": "Use official Ubuntu amd64 ISO."
+      "input": [
+        "USB keyboard",
+        "USB tablet mouse",
+        "Xbox controller mapped to guest keys and pointer"
+      ],
+      "notes": "Use official Ubuntu amd64 ISO.",
+      "audio": "XAudio2 / Intel HDA"
     },
     {
       "id": "arch-linux",
@@ -125,10 +156,15 @@
       "iso": "ISO/archlinux.iso",
       "disk": "VHDX/archlinux.vhdx",
       "firmware": "UEFI",
-      "network": true,
+      "network": "user-mode NAT via e1000e",
       "graphics": "virtio-vga",
-      "input": "USB keyboard and tablet",
-      "notes": "Use official Arch Linux x86_64 ISO."
+      "input": [
+        "USB keyboard",
+        "USB tablet mouse",
+        "Xbox controller mapped to guest keys and pointer"
+      ],
+      "notes": "Use official Arch Linux x86_64 ISO.",
+      "audio": "XAudio2 / Intel HDA"
     },
     {
       "id": "macos",
@@ -147,8 +183,13 @@
       "firmware": "UEFI",
       "network": false,
       "graphics": "not configured",
-      "input": "not configured",
-      "notes": "Disabled placeholder. Apple firmware, hardware compatibility and licensing are unresolved; no image or firmware is included."
+      "input": [
+        "USB keyboard",
+        "USB tablet mouse",
+        "Xbox controller mapped to guest keys and pointer"
+      ],
+      "notes": "Disabled placeholder. Apple firmware, hardware compatibility and licensing are unresolved; no image or firmware is included.",
+      "audio": "XAudio2 / Intel HDA"
     }
   ]
-}\n
+}
