@@ -1,5 +1,6 @@
 #include "App.xaml.h"
 #include "OnyxLogger.h"
+#include "vm/VirtualMachine.h"
 
 using namespace Platform;
 using namespace Windows::UI;
@@ -80,10 +81,14 @@ namespace OnyxOS
                 L"Windows 10", L"Windows 11", L"Debian",
                 L"Ubuntu", L"Arch Linux", L"macOS (experimental)"
             };
+            const char* profileIds[] = {
+                "windows10", "windows11", "debian", "ubuntu", "arch", "macos"
+            };
 
             for (int i = 0; i < 6; ++i)
             {
                 String^ name = ref new String(names[i]);
+                std::string profileId(profileIds[i]);
                 auto button = ref new Button();
                 button->Content = name;
                 button->Tag = name;
