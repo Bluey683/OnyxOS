@@ -6,14 +6,18 @@
 
 using namespace Platform;
 using namespace Windows::Storage;
-using namespace Windows::Storage::Streams;
 using namespace concurrency;
 
 namespace OnyxOS
 {
     void OnyxLogger::Write(String^ fileName, String^ source, String^ message)
     {
-        String^ line = DateTime::Now.ToString() + L" [" + source + L"] " + message + L"\r\n";
+        SYSTEMTIME now{};
+        GetLocalTime(&now);
+        wchar_t timestamp[64]{};
+        swprintf_s(timestamp, L"%04u-%02u-%02u %02u:%02u:%02u.%03u",
+            now.wYear, now.wMonth, now.wDay, now.wHour, now.wMinute, now.wSecond, now.wMilliseconds);
+        String^ line = ref new String(timestamp) + L" [" + source + L"] " + message + L"\r\n";
         OutputDebugStringW(line->Data());
 
         try
@@ -36,15 +40,8 @@ namespace OnyxOS
         }
     }
 
-    void OnyxLogger::App(String^ message)
-    {
-        Write(L"App.log", L"APP", message);
-    }
-
-    void OnyxLogger::Qemu(String^ message)
-    {
-        Write(L"QEMU.log", L"QEMU", message);
-    }
+    void OnyxLogger::App(String^ message) { Write(L"App.log", L"APP", message); }
+    void OnyxLogger::Qemu(String^ message) { Write(L"QEMU.log", L"QEMU", message); }
 
     void WriteQemuLogNative(const wchar_t* message)
     {
