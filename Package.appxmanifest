@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
          xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
-         IgnorableNamespaces="uap">
+         xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest"
+         IgnorableNamespaces="uap mp">
   <Identity Name="Bluey683.OnyxOS" Publisher="CN=Bluey683" Version="0.2.1.0" ProcessorArchitecture="x64" />
+  <mp:PhoneIdentity PhoneProductId="7d7c4f2a-6c19-4a7b-9a1f-8c4e3b2d1a60" PhonePublisherId="00000000-0000-0000-0000-000000000000" />
   <Properties>
     <DisplayName>OnyxOS</DisplayName>
     <PublisherDisplayName>Team Onyx</PublisherDisplayName>
