@@ -97,9 +97,16 @@ if (Test-Path $qemuDll) {
     Write-Host 'Bundled QEMU x86_64 UWP host DLL.' -ForegroundColor Green
 } else { Write-Warning 'QEMU UWP DLL is missing. VM startup will not be available.' }
 
-$runtimePath = Join-Path $repoRoot 'Dependencies/Runtime'
-if (Test-Path $runtimePath) {
-    Get-ChildItem $runtimePath -Filter '*.dll' -File | ForEach-Object { Copy-Item $_.FullName (Join-Path $stagePath $_.Name) -Force }
+# Ship the complete dependency tree with the APPX under the predictable Deps folder.
+# Keep runtime DLLs at package root as well, because the Windows loader resolves them by module name.
+$dependenciesPath = Join-Path $repoRoot 'Dependencies'
+$depsStagePath = Join-Path $stagePath 'Deps'
+if (Test-Path $dependenciesPath) {
+    Copy-Item $dependenciesPath $depsStagePath -Recurse -Force
+    Get-ChildItem (Join-Path $dependenciesPath 'Runtime') -Filter '*.dll' -File -ErrorAction SilentlyContinue |
+        ForEach-Object { Copy-Item $_.FullName (Join-Path $stagePath $_.Name) -Force }
+} else {
+    Write-Warning 'Dependencies folder is missing; APPX will not contain Deps.'
 }
 $firmwarePath = Join-Path $repoRoot 'Dependencies/qemu'
 if (Test-Path $firmwarePath) { Copy-Item $firmwarePath (Join-Path $stagePath 'qemu') -Recurse -Force }
