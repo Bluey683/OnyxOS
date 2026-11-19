@@ -11,67 +11,66 @@ Set-StrictMode -Version Latest
 
 $owner = 'rodrigoandrigo'
 $repository = 'QEMU-UWP-Host'
-$apiRoot = "https://api.github.com/repos/$owner/$repository/contents"
-$rawRoot = "https://raw.githubusercontent.com/$owner/$repository/$Branch"
+$archiveUrl = "https://codeload.github.com/$owner/$repository/zip/refs/heads/$Branch"
+$dependenciesRoot = Join-Path $RepositoryRoot 'Dependencies'
+$qemuDirectory = Join-Path $dependenciesRoot 'Qemu'
+$runtimeDirectory = Join-Path $dependenciesRoot 'Runtime'
+$tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("OnyxOS-QEMU-" + [guid]::NewGuid().ToString('N'))
+$archivePath = Join-Path $tempRoot 'qemu-uwp-host.zip'
+$extractPath = Join-Path $tempRoot 'source'
 
-$qemuDirectory = Join-Path $RepositoryRoot 'Dependencies/Qemu'
-$runtimeDirectory = Join-Path $RepositoryRoot 'Dependencies/Runtime'
-New-Item -ItemType Directory -Force -Path $qemuDirectory, $runtimeDirectory | Out-Null
+New-Item -ItemType Directory -Force -Path $tempRoot, $qemuDirectory, $runtimeDirectory | Out-Null
 
-$headers = @{
-    'User-Agent' = 'OnyxOS-QEMU-runtime-fetcher'
-    'Accept' = 'application/vnd.github+json'
-}
+try {
+    Write-Host "Downloading QEMU UWP source archive from $archiveUrl ..." -ForegroundColor Cyan
+    Invoke-WebRequest -Uri $archiveUrl -Headers @{ 'User-Agent' = 'OnyxOS-QEMU-runtime-fetcher' } -OutFile $archivePath -UseBasicParsing
 
-function Get-UpstreamFiles {
-    param([Parameter(Mandatory = $true)][string]$Path)
-
-    $uri = "$apiRoot/$Path" + "?ref=$Branch"
-    $items = Invoke-RestMethod -Uri $uri -Headers $headers -Method Get
-    return @($items | Where-Object { $_.type -eq 'file' })
-}
-
-function Save-UpstreamFile {
-    param(
-        [Parameter(Mandatory = $true)]$Item,
-        [Parameter(Mandatory = $true)][string]$Destination
-    )
-
-    $target = Join-Path $Destination $Item.name
-    if ((Test-Path $target) -and ((Get-Item $target).Length -eq [long]$Item.size)) {
-        Write-Host "Already present: $($Item.name)" -ForegroundColor DarkGray
-        return
+    Expand-Archive -LiteralPath $archivePath -DestinationPath $extractPath -Force
+    $sourceRoot = Get-ChildItem -LiteralPath $extractPath -Directory | Select-Object -First 1
+    if (-not $sourceRoot) {
+        throw 'O arquivo do repositório QEMU não contém a pasta raiz esperada.'
     }
 
-    # Use GitHub's canonical download URL. The previous URL builder removed
-    # the Dependencies/ prefix, producing a path that does not exist (404).
-    $downloadUrl = $Item.download_url
-    if ([string]::IsNullOrWhiteSpace($downloadUrl)) {
-        $downloadUrl = "$rawRoot/$($Item.path)"
+    $sourceQemu = Join-Path $sourceRoot.FullName 'Dependencies/Qemu'
+    $sourceRuntime = Join-Path $sourceRoot.FullName 'Dependencies/Runtime'
+    $mainDll = Join-Path $sourceQemu 'qemu-system-x86_64.dll'
+    if (-not (Test-Path -LiteralPath $mainDll -PathType Leaf)) {
+        throw "A DLL qemu-system-x86_64.dll não foi encontrada em $sourceQemu"
     }
-    Write-Host "Downloading $($Item.name) ($($Item.size) bytes)..." -ForegroundColor Cyan
-    Invoke-WebRequest -Uri $downloadUrl -Headers @{ 'User-Agent' = 'OnyxOS-QEMU-runtime-fetcher' } -OutFile $target -UseBasicParsing
 
-    $actualSize = (Get-Item $target).Length
-    if ($actualSize -ne [long]$Item.size) {
-        Remove-Item $target -Force -ErrorAction SilentlyContinue
-        throw "Tamanho incorreto para $($Item.name): esperado $($Item.size), recebido $actualSize."
+    foreach ($sourceDirectory in @(
+        @{ Source = $sourceQemu; Destination = $qemuDirectory },
+        @{ Source = $sourceRuntime; Destination = $runtimeDirectory }
+    )) {
+        if (-not (Test-Path -LiteralPath $sourceDirectory.Source -PathType Container)) {
+            if ($sourceDirectory.Source -eq $sourceRuntime) {
+                Write-Warning 'A pasta de dependências Runtime não foi encontrada no arquivo upstream.'
+                continue
+            }
+            throw "Diretório upstream ausente: $($sourceDirectory.Source)"
+        }
+
+        foreach ($file in Get-ChildItem -LiteralPath $sourceDirectory.Source -File) {
+            $target = Join-Path $sourceDirectory.Destination $file.Name
+            if ((Test-Path -LiteralPath $target) -and
+                (Get-Item -LiteralPath $target).Length -eq $file.Length) {
+                Write-Host "Already present: $($file.Name)" -ForegroundColor DarkGray
+                continue
+            }
+            Copy-Item -LiteralPath $file.FullName -Destination $target -Force
+            if ((Get-Item -LiteralPath $target).Length -ne $file.Length) {
+                Remove-Item -LiteralPath $target -Force -ErrorAction SilentlyContinue
+                throw "Falha na validação de tamanho de $($file.Name)."
+            }
+            Write-Host "Staged $($file.Name) ($($file.Length) bytes)" -ForegroundColor Cyan
+        }
+    }
+
+    Write-Host 'QEMU host DLL and runtime dependencies staged successfully.' -ForegroundColor Green
+    Write-Host "Source: https://github.com/$owner/$repository/tree/$Branch/Dependencies"
+}
+finally {
+    if (Test-Path -LiteralPath $tempRoot) {
+        Remove-Item -LiteralPath $tempRoot -Recurse -Force -ErrorAction SilentlyContinue
     }
 }
-
-$qemuFiles = Get-UpstreamFiles -Path 'Dependencies/Qemu'
-$runtimeFiles = Get-UpstreamFiles -Path 'Dependencies/Runtime'
-
-if (-not ($qemuFiles | Where-Object { $_.name -eq 'qemu-system-x86_64.dll' })) {
-    throw 'O repositório upstream não publicou qemu-system-x86_64.dll no caminho esperado.'
-}
-
-foreach ($file in $qemuFiles) {
-    Save-UpstreamFile -Item $file -Destination $qemuDirectory
-}
-foreach ($file in $runtimeFiles) {
-    Save-UpstreamFile -Item $file -Destination $runtimeDirectory
-}
-
-Write-Host "QEMU host + $($runtimeFiles.Count) runtime files staged for OnyxOS." -ForegroundColor Green
-Write-Host "Source: https://github.com/$owner/$repository/tree/$Branch/Dependencies"
