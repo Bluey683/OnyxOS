@@ -61,79 +61,38 @@ if (-not $SkipAssets) {
 }
 if (-not (Test-Path $assetsPath)) { throw 'Assets directory is missing. Run scripts/Make-Assets.ps1.' }
 
-Write-Host "Building OnyxOS with Visual Studio MSBuild ($Architecture / $Configuration)..." -ForegroundColor Yellow
+Write-Host "Building and packaging OnyxOS with native UWP MSBuild ($Architecture / $Configuration)..." -ForegroundColor Yellow
+$packageDirectory = Join-Path $outputPath 'MSBuildPackage'
+New-Item -ItemType Directory -Force -Path $packageDirectory | Out-Null
+
 Invoke-CheckedCommand -FilePath $msbuild -Arguments @(
-    $projectPath,'/m','/t:Build',"/p:Configuration=$Configuration","/p:Platform=$Architecture",
-    "/p:WindowsTargetPlatformVersion=$WindowsSdkVersion","/p:OutDir=$(Join-Path $buildPath "$Architecture/$Configuration/")",
-    "/p:IntDir=$(Join-Path $buildPath "obj/$Architecture/$Configuration/")"
+    $projectPath,'/m','/t:Rebuild',"/p:Configuration=$Configuration","/p:Platform=$Architecture",
+    "/p:WindowsTargetPlatformVersion=$WindowsSdkVersion",
+    "/p:OutDir=$(Join-Path $buildPath "$Architecture/$Configuration/")",
+    "/p:IntDir=$(Join-Path $buildPath "obj/$Architecture/$Configuration/")",
+    '/p:AppxPackage=true',
+    '/p:GenerateAppxPackageOnBuild=true',
+    '/p:AppxPackageSigningEnabled=false',
+    '/p:AppxBundle=Never',
+    "/p:AppxPackageDir=$packageDirectory\\"
 )
 
-$builtExecutable = Join-Path $buildPath "$Architecture/$Configuration/OnyxOS/OnyxOS.exe"
-if (-not (Test-Path $builtExecutable)) { throw "MSBuild output not found: $builtExecutable" }
-
-$sdkBinRoot = Join-Path ${env:ProgramFiles(x86)} 'Windows Kits/10/bin'
-if (-not (Test-Path $sdkBinRoot)) { throw "Windows SDK tools directory was not found: $sdkBinRoot" }
-$makeAppx = Get-ChildItem -Path $sdkBinRoot -Filter 'MakeAppx.exe' -Recurse -File -ErrorAction SilentlyContinue |
-    Where-Object { $_.FullName -match '[\\/]x64[\\/]MakeAppx.exe$' } |
-    Sort-Object FullName -Descending | Select-Object -First 1
-if (-not $makeAppx) { throw 'MakeAppx.exe was not found. Install the Windows SDK packaging tools.' }
-
-$stagePath = Join-Path $env:TEMP 'OnyxOS-Package'
-if (Test-Path $stagePath) { Remove-Item $stagePath -Recurse -Force }
-New-Item -ItemType Directory -Force -Path $stagePath | Out-Null
-Copy-Item $manifestPath (Join-Path $stagePath 'AppxManifest.xml')
-Copy-Item $assetsPath (Join-Path $stagePath 'Assets') -Recurse -Force
-
-# Keep a single registered launcher executable. OS profiles are selected inside the launcher,
-# not exposed as separate Xbox Start menu applications.
-$buildOutputRoot = Split-Path $builtExecutable
-Copy-Item $builtExecutable (Join-Path $stagePath 'OnyxOS.exe') -Force
-
-# The executable alone is not a complete UWP app. XAML pages are compiled to
-# .xbf and the XAML resource index is stored in resources.pri. Omitting these
-# files makes Application::LoadComponent fail at runtime (often E_UNEXPECTED).
-Get-ChildItem -Path $buildOutputRoot -File -Recurse -ErrorAction SilentlyContinue |
-    Where-Object { $_.Extension -in '.xbf', '.pri', '.dll', '.winmd', '.dat' } |
-    ForEach-Object {
-        $relative = $_.FullName.Substring($buildOutputRoot.Length).TrimStart([IO.Path]::DirectorySeparatorChar)
-        $destination = Join-Path $stagePath $relative
-        $destinationDirectory = Split-Path $destination
-        if (-not (Test-Path $destinationDirectory)) {
-            New-Item -ItemType Directory -Force -Path $destinationDirectory | Out-Null
-        }
-        Copy-Item $_.FullName $destination -Force
+# Use the APPX emitted by the official UWP packaging targets. Do not stage
+# files manually: MSBuild must generate the XBF files, PRI index, manifest
+# metadata, and package layout as one consistent deployment unit.
+$generatedAppx = Get-ChildItem -Path $packageDirectory -Filter '*.appx' -File -Recurse |
+    Where-Object { $_.Name -notmatch 'VCLibs|Dependencies' } |
+    Sort-Object LastWriteTime -Descending |
+    Select-Object -First 1
+if (-not $generatedAppx) {
+    Get-ChildItem -Path $buildPath -Filter '*.appx' -File -Recurse | ForEach-Object {
+        Write-Host "Found package candidate: $($_.FullName)"
     }
-
-# Some MSBuild UWP layouts place resources.pri beside the app output directory.
-# Include any generated PRI file from the build tree at package root as well.
-Get-ChildItem -Path $buildPath -Filter '*.pri' -File -Recurse -ErrorAction SilentlyContinue |
-    ForEach-Object {
-        Copy-Item $_.FullName (Join-Path $stagePath $_.Name) -Force
-    }
-
-Write-Host 'Staged compiled XAML (.xbf), resource index (.pri), and runtime dependencies.' -ForegroundColor Green
-
-$qemuDll = Join-Path $repoRoot 'Dependencies/Qemu/qemu-system-x86_64.dll'
-if (Test-Path $qemuDll) {
-    Copy-Item $qemuDll (Join-Path $stagePath 'qemu-system-x86_64.dll') -Force
-    Write-Host 'Bundled QEMU x86_64 UWP host DLL.' -ForegroundColor Green
-} else { Write-Warning 'QEMU UWP DLL is missing. VM startup will not be available.' }
-
-# Copy QEMU runtime DLLs beside the executable; do not create a Deps folder in the app.
-$runtimePath = Join-Path $repoRoot 'Dependencies/Runtime'
-if (Test-Path $runtimePath) {
-    Get-ChildItem $runtimePath -Filter '*.dll' -File | ForEach-Object {
-        Copy-Item $_.FullName (Join-Path $stagePath $_.Name) -Force
-    }
+    throw "Native MSBuild UWP packaging did not produce an APPX in $packageDirectory."
 }
-$firmwarePath = Join-Path $repoRoot 'Dependencies/qemu'
-if (Test-Path $firmwarePath) { Copy-Item $firmwarePath (Join-Path $stagePath 'qemu') -Recurse -Force }
-
 $appxPath = Join-Path $outputPath 'OnyxOS-x64.appx'
-if (Test-Path $appxPath) { Remove-Item $appxPath -Force }
-Write-Host 'Packaging one APPX containing all seven application entries...' -ForegroundColor Yellow
-Invoke-CheckedCommand -FilePath $makeAppx.FullName -Arguments @('pack','/d',$stagePath,'/p',$appxPath,'/o')
-if (-not (Test-Path $appxPath)) { throw "APPX output was not created: $appxPath" }
+Copy-Item $generatedAppx.FullName $appxPath -Force
+Write-Host "Native UWP package copied to: $appxPath" -ForegroundColor Green
 
 # Download the Microsoft-signed x64 C++ UWP Desktop framework required by the manifest.
 $vclibsPath = Join-Path $outputPath 'Microsoft.VCLibs.x64.14.00.appx'
