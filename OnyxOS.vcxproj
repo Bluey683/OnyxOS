@@ -64,13 +64,6 @@
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="src\LogsPage.xaml.cpp">
-      <DependentUpon>LogsPage.xaml</DependentUpon>
-      <CompileAsWinRT>true</CompileAsWinRT>
-      <LanguageStandard>stdcpp14</LanguageStandard>
-      <ConformanceMode>false</ConformanceMode>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-    </ClCompile>
     <ClCompile Include="src\App.xaml.cpp">
       <DependentUpon>App.xaml</DependentUpon>
       <CompileAsWinRT>true</CompileAsWinRT>
@@ -100,13 +93,11 @@
     <ClInclude Include="src\downloads\OsImageDownloader.h" />
     <ClInclude Include="src\OnyxLogger.h" />
     <ClInclude Include="src\OnyxNativeLog.h" />
-    <ClInclude Include="src\LogsPage.xaml.h"><DependentUpon>LogsPage.xaml</DependentUpon></ClInclude>
     <ClInclude Include="src\App.xaml.h"><DependentUpon>App.xaml</DependentUpon></ClInclude>
     <ClInclude Include="src\LauncherPage.xaml.h"><DependentUpon>LauncherPage.xaml</DependentUpon></ClInclude>
     <ClInclude Include="src\GuestPage.xaml.h"><DependentUpon>GuestPage.xaml</DependentUpon></ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Page Include="src\LogsPage.xaml"><Generator>MSBuild:Compile</Generator><SubType>Designer</SubType></Page>
     <Page Include="src\App.xaml"><Generator>MSBuild:Compile</Generator><SubType>Designer</SubType></Page>
     <Page Include="src\LauncherPage.xaml"><Generator>MSBuild:Compile</Generator><SubType>Designer</SubType></Page>
     <Page Include="src\GuestPage.xaml"><Generator>MSBuild:Compile</Generator><SubType>Designer</SubType></Page>
