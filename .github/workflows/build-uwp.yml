@@ -39,8 +39,7 @@ jobs:
             throw "APPX package not found: $appx"
           }
 
-          # Temporary development certificate. Its public .cer is uploaded
-          # beside the APPX so the tester can explicitly trust this exact signer.
+          # Temporary development certificate. Only the public .cer is published.
           $cert = New-SelfSignedCertificate `
             -Type Custom `
             -Subject 'CN=Bluey683' `
@@ -60,6 +59,11 @@ jobs:
           Export-PfxCertificate -Cert $cert -FilePath $pfxPath -Password $password | Out-Null
           Export-Certificate -Cert $cert -FilePath $cerPath | Out-Null
 
+          # Trust this ephemeral signer on the disposable GitHub runner so SignTool
+          # can validate the self-signed chain during the verification step.
+          Import-Certificate -FilePath $cerPath -CertStoreLocation 'Cert:\CurrentUser\Root' | Out-Null
+          Import-Certificate -FilePath $cerPath -CertStoreLocation 'Cert:\CurrentUser\TrustedPeople' | Out-Null
+
           $sdkBin = Join-Path ${env:ProgramFiles(x86)} 'Windows Kits/10/bin'
           $signTool = Get-ChildItem -Path $sdkBin -Filter 'signtool.exe' -Recurse -File |
             Where-Object { $_.FullName -match '[\\/]x64[\\/]signtool.exe$' } |
@@ -69,18 +73,22 @@ jobs:
             throw 'SignTool.exe was not found in the installed Windows SDK.'
           }
 
-          & $signTool.FullName sign /fd SHA256 /f $pfxPath /p $passwordText /v $appx
-          if (-not $?) {
-            throw 'SignTool failed to sign the APPX package.'
+          # Add a trusted RFC 3161 timestamp. This prevents the package signature
+          # from depending solely on the certificate validity date.
+          & $signTool.FullName sign /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 /f $pfxPath /p $passwordText /v $appx
+          $signExitCode = $LASTEXITCODE
+          if ($signExitCode -ne 0) {
+            throw "SignTool failed to sign the APPX (exit code $signExitCode)."
           }
 
           & $signTool.FullName verify /pa /v $appx
-          if (-not $?) {
-            throw 'SignTool could not verify the signed APPX package.'
+          $verifyExitCode = $LASTEXITCODE
+          if ($verifyExitCode -ne 0) {
+            throw "SignTool could not verify the signed APPX (exit code $verifyExitCode)."
           }
 
           Remove-Item $pfxPath -Force
-          Write-Host "Signed APPX: $appx"
+          Write-Host "Signed and verified APPX: $appx"
           Write-Host "Public certificate: $cerPath"
           Write-Warning 'This is a self-signed development certificate. Trust OnyxOS-signing.cer on the Xbox before installing the APPX. A new certificate is generated for each workflow run.'
 
