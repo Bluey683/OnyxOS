@@ -76,8 +76,8 @@
     <ClCompile Include="src\\vm\\QemuInputBridge.cpp"><CompileAsWinRT>false</CompileAsWinRT><LanguageStandard>stdcpp20</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
     <ClCompile Include="src\\vm\\VhdxProvisioner.cpp"><CompileAsWinRT>false</CompileAsWinRT><LanguageStandard>stdcpp20</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
     <ClCompile Include="src\\downloads\\OsImageDownloader.cpp"><CompileAsWinRT>false</CompileAsWinRT><LanguageStandard>stdcpp20</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
-    <ClCompile Include="src\LauncherPage.xaml.cpp">
-      <DependentUpon>LauncherPage.xaml</DependentUpon>
+    <ClCompile Include="src\MainPage.xaml.cpp">
+      <DependentUpon>MainPage.xaml</DependentUpon>
       <CompileAsWinRT>true</CompileAsWinRT><LanguageStandard>stdcpp14</LanguageStandard><ConformanceMode>false</ConformanceMode><PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="src\GuestPage.xaml.cpp">
@@ -94,12 +94,12 @@
     <ClInclude Include="src\OnyxLogger.h" />
     <ClInclude Include="src\OnyxNativeLog.h" />
     <ClInclude Include="src\App.xaml.h"><DependentUpon>App.xaml</DependentUpon></ClInclude>
-    <ClInclude Include="src\LauncherPage.xaml.h"><DependentUpon>LauncherPage.xaml</DependentUpon></ClInclude>
+    <ClInclude Include="src\MainPage.xaml.h"><DependentUpon>MainPage.xaml</DependentUpon></ClInclude>
     <ClInclude Include="src\GuestPage.xaml.h"><DependentUpon>GuestPage.xaml</DependentUpon></ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Page Include="src\App.xaml"><Generator>MSBuild:Compile</Generator><SubType>Designer</SubType></Page>
-    <Page Include="src\LauncherPage.xaml"><Generator>MSBuild:Compile</Generator><SubType>Designer</SubType></Page>
+    <Page Include="src\MainPage.xaml"><Generator>MSBuild:Compile</Generator><SubType>Designer</SubType></Page>
     <Page Include="src\GuestPage.xaml"><Generator>MSBuild:Compile</Generator><SubType>Designer</SubType></Page>
     <AppxManifest Include="Package.appxmanifest" />
   </ItemGroup>
