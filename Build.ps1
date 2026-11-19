@@ -95,13 +95,27 @@ $appxPath = Join-Path $outputPath 'OnyxOS-x64.appx'
 Copy-Item $generatedAppx.FullName $appxPath -Force
 Write-Host "Native UWP package copied to: $appxPath" -ForegroundColor Green
 
-# Download the Microsoft-signed x64 C++ UWP Desktop framework required by the manifest.
+# Prefer the Microsoft VCLibs package installed with the Windows SDK.
+# This avoids relying on aka.ms redirects returning an HTML/error page in CI.
 $vclibsPath = Join-Path $outputPath 'Microsoft.VCLibs.x64.14.00.appx'
-$vclibsUri = 'https://aka.ms/Microsoft.VCLibs.x64.14.00.appx'
-Write-Host 'Downloading Microsoft VCLibs x64 framework dependency...' -ForegroundColor Yellow
-Invoke-WebRequest -Uri $vclibsUri -OutFile $vclibsPath -UseBasicParsing
+$programFilesX86 = [Environment]::GetFolderPath('ProgramFilesX86')
+$vclibsCandidates = @(
+    (Join-Path $programFilesX86 'Microsoft SDKs/Windows Kits/10/ExtensionSDKs/Microsoft.VCLibs/14.0/AppX/Retail/x64/Microsoft.VCLibs.x64.14.00.appx'),
+    (Join-Path $env:WindowsSdkDir 'ExtensionSDKs/Microsoft.VCLibs/14.0/AppX/Retail/x64/Microsoft.VCLibs.x64.14.00.appx')
+) | Where-Object { $_ -and (Test-Path $_) }
+$vclibsSource = $vclibsCandidates | Select-Object -First 1
+
+if ($vclibsSource) {
+    Copy-Item -LiteralPath $vclibsSource -Destination $vclibsPath -Force
+    Write-Host "Using SDK-provided Microsoft VCLibs x64 package: $vclibsSource" -ForegroundColor Green
+}
+else {
+    $vclibsUri = 'https://aka.ms/Microsoft.VCLibs.x64.14.00.appx'
+    Write-Host 'SDK VCLibs package not found; downloading Microsoft VCLibs x64 framework...' -ForegroundColor Yellow
+    Invoke-WebRequest -Uri $vclibsUri -OutFile $vclibsPath -UseBasicParsing
+}
 if (-not (Test-Path $vclibsPath) -or (Get-Item $vclibsPath).Length -lt 100000) {
-    throw 'Microsoft VCLibs x64 framework download is missing or invalid.'
+    throw 'Microsoft VCLibs x64 framework package is missing or invalid.'
 }
 Write-Host "VCLibs dependency: $vclibsPath" -ForegroundColor Green
 
