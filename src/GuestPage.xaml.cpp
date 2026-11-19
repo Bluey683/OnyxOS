@@ -21,8 +21,8 @@ namespace OnyxOS
     {
         DisplayStatus->Text = status;
         NoFramePanel->Visibility = hasFrame
-            ? Visibility::Collapsed
-            : Visibility::Visible;
+            ? Windows::UI::Xaml::Visibility::Collapsed
+            : Windows::UI::Xaml::Visibility::Visible;
     }
 
     void GuestPage::SetRendererName(String^ renderer)
