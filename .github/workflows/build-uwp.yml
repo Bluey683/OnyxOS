@@ -9,6 +9,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: onyxos-xbox-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-onyxos:
     name: Build and sign seven OnyxOS entries into one APPX (x64)
@@ -23,6 +27,19 @@ jobs:
       - name: Build and package OnyxOS with Visual Studio MSBuild
         shell: pwsh
         run: ./Build.ps1 -Mode GitHubActions -Configuration Release -Architecture x64
+
+      - name: Diagnose generated XAML code on build failure
+        if: failure()
+        shell: pwsh
+        run: |
+          $generated = Join-Path $PWD 'Generated Files'
+          if (Test-Path $generated) {
+            Get-ChildItem $generated -Recurse -File |
+              Where-Object { $_.Name -match 'LauncherPage|GuestPage|XamlTypeInfo' } |
+              Select-Object FullName, Length
+          } else {
+            Write-Host 'Generated Files directory was not created.'
+          }
 
       - name: Sign APPX
         if: github.event_name != 'pull_request'
