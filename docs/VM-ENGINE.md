@@ -1,15 +1,19 @@
 # VM Engine
 
-The first VM engine layer provides validated VM configuration and QEMU argument
-generation for the OnyxOS x86_64 guest profiles.
+The VM engine now prepares a more complete QEMU configuration for the six guest
+profiles while keeping the seven app entries inside one APPX package.
 
-## Current capabilities
+## Profile defaults
 
-- Configuration model: guest ID/name, OS family, ISO, VHDX, machine type,
-  memory, vCPU count and UEFI preference.
-- Input validation before a VM can be handed to the runtime.
-- QEMU argument generation for a q35 guest with a VHDX disk and installer ISO.
-- The model is shared by the seven packaged app entries.
+- x86_64 guests on the QEMU `q35` machine.
+- QEMU TCG software emulation with two vCPUs.
+- 3072 MB guest RAM as a conservative starting point for the Xbox UWP memory budget.
+- VHDX virtual disk plus an installer ISO.
+- Virtio VGA, USB keyboard/tablet and user-mode networking arguments.
+- Per-guest ISO and VHDX paths under the app's LocalState directory.
+
+The current profile list is Windows 10, Windows 11, Debian, Ubuntu, Arch Linux
+and an experimental macOS placeholder. macOS remains disabled.
 
 ## Storage layout
 
@@ -23,16 +27,19 @@ LocalState/
 
 ## Important implementation boundary
 
-This is still not a running hypervisor. The new QemuHostAdapter loads the packaged
-QEMU UWP DLL and validates its host API exports, but it does not yet invoke the
-lifecycle functions or run the guest loop. It also does not create VHDX files,
-locate UEFI firmware, render the guest framebuffer, or connect audio/input/network
-devices. The Xbox UWP runtime must call the supported QEMU host API in-process;
-ordinary desktop process creation is not an acceptable substitute in the AppContainer.
+This code validates profile values and builds QEMU command-line argument vectors.
+It does **not** yet pass those arguments to the QEMU UWP host API or start a guest.
+The QemuHostAdapter currently loads the packaged DLL and checks expected exports;
+it does not call the host lifecycle functions or run the guest loop.
 
-See [QEMU-HOST-ADAPTER.md](QEMU-HOST-ADAPTER.md) for DLL placement and integration status.
+The generated virtio, USB and user-network arguments are therefore preparation,
+not proof that those devices are active. Audio through XAudio2, keyboard/mouse/
+controller event forwarding, guest framebuffer presentation, UEFI firmware
+discovery and actual networking still require host-API integration and testing.
 
-The generated arguments are a starting point for that adapter. UEFI firmware
-arguments must be appended only after the exact firmware files and licensing/
-redistribution terms are established. Windows 11 TPM/Secure Boot support and
-macOS compatibility remain unimplemented.
+UEFI arguments must be added only after the exact compatible firmware files are
+available. Windows 11 TPM 2.0/Secure Boot support is not configured, so its
+installer may reject this profile. macOS compatibility, firmware and licensing
+remain unresolved.
+
+See [QEMU-HOST-ADAPTER.md](QEMU-HOST-ADAPTER.md) for DLL integration status.
