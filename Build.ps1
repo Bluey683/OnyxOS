@@ -63,10 +63,9 @@ if (-not $SkipQemuDownload) {
         throw 'scripts/Fetch-QemuRuntime.ps1 was not found.'
     }
     Write-Host 'Fetching QEMU UWP host DLL and matching runtime dependencies...' -ForegroundColor Yellow
+    # This is another PowerShell script, not a native executable.
+    # Its terminating errors propagate because ErrorActionPreference is Stop.
     & $qemuFetchScript -RepositoryRoot $repoRoot
-    if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) {
-        throw 'QEMU dependency download failed.'
-    }
 }
 
 if ($Clean -and (Test-Path $buildPath)) {
@@ -84,10 +83,9 @@ if (-not $SkipAssets) {
         throw 'scripts/Make-Assets.ps1 was not found.'
     }
     Write-Host 'Generating APPX image assets...' -ForegroundColor Yellow
+    # This is another PowerShell script, not a native executable.
+    # Its terminating errors propagate because ErrorActionPreference is Stop.
     & $assetScript
-    if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) {
-        throw 'Asset generation failed.'
-    }
 }
 
 if (-not (Test-Path $assetsPath)) {
