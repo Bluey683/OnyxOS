@@ -1,4 +1,5 @@
 #include <windows.h>
+#include "LauncherPage.xaml.h"
 #include <collection.h>
 #include <ppltasks.h>
 #include <windows.applicationmodel.activation.h>
@@ -46,87 +47,7 @@ protected:
     virtual void OnLaunched(Windows::ApplicationModel::Activation::LaunchActivatedEventArgs^ args) override
     {
         auto window = Window::Current;
-
-        auto page = ref new StackPanel();
-        page->Spacing = 14;
-        page->Padding = Thickness(28, 24, 28, 24);
-        page->Background = MakeBrush(12, 19, 30);
-
-        auto title = MakeText(ref new String(L"ONYXOS"), 32, MakeBrush(244, 247, 251));
-        title->FontWeight = FontWeights::Bold;
-        page->Children->Append(title);
-
-        page->Children->Append(
-            MakeText(ref new String(L"VIRTUAL MACHINE CENTER"), 12, MakeBrush(139, 154, 175)));
-
-        auto heading = MakeText(
-            ref new String(L"Escolha seu sistema"), 25, MakeBrush(244, 247, 251));
-        heading->Margin = Thickness(0, 18, 0, 0);
-        page->Children->Append(heading);
-
-        page->Children->Append(MakeText(
-            ref new String(L"Selecione um perfil para preparar sua máquina virtual."),
-            14, MakeBrush(154, 169, 188)));
-
-        selection = MakeText(
-            ref new String(L"Nenhum sistema selecionado"), 16, MakeBrush(244, 247, 251));
-        selection->Margin = Thickness(0, 14, 0, 0);
-        page->Children->Append(selection);
-
-        status = MakeText(
-            ref new String(L"Launcher iniciado. O mecanismo de inicializacao das VMs ainda precisa ser integrado."),
-            13, MakeBrush(154, 169, 188));
-        page->Children->Append(status);
-
-        auto launch = ref new Button();
-        launch->Content = ref new String(L"Iniciar maquina virtual");
-        launch->IsEnabled = false;
-        launch->MinHeight = 52;
-        launch->Margin = Thickness(0, 8, 0, 0);
-        launch->Background = MakeBrush(32, 49, 70);
-        launch->Foreground = MakeBrush(244, 247, 251);
-        page->Children->Append(launch);
-
-        struct Profile
-        {
-            wchar_t const* id;
-            wchar_t const* name;
-        };
-
-        static const Profile profiles[] = {
-            { L"windows10", L"Windows 10" },
-            { L"windows11", L"Windows 11" },
-            { L"debian", L"Debian" },
-            { L"ubuntu", L"Ubuntu" },
-            { L"archlinux", L"Arch Linux" },
-            { L"macos", L"macOS (experimental)" }
-        };
-
-        for (auto const& profile : profiles)
-        {
-            auto card = ref new Button();
-            card->Content = ref new String(profile.name);
-            card->Tag = ref new String(profile.id);
-            card->MinHeight = 64;
-            card->HorizontalContentAlignment = HorizontalAlignment::Left;
-            card->Padding = Thickness(18, 12, 18, 12);
-            card->Background = MakeBrush(20, 32, 49);
-            card->Foreground = MakeBrush(244, 247, 251);
-            card->BorderBrush = MakeBrush(41, 59, 80);
-            card->BorderThickness = Thickness(1);
-            card->Click += ref new RoutedEventHandler(this, &App::OnProfileClick);
-            page->Children->Append(card);
-        }
-
-        page->Children->Append(MakeText(
-            ref new String(L"ONYXOS  |  QEMU HOST  |  ISO / VHDX / CONFIGURACOES"),
-            11, MakeBrush(101, 117, 138)));
-
-        auto scroll = ref new ScrollViewer();
-        scroll->VerticalScrollBarVisibility = ScrollBarVisibility::Auto;
-        scroll->Content = page;
-
-        window->Content = scroll;
+        window->Content = ref new OnyxOS::LauncherPage();
         window->Activate();
     }
 
