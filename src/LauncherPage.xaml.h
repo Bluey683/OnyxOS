@@ -13,8 +13,10 @@ namespace OnyxOS
         void ProfileCard_Click(
             Platform::Object^ sender,
             Windows::UI::Xaml::RoutedEventArgs^ args);
-
         void LaunchButton_Click(
+            Platform::Object^ sender,
+            Windows::UI::Xaml::RoutedEventArgs^ args);
+        void LogsButton_Click(
             Platform::Object^ sender,
             Windows::UI::Xaml::RoutedEventArgs^ args);
     };
