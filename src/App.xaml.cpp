@@ -12,7 +12,7 @@ namespace OnyxOS
     {
         OnyxLogger::App(L"App constructor entered.");
         InitializeComponent();
-        UnhandledException += ref new EventHandler<UnhandledExceptionEventArgs^>(
+        UnhandledException += ref new UnhandledExceptionEventHandler(
             this, &App::OnUnhandledException);
         OnyxLogger::App(L"XAML application initialized.");
     }
