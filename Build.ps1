@@ -86,10 +86,32 @@ Copy-Item $assetsPath (Join-Path $stagePath 'Assets') -Recurse -Force
 
 # Keep a single registered launcher executable. OS profiles are selected inside the launcher,
 # not exposed as separate Xbox Start menu applications.
+$buildOutputRoot = Split-Path $builtExecutable
 Copy-Item $builtExecutable (Join-Path $stagePath 'OnyxOS.exe') -Force
 
-Get-ChildItem -Path (Split-Path $builtExecutable) -Filter '*.dll' -File -ErrorAction SilentlyContinue |
-    ForEach-Object { Copy-Item $_.FullName (Join-Path $stagePath $_.Name) -Force }
+# The executable alone is not a complete UWP app. XAML pages are compiled to
+# .xbf and the XAML resource index is stored in resources.pri. Omitting these
+# files makes Application::LoadComponent fail at runtime (often E_UNEXPECTED).
+Get-ChildItem -Path $buildOutputRoot -File -Recurse -ErrorAction SilentlyContinue |
+    Where-Object { $_.Extension -in '.xbf', '.pri', '.dll', '.winmd', '.dat' } |
+    ForEach-Object {
+        $relative = $_.FullName.Substring($buildOutputRoot.Length).TrimStart([IO.Path]::DirectorySeparatorChar)
+        $destination = Join-Path $stagePath $relative
+        $destinationDirectory = Split-Path $destination
+        if (-not (Test-Path $destinationDirectory)) {
+            New-Item -ItemType Directory -Force -Path $destinationDirectory | Out-Null
+        }
+        Copy-Item $_.FullName $destination -Force
+    }
+
+# Some MSBuild UWP layouts place resources.pri beside the app output directory.
+# Include any generated PRI file from the build tree at package root as well.
+Get-ChildItem -Path $buildPath -Filter '*.pri' -File -Recurse -ErrorAction SilentlyContinue |
+    ForEach-Object {
+        Copy-Item $_.FullName (Join-Path $stagePath $_.Name) -Force
+    }
+
+Write-Host 'Staged compiled XAML (.xbf), resource index (.pri), and runtime dependencies.' -ForegroundColor Green
 
 $qemuDll = Join-Path $repoRoot 'Dependencies/Qemu/qemu-system-x86_64.dll'
 if (Test-Path $qemuDll) {
