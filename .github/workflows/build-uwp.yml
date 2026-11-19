@@ -106,11 +106,15 @@ jobs:
             Select-Object -First 1
           if (-not $signToolPath) { throw "SignTool.exe was not found under $sdkBin." }
 
-          Write-Host 'SIGN 4/5: signing APPX'
+          Write-Host 'SIGN 4/6: trusting the self-signed development certificate'
+          Import-Certificate -FilePath $cerPath -CertStoreLocation 'Cert:\CurrentUser\Root' | Out-Null
+          Import-Certificate -FilePath $cerPath -CertStoreLocation 'Cert:\CurrentUser\TrustedPeople' | Out-Null
+
+          Write-Host 'SIGN 5/6: signing APPX'
           & $signToolPath sign /fd SHA256 /f $pfxPath /p $passwordText /v $appx
           if ($LASTEXITCODE -ne 0) { throw "SignTool signing failed: exit code $LASTEXITCODE" }
 
-          Write-Host 'SIGN 5/5: verifying signature'
+          Write-Host 'SIGN 6/6: verifying signature'
           & $signToolPath verify /pa /v $appx
           if ($LASTEXITCODE -ne 0) { throw "SignTool verification failed: exit code $LASTEXITCODE" }
 
