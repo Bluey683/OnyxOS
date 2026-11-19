@@ -11,10 +11,20 @@ namespace OnyxOS
     App::App()
     {
         OnyxLogger::App(L"App constructor entered.");
-        InitializeComponent();
+        try
+        {
+            InitializeComponent();
+            OnyxLogger::App(L"Application XAML initialized.");
+        }
+        catch (Exception^ ex)
+        {
+            OnyxLogger::App(L"APP XAML INITIALIZATION FAILURE: " + ex->Message);
+            throw;
+        }
+
         UnhandledException += ref new UnhandledExceptionEventHandler(
             this, &App::OnUnhandledException);
-        OnyxLogger::App(L"XAML application initialized.");
+        OnyxLogger::App(L"Unhandled-exception logger registered.");
     }
 
     void App::OnUnhandledException(Object^, UnhandledExceptionEventArgs^ args)
@@ -59,10 +69,32 @@ namespace OnyxOS
 int main(Array<String^>^)
 {
     OutputDebugStringW(L"[OnyxOS][APP] main() entered.\n");
-    Application::Start(ref new ApplicationInitializationCallback(
-        [](ApplicationInitializationCallbackParams^)
-        {
-            auto app = ref new OnyxOS::App();
-        }));
+    try
+    {
+        OnyxLogger::App(L"Entering Application::Start.");
+        Application::Start(ref new ApplicationInitializationCallback(
+            [](ApplicationInitializationCallbackParams^)
+            {
+                auto app = ref new OnyxOS::App();
+            }));
+        OnyxLogger::App(L"Application::Start returned normally.");
+    }
+    catch (Exception^ ex)
+    {
+        OnyxLogger::App(L"FATAL PLATFORM EXCEPTION IN main: " + ex->Message);
+        return -1;
+    }
+    catch (const std::exception& ex)
+    {
+        OnyxLogger::App(L"FATAL C++ EXCEPTION IN main.");
+        OutputDebugStringA(ex.what());
+        OutputDebugStringA("\n");
+        return -2;
+    }
+    catch (...)
+    {
+        OnyxLogger::App(L"FATAL UNKNOWN EXCEPTION IN main.");
+        return -3;
+    }
     return 0;
 }
