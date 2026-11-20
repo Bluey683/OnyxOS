@@ -8,6 +8,9 @@
         <Grid x:Name="GuestHost" HorizontalAlignment="Stretch"
               VerticalAlignment="Stretch"/>
 
+        <TextBox x:Name="KeyboardSink" Width="1" Height="1" Opacity="0"
+                 IsTabStop="True" IsReadOnly="True"
+                 HorizontalAlignment="Left" VerticalAlignment="Top"/>
         <Border x:Name="HeaderPanel" VerticalAlignment="Top"
                 Background="#DD111C2A" Padding="22,12">
             <Grid>
