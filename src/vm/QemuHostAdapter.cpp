@@ -126,7 +126,7 @@ namespace onyx::vm
         if (m_videoRegister)
             m_videoRegister(&QemuHostAdapter::VideoThunk, this);
         else if (m_videoSet)
-            m_videoSet(&QemuHostAdapter::VideoThunk, this);
+            m_videoSet(&QemuHostAdapter::LegacyVideoThunk, this);
         m_stopRequested = false;
         try { m_worker = std::thread(&QemuHostAdapter::Run, this, arguments); }
         catch (...) { m_error = L"Não foi possível criar a thread do QEMU."; return false; }
@@ -191,6 +191,11 @@ namespace onyx::vm
             return;
         }
         self->m_videoCallback(bgra, width, height);
+    }
+
+    void QemuHostAdapter::LegacyVideoThunk(const void* pixels, int width, int height, int stride, int format, void* opaque)
+    {
+        VideoThunk(opaque, pixels, width, height, stride, format);
     }
 
     void QemuHostAdapter::Unload() noexcept
