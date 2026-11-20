@@ -8,6 +8,9 @@
         <SwapChainPanel x:Name="QemuSurface"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"/>
+        <TextBox x:Name="KeyboardSink" Width="1" Height="1" Opacity="0"
+                 IsTabStop="True" IsReadOnly="True"
+                 HorizontalAlignment="Left" VerticalAlignment="Top"/>
         <StackPanel x:Name="NoFramePanel" HorizontalAlignment="Center"
                     VerticalAlignment="Center" Spacing="10" MaxWidth="700">
             <TextBlock Text="QEMU DISPLAY" Foreground="#6F829B"
