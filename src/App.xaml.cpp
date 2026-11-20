@@ -526,12 +526,12 @@ namespace OnyxOS
                     session->input = std::make_shared<onyx::vm::QemuInputBridge>(*session->host);
                     auto inputBridge = session->input;
                     auto coreWindow = Window::Current->CoreWindow;
-                    coreWindow->KeyDown += ref new Windows::UI::Core::KeyEventHandler(
+                    coreWindow->KeyDown += ref new Windows::Foundation::TypedEventHandler<Windows::UI::Core::CoreWindow^, Windows::UI::Core::KeyEventArgs^>(
                         [inputBridge](Windows::UI::Core::CoreWindow^, Windows::UI::Core::KeyEventArgs^ args)
                         {
                             inputBridge->SendVirtualKey(static_cast<int>(args->VirtualKey), true);
                         });
-                    coreWindow->KeyUp += ref new Windows::UI::Core::KeyEventHandler(
+                    coreWindow->KeyUp += ref new Windows::Foundation::TypedEventHandler<Windows::UI::Core::CoreWindow^, Windows::UI::Core::KeyEventArgs^>(
                         [inputBridge](Windows::UI::Core::CoreWindow^, Windows::UI::Core::KeyEventArgs^ args)
                         {
                             inputBridge->SendVirtualKey(static_cast<int>(args->VirtualKey), false);
