@@ -2,10 +2,48 @@
 #include "../OnyxNativeLog.h"
 #include <array>
 #include <chrono>
+#include <cstring>
+#include <algorithm>
 #include <thread>
 
 namespace onyx::vm
 {
+    namespace
+    {
+        std::uint32_t ExpandColorBits(std::uint32_t value, int bits)
+        {
+            if (bits <= 0) return 0;
+            if (bits >= 8) return value & 0xffu;
+            const std::uint32_t maximum = (1u << bits) - 1u;
+            return (value * 255u + maximum / 2u) / maximum;
+        }
+        std::uint32_t PackBgra(std::uint32_t r, std::uint32_t g, std::uint32_t b)
+        { return 0xff000000u | ((r & 0xffu) << 16) | ((g & 0xffu) << 8) | (b & 0xffu); }
+        bool ConvertQemuFrame(const void* pixels, int width, int height, int stride, int format, std::vector<std::uint32_t>& output)
+        {
+            if (!pixels || width <= 0 || height <= 0 || stride <= 0 ||
+                static_cast<std::size_t>(width) > (SIZE_MAX / sizeof(std::uint32_t)) / static_cast<std::size_t>(height)) return false;
+            output.resize(static_cast<std::size_t>(width) * height);
+            if (format >= 1 && format <= 4) {
+                if (static_cast<std::size_t>(stride) < static_cast<std::size_t>(width) * 4) return false;
+                for (int y=0;y<height;++y) { const auto* row=static_cast<const std::uint8_t*>(pixels)+static_cast<std::size_t>(y)*stride;
+                    for(int x=0;x<width;++x){const auto* p=row+static_cast<std::size_t>(x)*4;const bool bgr=format==1||format==4;
+                        output[static_cast<std::size_t>(y)*width+x]=PackBgra(bgr?p[2]:p[0],p[1],bgr?p[0]:p[2]);}}
+                return true;
+            }
+            const int bpp=(format>>24)&0xff, type=(format>>16)&0xff, rb=(format>>8)&0xf, gb=(format>>4)&0xf, bb=format&0xf;
+            const bool reversed=type==3||type==8||type==9; const int bytes=(bpp+7)/8;
+            if((bpp!=32&&bpp!=24&&bpp!=16&&bpp!=15&&bpp!=8)||static_cast<std::size_t>(stride)<static_cast<std::size_t>(width)*bytes)return false;
+            for(int y=0;y<height;++y){const auto* row=static_cast<const std::uint8_t*>(pixels)+static_cast<std::size_t>(y)*stride;
+                for(int x=0;x<width;++x){std::uint32_t r=0,g=0,b=0;
+                    if(bpp==32){std::uint32_t v;std::memcpy(&v,row+static_cast<std::size_t>(x)*4,4);r=reversed?(v&255u):((v>>16)&255u);g=(v>>8)&255u;b=reversed?((v>>16)&255u):(v&255u);}
+                    else if(bpp==24){const auto* p=row+static_cast<std::size_t>(x)*3;r=reversed?p[0]:p[2];g=p[1];b=reversed?p[2]:p[0];}
+                    else if(bpp==16||bpp==15){std::uint16_t v;std::memcpy(&v,row+static_cast<std::size_t>(x)*2,2);const std::uint32_t bm=bb?((1u<<bb)-1u):0u,gm=gb?((1u<<gb)-1u):0u,rm=rb?((1u<<rb)-1u):0u;b=ExpandColorBits(v&bm,bb);g=ExpandColorBits((v>>bb)&gm,gb);r=ExpandColorBits((v>>(bb+gb))&rm,rb);if(reversed)std::swap(r,b);}
+                    else {r=g=b=row[x];}
+                    output[static_cast<std::size_t>(y)*width+x]=PackBgra(r,g,b);
+                }} return true;
+        }
+    }
     QemuHostAdapter::~QemuHostAdapter() { Stop(); Unload(); }
 
     bool QemuHostAdapter::Load(const std::wstring& dllName)
@@ -146,7 +184,13 @@ namespace onyx::vm
     void QemuHostAdapter::VideoThunk(void* opaque, const void* pixels, int width, int height, int stride, int format)
     {
         auto self = static_cast<QemuHostAdapter*>(opaque);
-        if (self && self->m_videoCallback) self->m_videoCallback(pixels, width, height, stride, format);
+        if (!self || !self->m_videoCallback) return;
+        std::vector<std::uint32_t> bgra;
+        if (!ConvertQemuFrame(pixels, width, height, stride, format, bgra)) {
+            OnyxOS::WriteQemuLogNative(L"Unsupported or invalid QEMU framebuffer format/stride.");
+            return;
+        }
+        self->m_videoCallback(bgra, width, height);
     }
 
     void QemuHostAdapter::Unload() noexcept
