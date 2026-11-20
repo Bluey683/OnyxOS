@@ -11,6 +11,10 @@ namespace OnyxOS
         void SetGuestProfile(Platform::String^ profileId, Platform::String^ displayName);
         void SetDisplayStatus(Platform::String^ status, bool hasFrame);
         void SetRendererName(Platform::String^ renderer);
+        Windows::UI::Xaml::Controls::SwapChainPanel^ GetQemuSurface();
+        void SetStopEnabled(bool enabled);
+
+        event Windows::Foundation::EventHandler<Platform::Object^>^ StopRequested;
 
     private:
         void StopButton_Click(
