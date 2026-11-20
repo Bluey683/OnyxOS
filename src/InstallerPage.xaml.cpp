@@ -42,11 +42,16 @@ namespace OnyxOS
         FinishRequested(this, nullptr);
     }
 
-    void InstallerPage::FullScreenButton_Click(Object^, RoutedEventArgs^)
+    void InstallerPage::EnterFullScreen()
     {
         HeaderPanel->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
         FooterPanel->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
         ShowControlsButton->Visibility = Windows::UI::Xaml::Visibility::Visible;
+    }
+
+    void InstallerPage::FullScreenButton_Click(Object^, RoutedEventArgs^)
+    {
+        EnterFullScreen();
     }
 
     void InstallerPage::ShowControlsButton_Click(Object^, RoutedEventArgs^)
