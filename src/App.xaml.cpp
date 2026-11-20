@@ -74,8 +74,8 @@ namespace OnyxOS
             layout->Children->Append(status);
 
             auto profiles = ref new StackPanel();
-            profiles->Spacing = 8;
-            profiles->Margin = Thickness(0, 8, 0, 0);
+            profiles->Spacing = 5;
+            profiles->Margin = Thickness(0, 4, 0, 0);
 
             const wchar_t* names[] = {
                 L"Windows 10", L"Windows 11", L"Debian",
@@ -94,8 +94,8 @@ namespace OnyxOS
                 button->Tag = name;
                 button->HorizontalAlignment = HorizontalAlignment::Stretch;
                 button->HorizontalContentAlignment = HorizontalAlignment::Left;
-                button->MinHeight = 58;
-                button->Padding = Thickness(18, 10, 18, 10);
+                button->MinHeight = 42;
+                button->Padding = Thickness(18, 6, 18, 6);
                 button->Background = ref new SolidColorBrush(ColorHelper::FromArgb(255, 20, 32, 49));
                 button->Foreground = ref new SolidColorBrush(Colors::White);
                 button->BorderBrush = ref new SolidColorBrush(ColorHelper::FromArgb(255, 41, 59, 80));
