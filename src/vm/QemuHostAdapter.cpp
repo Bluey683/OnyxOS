@@ -239,6 +239,7 @@ namespace onyx::vm
         int status = 0;
         while (!m_stopRequested)
         {
+            ProcessPendingInput();
             const int result = m_step(m_wake == nullptr, &status);
             if (result != 0)
             {
@@ -315,18 +316,51 @@ namespace onyx::vm
         m_keyNumber = nullptr; m_keyQcode = nullptr; m_pointerRel = nullptr;
         m_pointerAbs = nullptr; m_pointerButton = nullptr; m_wake = nullptr;
         m_videoCallback = {};
+        { std::lock_guard<std::mutex> lock(m_inputMutex); m_inputQueue.clear(); }
+    }
+
+    bool QemuHostAdapter::QueueInput(const InputEvent& event) const noexcept
+    {
+        if (!m_compatible) return false;
+        try {
+            std::lock_guard<std::mutex> lock(m_inputMutex);
+            if (m_inputQueue.size() >= 2048) return false;
+            m_inputQueue.push_back(event);
+        } catch (...) { return false; }
+        WakeMainLoop();
+        return true;
+    }
+
+    void QemuHostAdapter::ProcessPendingInput() noexcept
+    {
+        std::deque<InputEvent> pending;
+        {
+            std::lock_guard<std::mutex> lock(m_inputMutex);
+            pending.swap(m_inputQueue);
+        }
+        for (const auto& e : pending) {
+            int result = -1;
+            switch (e.type) {
+            case InputEventType::KeyNumber: if (m_keyNumber) result = m_keyNumber(e.a, e.down); break;
+            case InputEventType::KeyQcode: if (m_keyQcode) result = m_keyQcode(e.a, e.down); break;
+            case InputEventType::PointerRelative: if (m_pointerRel) result = m_pointerRel(e.a, e.b); break;
+            case InputEventType::PointerAbsolute: if (m_pointerAbs) result = m_pointerAbs(e.a, e.b, e.c, e.d); break;
+            case InputEventType::PointerButton: if (m_pointerButton) result = m_pointerButton(e.a, e.down); break;
+            }
+            if (result != 0) OnyxOS::WriteQemuLogNative(L"QEMU input event was rejected by the host API.");
+        }
     }
 
     bool QemuHostAdapter::SendKeyNumber(int key, bool down) const noexcept
-    { return m_compatible && m_keyNumber && m_keyNumber(key, down) == 0; }
+    { return m_keyNumber && QueueInput({ InputEventType::KeyNumber, key, 0, 0, 0, down }); }
     bool QemuHostAdapter::SendKeyQcode(int key, bool down) const noexcept
-    { return m_compatible && m_keyQcode && m_keyQcode(key, down) == 0; }
+    { return m_keyQcode && QueueInput({ InputEventType::KeyQcode, key, 0, 0, 0, down }); }
     bool QemuHostAdapter::SendPointerRelative(int x, int y) const noexcept
-    { return m_compatible && m_pointerRel && m_pointerRel(x, y) == 0; }
+    { return m_pointerRel && QueueInput({ InputEventType::PointerRelative, x, y }); }
     bool QemuHostAdapter::SendPointerAbsolute(int x, int y, int w, int h) const noexcept
-    { return m_compatible && m_pointerAbs && m_pointerAbs(x, y, w, h) == 0; }
+    { return m_pointerAbs && QueueInput({ InputEventType::PointerAbsolute, x, y, w, h }); }
     bool QemuHostAdapter::SendPointerButton(int button, bool down) const noexcept
-    { return m_compatible && m_pointerButton && m_pointerButton(button, down) == 0; }
+    { return m_pointerButton && QueueInput({ InputEventType::PointerButton, button, 0, 0, 0, down }); }
     bool QemuHostAdapter::WakeMainLoop() const noexcept
     {
         if (!m_compatible || !m_wake) return false;
