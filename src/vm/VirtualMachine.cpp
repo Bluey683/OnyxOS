@@ -106,15 +106,25 @@ namespace vm
         add("-smp", std::to_string(configuration.cpuCount));
         add("-display", "host"); // QEMU-UWP-Host custom display backend feeds Direct3D.
         add("-L", "qemu"); // Packaged QEMU BIOS/firmware directory.
-        add("-drive", "file=" + configuration.diskPath + ",if=virtio,format=vhdx");
+        // Use explicit drive backends and device boot indexes. The legacy
+        // -cdrom shorthand left SeaBIOS trying the empty VHDX first on the
+        // Xbox QEMU host, then reporting that the CD-ROM could not be read.
+        // Keep the user ISO as a raw, read-only optical medium and force it
+        // ahead of the virtual disk during installation.
+        add("-drive", "file=" + configuration.diskPath + ",if=none,id=onyx_disk,format=vhdx");
+        args.emplace_back("-device");
+        args.emplace_back("virtio-blk-pci,drive=onyx_disk,bootindex=2");
+
         if (!configuration.isoPath.empty())
         {
-            add("-cdrom", configuration.isoPath);
-            add("-boot", "order=d,menu=on");
+            add("-drive", "file=" + configuration.isoPath + ",if=none,id=onyx_iso,format=raw,media=cdrom,readonly=on");
+            args.emplace_back("-device");
+            args.emplace_back("ide-cd,drive=onyx_iso,bootindex=1");
+            add("-boot", "menu=on,strict=on");
         }
         else
         {
-            add("-boot", "order=c,menu=on");
+            add("-boot", "menu=on,strict=on");
         }
 
         // QEMU UWP host audio backend: route guest HDA output through XAudio2.
