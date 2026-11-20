@@ -127,6 +127,7 @@ namespace onyx::vm
             std::lock_guard<std::mutex> lock(m_startMutex);
             m_startComplete = false;
             m_startSucceeded = false;
+            m_firstFrameReceived = false;
         }
         if (m_videoRegister)
             m_videoRegister(&QemuHostAdapter::VideoThunk, this);
@@ -145,10 +146,21 @@ namespace onyx::vm
             return false;
         }
         const bool initialized = m_startSucceeded;
-        lock.unlock();
         if (!initialized)
         {
+            lock.unlock();
             if (m_worker.joinable()) m_worker.join();
+            return false;
+        }
+        // Wait for a real guest frame before reporting the VM as started.
+        const bool gotFirstFrame = m_startCondition.wait_for(lock, std::chrono::seconds(45),
+            [this] { return m_firstFrameReceived || !m_running.load(); }) && m_firstFrameReceived;
+        lock.unlock();
+        if (!gotFirstFrame)
+        {
+            m_error = L"QEMU inicializou, mas não entregou o primeiro framebuffer em 45 segundos. Verifique BIOS/firmware, -display host e o log QEMU.";
+            OnyxOS::WriteQemuLogNative(m_error.c_str());
+            Stop();
             return false;
         }
         return true;
@@ -199,6 +211,7 @@ namespace onyx::vm
         }
         if (m_join) { int finalStatus = 0; m_join(&finalStatus); }
         m_running = false;
+        m_startCondition.notify_all();
         OnyxOS::WriteQemuLogNative(L"QEMU main loop stopped.");
     }
 
@@ -224,6 +237,11 @@ namespace onyx::vm
             return;
         }
         self->m_videoCallback(bgra, width, height);
+        {
+            std::lock_guard<std::mutex> lock(self->m_startMutex);
+            self->m_firstFrameReceived = true;
+        }
+        self->m_startCondition.notify_all();
     }
 
     void QemuHostAdapter::LegacyVideoThunk(const void* pixels, int width, int height, int stride, int format, void* opaque)
