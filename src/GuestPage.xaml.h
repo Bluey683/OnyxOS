@@ -12,6 +12,7 @@ namespace OnyxOS
         void SetDisplayStatus(Platform::String^ status, bool hasFrame);
         void SetRendererName(Platform::String^ renderer);
         Windows::UI::Xaml::Controls::SwapChainPanel^ GetQemuSurface();
+        Windows::UI::Xaml::Controls::TextBox^ GetKeyboardSink();
         void SetStopEnabled(bool enabled);
         void EnterFullScreen();
 
