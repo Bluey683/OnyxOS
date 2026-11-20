@@ -69,8 +69,6 @@ namespace vm
             return { false, "O ID da VM deve conter apenas letras, números, hífen ou sublinhado." };
         if (configuration.name.empty())
             return { false, "Informe um nome para a máquina virtual." };
-        if (configuration.isoPath.empty())
-            return { false, "Selecione uma imagem ISO." };
         if (configuration.diskPath.empty())
             return { false, "Informe o caminho do disco virtual." };
         if (!IsSafeMachineType(configuration.machineType))
@@ -83,7 +81,9 @@ namespace vm
             return { false, "A quantidade de CPUs deve estar entre 1 e 64." };
         if (configuration.displayWidth < 640 || configuration.displayWidth > 3840 || configuration.displayHeight < 480 || configuration.displayHeight > 2160 || configuration.displayRefreshHz < 30 || configuration.displayRefreshHz > 120)
             return { false, "A resolução ou taxa de atualização do vídeo é inválida." };
-        return { true, "Perfil validado. ISO e disco VHDX existentes serão enviados à API QEMU UWP." };
+        return { true, configuration.isoPath.empty()
+            ? "Perfil validado. Inicialização pelo disco VHDX."
+            : "Perfil validado. ISO e disco VHDX serão enviados à API QEMU UWP." };
     }
 
     std::vector<std::string> BuildQemuArguments(const VmConfiguration& configuration)
@@ -106,8 +106,15 @@ namespace vm
         add("-smp", std::to_string(configuration.cpuCount));
         add("-display", "none"); // The host renderer presents the guest framebuffer.
         add("-drive", "file=" + configuration.diskPath + ",if=virtio,format=vhdx");
-        add("-cdrom", configuration.isoPath);
-        add("-boot", "order=d,menu=on");
+        if (!configuration.isoPath.empty())
+        {
+            add("-cdrom", configuration.isoPath);
+            add("-boot", "order=d,menu=on");
+        }
+        else
+        {
+            add("-boot", "order=c,menu=on");
+        }
 
         // QEMU UWP host audio backend: route guest HDA output through XAudio2.
         add("-audiodev", "xaudio2,id=audio0");
