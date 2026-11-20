@@ -8,6 +8,7 @@ namespace OnyxOS
     public:
         InstallerPage();
         Windows::UI::Xaml::Controls::Grid^ GetGuestHost();
+        Windows::UI::Xaml::Controls::TextBox^ GetKeyboardSink();
         void SetStatus(Platform::String^ status);
         void SetStopped();
         void EnterFullScreen();
