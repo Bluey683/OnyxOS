@@ -13,6 +13,7 @@ namespace OnyxOS
         void SetRendererName(Platform::String^ renderer);
         Windows::UI::Xaml::Controls::SwapChainPanel^ GetQemuSurface();
         void SetStopEnabled(bool enabled);
+        void EnterFullScreen();
 
         event Windows::Foundation::EventHandler<Platform::Object^>^ StopRequested;
 
