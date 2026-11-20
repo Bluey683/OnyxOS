@@ -5,6 +5,8 @@
 #include <functional>
 #include <thread>
 #include <atomic>
+#include <mutex>
+#include <condition_variable>
 #include <windows.h>
 
 namespace onyx
@@ -67,6 +69,10 @@ namespace vm
         std::thread m_worker;
         std::atomic<bool> m_running{ false };
         std::atomic<bool> m_stopRequested{ false };
+        std::mutex m_startMutex;
+        std::condition_variable m_startCondition;
+        bool m_startComplete{ false };
+        bool m_startSucceeded{ false };
         VideoFrameCallback m_videoCallback;
         bool m_compatible{ false };
         std::uint32_t m_apiVersion{ 0 };
