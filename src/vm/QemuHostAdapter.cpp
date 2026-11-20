@@ -5,6 +5,7 @@
 #include <cstring>
 #include <algorithm>
 #include <thread>
+#include <roapi.h>
 
 namespace onyx::vm
 {
@@ -179,6 +180,25 @@ namespace onyx::vm
 
     void QemuHostAdapter::Run(std::vector<std::string> arguments) noexcept
     {
+        // The upstream UWP host runs qemu_host_init on a WinRT ThreadPool
+        // worker. A plain std::thread has no WinRT apartment; initialize MTA
+        // explicitly before entering QEMU, which may call WinRT/UWP APIs.
+        const HRESULT apartmentResult = RoInitialize(RO_INIT_MULTITHREADED);
+        if (FAILED(apartmentResult))
+        {
+            m_error = L"RoInitialize(MTA) falhou antes do QEMU: HRESULT " +
+                std::to_wstring(static_cast<unsigned long>(apartmentResult));
+            OnyxOS::WriteQemuLogNative(m_error.c_str());
+            {
+                std::lock_guard<std::mutex> lock(m_startMutex);
+                m_startComplete = true;
+                m_startSucceeded = false;
+            }
+            m_startCondition.notify_all();
+            m_running = false;
+            return;
+        }
+        OnyxOS::WriteQemuLogNative(L"WinRT MTA apartment initialized for QEMU worker.");
         // qemu_host_init follows the normal QEMU argv contract: argv[0] is
         // the executable name, followed by the command-line options.
         if (arguments.empty() || arguments.front() != "qemu-system-x86_64")
@@ -229,6 +249,8 @@ namespace onyx::vm
         m_running = false;
         m_startCondition.notify_all();
         OnyxOS::WriteQemuLogNative(L"QEMU main loop stopped.");
+        RoUninitialize();
+        OnyxOS::WriteQemuLogNative(L"WinRT MTA apartment released.");
     }
 
     void QemuHostAdapter::Stop() noexcept
