@@ -45,4 +45,18 @@ namespace OnyxOS
         StopButton->IsEnabled = false;
         StopRequested(this, nullptr);
     }
+
+    void GuestPage::FullScreenButton_Click(Object^, RoutedEventArgs^)
+    {
+        HeaderPanel->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+        FooterPanel->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+        ShowControlsButton->Visibility = Windows::UI::Xaml::Visibility::Visible;
+    }
+
+    void GuestPage::ShowControlsButton_Click(Object^, RoutedEventArgs^)
+    {
+        HeaderPanel->Visibility = Windows::UI::Xaml::Visibility::Visible;
+        FooterPanel->Visibility = Windows::UI::Xaml::Visibility::Visible;
+        ShowControlsButton->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+    }
 }
