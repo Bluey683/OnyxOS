@@ -90,6 +90,13 @@ Invoke-CheckedCommand $makeAppx @('unpack','/p',$finalAppx,'/d',$unpacked,'/o')
 foreach ($file in @((Get-Item -LiteralPath $qemu)) + $runtimeFiles) {
     Copy-Item -LiteralPath $file.FullName -Destination (Join-Path $unpacked $file.Name) -Force
 }
+$firmwareSource = Join-Path $root 'qemu'
+if (!(Test-Path -LiteralPath (Join-Path $firmwareSource 'bios-256k.bin'))) {
+    throw 'QEMU firmware is missing: qemu/bios-256k.bin. The guest cannot boot without the packaged BIOS.'
+}
+$firmwareDestination = Join-Path $unpacked 'qemu'
+New-Item -ItemType Directory -Force -Path $firmwareDestination | Out-Null
+Copy-Item -Path (Join-Path $firmwareSource '*') -Destination $firmwareDestination -Recurse -Force
 
 # Include the HLSL source tracked in GitHub in the final APPX.
 $shaderSource=Join-Path $root 'graphics/shaders/onyxos.hlsl'
