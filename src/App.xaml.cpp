@@ -532,16 +532,22 @@ namespace OnyxOS
                     // itself is not a focusable Control; pointer events are measured in panel pixels.
                     session->input = std::make_shared<onyx::vm::QemuInputBridge>(*session->host);
                     auto inputBridge = session->input;
+                    // Keep keyboard focus on the guest surface so physical USB
+                    // keyboards connected to the Xbox are delivered to CoreWindow.
+                    activeGuestPanel->IsTabStop = true;
+                    activeGuestPanel->Focus(FocusState::Programmatic);
                     auto coreWindow = Window::Current->CoreWindow;
                     coreWindow->KeyDown += ref new Windows::Foundation::TypedEventHandler<Windows::UI::Core::CoreWindow^, Windows::UI::Core::KeyEventArgs^>(
                         [inputBridge](Windows::UI::Core::CoreWindow^, Windows::UI::Core::KeyEventArgs^ args)
                         {
                             inputBridge->SendVirtualKey(static_cast<int>(args->VirtualKey), true);
+                            args->Handled = true;
                         });
                     coreWindow->KeyUp += ref new Windows::Foundation::TypedEventHandler<Windows::UI::Core::CoreWindow^, Windows::UI::Core::KeyEventArgs^>(
                         [inputBridge](Windows::UI::Core::CoreWindow^, Windows::UI::Core::KeyEventArgs^ args)
                         {
                             inputBridge->SendVirtualKey(static_cast<int>(args->VirtualKey), false);
+                            args->Handled = true;
                         });
                     // Use routed XAML pointer events on the guest surface.
                     // Do not run CoreIndependentInputSource::Dispatcher::ProcessEvents
