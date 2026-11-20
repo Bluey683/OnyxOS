@@ -137,5 +137,11 @@ namespace vm
         CloseHandle(file);
         return ok;
     }
+    void ClearInstallationMark(const std::string& profileId)
+    {
+        const auto path = StatePathForProfile(profileId);
+        if (!path.empty()) DeleteFileW(path.c_str());
+    }
+
 }
 }
