@@ -30,8 +30,19 @@ namespace OnyxOS
         RendererLabel->Text = renderer;
     }
 
+    Windows::UI::Xaml::Controls::SwapChainPanel^ GuestPage::GetQemuSurface()
+    {
+        return QemuSurface;
+    }
+
+    void GuestPage::SetStopEnabled(bool enabled)
+    {
+        StopButton->IsEnabled = enabled;
+    }
+
     void GuestPage::StopButton_Click(Object^, RoutedEventArgs^)
     {
-        DisplayStatus->Text = L"O controle de parada ainda não está conectado ao ciclo de vida do QEMU.";
+        StopButton->IsEnabled = false;
+        StopRequested(this, nullptr);
     }
 }
