@@ -100,7 +100,7 @@ namespace vm
 
         add("-name", configuration.name);
         add("-machine", configuration.machineType);
-        add("-accel", "tcg,thread=multi");
+        add("-accel", "tcg,thread=multi,tb-size=128"); // 128 MiB TCG JIT cache; avoids the oversized 208 MiB default on Xbox.
         add("-cpu", configuration.cpuModel);
         add("-m", std::to_string(configuration.memoryMB));
         add("-smp", std::to_string(configuration.cpuCount));
