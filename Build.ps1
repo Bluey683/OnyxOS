@@ -102,21 +102,42 @@ if (Test-Path $rebuiltAppx) { Remove-Item $rebuiltAppx -Force }
 Invoke-CheckedCommand $makeAppx @('pack','/d',$unpacked,'/p',$rebuiltAppx,'/o')
 Move-Item -LiteralPath $rebuiltAppx -Destination $finalAppx -Force
 
-$zip=[IO.Compression.ZipFile]::OpenRead($finalAppx)
+$zip = [IO.Compression.ZipFile]::OpenRead($finalAppx)
 try {
-    $entries=@{}
-    foreach($entry in $zip.Entries) { $entries[$entry.FullName.Replace('/','\\')]=$entry.Length }
-    $qemuEntry=$entries.Keys | Where-Object { $_ -eq 'qemu-system-x86_64.dll' -or $_ -match '\\\\qemu-system-x86_64\\.dll$' } | Select-Object -First 1
-    if (!$entries.ContainsKey('Shaders\\onyxos.hlsl') -or $entries['Shaders\\onyxos.hlsl'] -le 0) { throw 'The final APPX does not contain Shaders/onyxos.hlsl.' }
-    if (!$qemuEntry -or $entries[$qemuEntry] -lt 20000000) { throw 'The final APPX does not contain the complete QEMU host DLL.' }
-    $missing=@()
-    foreach($file in $runtimeFiles) {
-        $found=$entries.Keys | Where-Object { $_ -eq $file.Name -or $_ -match ("\\\\{0}$" -f [regex]::Escape($file.Name)) } | Select-Object -First 1
-        if (!$found -or $entries[$found] -ne $file.Length) { $missing += $file.Name }
+    # ZIP/AppX entry names always use forward slashes.
+    $entries = @{}
+    foreach ($entry in $zip.Entries) {
+        $entries[$entry.FullName] = $entry.Length
     }
-    if ($missing.Count) { throw ('APPX missing runtime DLLs: '+($missing -join ', ')) }
+
+    $qemuEntry = $entries.Keys |
+        Where-Object { $_ -match '(^|/)qemu-system-x86_64\.dll$' } |
+        Select-Object -First 1
+
+    $shaderEntry = 'Shaders/onyxos.hlsl'
+    if (!$entries.ContainsKey($shaderEntry) -or $entries[$shaderEntry] -le 0) {
+        throw "The final APPX does not contain Shaders/onyxos.hlsl."
+    }
+    if (!$qemuEntry -or $entries[$qemuEntry] -lt 20000000) {
+        throw "The final APPX does not contain the complete QEMU host DLL."
+    }
+
+    $missing = @()
+    foreach ($file in $runtimeFiles) {
+        $found = $entries.Keys |
+            Where-Object { $_ -eq $file.Name -or $_ -match ("(^|/){0}$" -f [regex]::Escape($file.Name)) } |
+            Select-Object -First 1
+        if (!$found -or $entries[$found] -ne $file.Length) {
+            $missing += $file.Name
+        }
+    }
+    if ($missing.Count) {
+        throw ("APPX missing runtime DLLs: " + ($missing -join ', '))
+    }
     Write-Host "Verified HLSL, QEMU host and $($runtimeFiles.Count) runtime DLLs inside APPX." -ForegroundColor Green
-} finally { $zip.Dispose() }
+} finally {
+    $zip.Dispose()
+}
 $vclibs=Join-Path $outPath 'Microsoft.VCLibs.x64.14.00.appx'
 $pf86=[Environment]::GetFolderPath('ProgramFilesX86')
 $candidates=@((Join-Path $pf86 'Microsoft SDKs/Windows Kits/10/ExtensionSDKs/Microsoft.VCLibs/14.0/AppX/Retail/x64/Microsoft.VCLibs.x64.14.00.appx'))
