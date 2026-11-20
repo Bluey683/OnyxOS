@@ -545,7 +545,7 @@ namespace OnyxOS
                     concurrency::create_task([session, arguments, onVideoFrame]()
                     {
                         return session->host->Start(arguments, onVideoFrame);
-                    }).then([session, dispatcher, status, launchButton, stopButton, installerPage, guestPage, root, layout](bool started)
+                    }).then([session, dispatcher, status, launchButton, stopButton, installerPage, guestPage, root, layout, mainScroll](bool started)
                     {
                         dispatcher->RunAsync(CoreDispatcherPriority::Normal,
                             ref new DispatchedHandler([session, status, launchButton, stopButton, installerPage, guestPage, root, layout, mainScroll, started]()
