@@ -35,6 +35,11 @@ namespace OnyxOS
         return QemuSurface;
     }
 
+    Windows::UI::Xaml::Controls::TextBox^ GuestPage::GetKeyboardSink()
+    {
+        return KeyboardSink;
+    }
+
     void GuestPage::SetStopEnabled(bool enabled)
     {
         StopButton->IsEnabled = enabled;
