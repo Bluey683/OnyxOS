@@ -372,7 +372,7 @@ namespace OnyxOS
                         (session->profileSelected ? L"true" : L"false") +
                         L"; ISO selected=" + (session->isoSelected ? L"true" : L"false") +
                         L"; VHDX selected=" + (session->diskSelected ? L"true" : L"false") +
-                        L"; profile=" + ref new String(session->config.id.c_str()));
+                        L"; profile=" + ref new String(ToWide(session->config.id).c_str()));
                     const bool alreadyInstalled =
                         onyx::vm::IsInstallationMarkedComplete(session->config.id);
                     if (!session->profileSelected || !session->diskSelected ||
@@ -385,7 +385,7 @@ namespace OnyxOS
                     if (!onyx::vm::IsValidVhdxFile(ToWide(session->config.diskPath)))
                     {
                         status->Text = L"O VHDX não passou na verificação de cabeçalho. A máquina não será iniciada.";
-                        OnyxLogger::Qemu(L"Launch blocked: VHDX validation failed: " + ref new String(session->config.diskPath.c_str()));
+                        OnyxLogger::Qemu(L"Launch blocked: VHDX validation failed: " + ref new String(ToWide(session->config.diskPath).c_str()));
                         return;
                     }
                     if (alreadyInstalled)
@@ -396,7 +396,7 @@ namespace OnyxOS
                     else if (!onyx::vm::IsRecognizedIsoFile(ToWide(session->config.isoPath)))
                     {
                         status->Text = L"A ISO não foi reconhecida. Selecione uma ISO válida antes de instalar.";
-                        OnyxLogger::Qemu(L"Launch blocked: ISO validation failed: " + ref new String(session->config.isoPath.c_str()));
+                        OnyxLogger::Qemu(L"Launch blocked: ISO validation failed: " + ref new String(ToWide(session->config.isoPath).c_str()));
                         return;
                     }
 
