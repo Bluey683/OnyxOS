@@ -83,7 +83,7 @@ namespace vm
             return { false, "A quantidade de CPUs deve estar entre 1 e 64." };
         if (configuration.displayWidth < 640 || configuration.displayWidth > 3840 || configuration.displayHeight < 480 || configuration.displayHeight > 2160 || configuration.displayRefreshHz < 30 || configuration.displayRefreshHz > 120)
             return { false, "A resolução ou taxa de atualização do vídeo é inválida." };
-        return { true, "Perfil validado. A inicialização ainda depende da integração da API QEMU UWP." };
+        return { true, "Perfil validado. ISO e disco VHDX existentes serão enviados à API QEMU UWP." };
     }
 
     std::vector<std::string> BuildQemuArguments(const VmConfiguration& configuration)
