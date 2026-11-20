@@ -45,6 +45,7 @@ namespace vm
         using ShutdownFn = int(*)();
         using JoinFn = int(*)(int*);
         using VideoCallbackFn = void(*)(void*, const void*, int, int, int, int);
+        using LegacyVideoCallbackFn = void(*)(const void*, int, int, int, int, void*);
         using KeyFn = int(*)(int, bool);
         using PointerRelFn = int(*)(int, int);
         using PointerAbsFn = int(*)(int, int, int, int);
@@ -52,6 +53,7 @@ namespace vm
         using WakeFn = void(*)();
 
         static void VideoThunk(void*, const void*, int, int, int, int);
+        static void LegacyVideoThunk(const void*, int, int, int, int, void*);
         void Run(std::vector<std::string> arguments) noexcept;
         HMODULE m_module{ nullptr };
         InitFn m_init{ nullptr };
@@ -59,7 +61,7 @@ namespace vm
         ShutdownFn m_shutdown{ nullptr };
         JoinFn m_join{ nullptr };
         using RegisterVideoFn = void(*)(VideoCallbackFn, void*);
-        using SetVideoFn = void(*)(VideoCallbackFn, void*);
+        using SetVideoFn = void(*)(LegacyVideoCallbackFn, void*);
         RegisterVideoFn m_videoRegister{ nullptr };
         SetVideoFn m_videoSet{ nullptr };
         std::thread m_worker;
