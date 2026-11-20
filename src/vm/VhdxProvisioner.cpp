@@ -87,6 +87,30 @@ namespace vm
         return valid;
     }
 
+    bool IsRecognizedIsoFile(const std::wstring& path)
+    {
+        if (path.empty()) return false;
+        HANDLE file = CreateFileW(path.c_str(), GENERIC_READ,
+            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+            nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+        if (file == INVALID_HANDLE_VALUE) return false;
+        LARGE_INTEGER size = {};
+        bool valid = GetFileSizeEx(file, &size) && size.QuadPart >= 17ll * 2048ll;
+        if (valid)
+        {
+            LARGE_INTEGER position;
+            position.QuadPart = 16ll * 2048ll + 1ll;
+            valid = SetFilePointerEx(file, position, nullptr, FILE_BEGIN);
+            char signature[5] = {};
+            DWORD read = 0;
+            valid = valid && ReadFile(file, signature, 5, &read, nullptr) &&
+                read == 5 && signature[0] == 'C' && signature[1] == 'D' &&
+                signature[2] == '0' && signature[3] == '0' && signature[4] == '1';
+        }
+        CloseHandle(file);
+        return valid;
+    }
+
     bool IsInstallationMarkedComplete(const std::string& profileId)
     {
         const auto path = StatePathForProfile(profileId);
