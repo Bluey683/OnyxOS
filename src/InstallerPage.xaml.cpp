@@ -15,6 +15,11 @@ namespace OnyxOS
         return GuestHost;
     }
 
+    Windows::UI::Xaml::Controls::TextBox^ InstallerPage::GetKeyboardSink()
+    {
+        return KeyboardSink;
+    }
+
     void InstallerPage::SetStatus(String^ status)
     {
         InstallStatus->Text = status;
