@@ -70,7 +70,7 @@ namespace vm
     bool IsValidVhdxFile(const std::wstring& path)
     {
         if (path.empty()) return false;
-        HANDLE file = CreateFileW(path.c_str(), GENERIC_READ,
+        HANDLE file = CreateFile2(path.c_str(), GENERIC_READ,
             FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
             nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
         if (file == INVALID_HANDLE_VALUE) return false;
@@ -90,7 +90,7 @@ namespace vm
     bool IsRecognizedIsoFile(const std::wstring& path)
     {
         if (path.empty()) return false;
-        HANDLE file = CreateFileW(path.c_str(), GENERIC_READ,
+        HANDLE file = CreateFile2(path.c_str(), GENERIC_READ,
             FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
             nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
         if (file == INVALID_HANDLE_VALUE) return false;
@@ -126,7 +126,7 @@ namespace vm
         if (path.empty()) return false;
         CreateDirectoryW(L"C:\\DevelopmentFiles\\OnyxOS", nullptr);
         CreateDirectoryW(L"C:\\DevelopmentFiles\\OnyxOS\\State", nullptr);
-        HANDLE file = CreateFileW(path.c_str(), GENERIC_WRITE, 0, nullptr,
+        HANDLE file = CreateFile2(path.c_str(), GENERIC_WRITE, 0, nullptr,
             CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
         if (file == INVALID_HANDLE_VALUE) return false;
         const char marker[] = "OnyxOS installation confirmed by user.\r\n";
