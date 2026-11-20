@@ -203,7 +203,7 @@ namespace OnyxOS
                                 ? (alreadyInstalled
                                     ? L"\nVHDX encontrado em DevelopmentFiles. Sistema marcado como instalado; iniciará direto pelo disco."
                                     : L"\nVHDX encontrado em DevelopmentFiles. Se ainda não instalou, escolha a ISO.")
-                                : L"\nColoque o VHDX em C:\\DevelopmentFiles\\OnyxOS\\VHDX ou selecione manualmente.");
+                                : L"\nColoque o VHDX em D:\\DevelopmentFiles\\OnyxOS\\VHDX ou selecione manualmente.");
                         status->Text = ref new String(details.c_str());
                         OnyxLogger::App(L"VM profile stored for QEMU launch: " + name);
                     });
@@ -252,10 +252,10 @@ namespace OnyxOS
                                 OnyxLogger::Qemu(L"ISO rejected: ISO9660 primary volume descriptor not found.");
                                 return;
                             }
-                            CreateDirectoryW(L"C:\\DevelopmentFiles", nullptr);
-                            CreateDirectoryW(L"C:\\DevelopmentFiles\\OnyxOS", nullptr);
-                            CreateDirectoryW(L"C:\\DevelopmentFiles\\OnyxOS\\ISO", nullptr);
-                            std::wstring isoName = L"C:\\DevelopmentFiles\\OnyxOS\\ISO\\";
+                            CreateDirectoryW(L"D:\\DevelopmentFiles", nullptr);
+                            CreateDirectoryW(L"D:\\DevelopmentFiles\\OnyxOS", nullptr);
+                            CreateDirectoryW(L"D:\\DevelopmentFiles\\OnyxOS\\ISO", nullptr);
+                            std::wstring isoName = L"D:\\DevelopmentFiles\\OnyxOS\\ISO\\";
                             isoName.append(session->config.id.begin(), session->config.id.end());
                             isoName += L".iso";
                             if (selectedIso != isoName &&
@@ -299,13 +299,13 @@ namespace OnyxOS
                             else if (session->config.id == "arch") targetName = L"ArchLinux.vhdx";
                             else if (session->config.id == "macos") targetName = L"MacOS.vhdx";
 
-                            CreateDirectoryW(L"C:\\DevelopmentFiles", nullptr);
-                            CreateDirectoryW(L"C:\\DevelopmentFiles\\OnyxOS", nullptr);
-                            CreateDirectoryW(L"C:\\DevelopmentFiles\\OnyxOS\\VHDX", nullptr);
+                            CreateDirectoryW(L"D:\\DevelopmentFiles", nullptr);
+                            CreateDirectoryW(L"D:\\DevelopmentFiles\\OnyxOS", nullptr);
+                            CreateDirectoryW(L"D:\\DevelopmentFiles\\OnyxOS\\VHDX", nullptr);
                             std::wstring selectedPath(file->Path->Data());
                             if (!targetName.empty())
                             {
-                                std::wstring destination = L"C:\\DevelopmentFiles\\OnyxOS\\VHDX\\";
+                                std::wstring destination = L"D:\\DevelopmentFiles\\OnyxOS\\VHDX\\";
                                 destination += targetName;
                                 if (selectedPath != destination &&
                                     !CopyFileW(selectedPath.c_str(), destination.c_str(), FALSE))
