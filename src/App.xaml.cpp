@@ -216,7 +216,7 @@ namespace OnyxOS
                             (session->diskSelected
                                 ? (alreadyInstalled
                                     ? L"\nVHDX encontrado em DevelopmentFiles. Sistema marcado como instalado; iniciará direto pelo disco."
-                                    : L"\nVHDX encontrado em DevelopmentFiles. Se ainda não instalou, escolha a ISO.")
+                                    : (session->isoSelected ? L"\nVHDX e ISO encontrados em DevelopmentFiles. A instalação pode iniciar." : L"\nVHDX encontrado em DevelopmentFiles. Coloque a ISO em D:\\DevelopmentFiles\\OnyxOS\\ISO ou selecione manualmente."))
                                 : L"\nColoque o VHDX em D:\\DevelopmentFiles\\OnyxOS\\VHDX ou selecione manualmente.");
                         status->Text = ref new String(details.c_str());
                         OnyxLogger::App(L"VM profile stored for QEMU launch: " + name);
