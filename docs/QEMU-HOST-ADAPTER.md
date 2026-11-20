@@ -1,22 +1,21 @@
 # QEMU Host Adapter
 
-O OnyxOS agora tem uma camada nativa para carregar e fazer preflight da DLL QEMU UWP empacotada.
+O OnyxOS carrega a DLL QEMU UWP x64 empacotada e executa a VM dentro do processo UWP.
 
-## DLL e ABI
+## Inicialização
 
-O alvo esperado é `Dependencies/Qemu/qemu-system-x86_64.dll`, da build UWP x64 do [QEMU-UWP-Host](https://github.com/rodrigoandrigo/QEMU-UWP-Host). A API host documentada pelo projeto upstream usa ABI major 1. A integração verifica os exports de inicialização, loop, controle, entrada e callback de vídeo; se existir, consulta `qemu_host_get_api_version`.
+- Carrega `qemu-system-x86_64.dll` com `LoadPackagedLibrary`.
+- Confere os exports da API QEMU Host e a versão principal da ABI.
+- Executa `qemu_host_init` e o ciclo `qemu_host_main_loop_step` em uma thread de trabalho.
+- Aguarda até 45 segundos pelo primeiro framebuffer real antes de declarar a VM iniciada.
+- Usa `-display host` para o backend de vídeo do QEMU UWP e envia os quadros ao renderer Direct3D 11/HLSL.
+- Executa a inicialização fora da thread da interface para manter a tela responsiva.
+- O argumento `-L qemu` aponta para o diretório de BIOS/firmware incluído no APPX.
 
-## O que já está implementado
+## Arquivos do runtime
 
-- Carregamento por `LoadPackagedLibrary` (DLL dentro do pacote UWP).
-- Verificação dos exports obrigatórios e compatibilidade da API major 1.
-- Mensagem de erro e lista de exports ausentes.
-- Build.ps1 copia a DLL e as dependências runtime/firmware quando as pastas estão presentes.
+`scripts/Fetch-QemuRuntime.ps1` obtém a DLL, as dependências e a pasta de firmware `qemu` do projeto upstream. `Build.ps1` inclui esses arquivos no pacote e valida a presença de `qemu/bios-256k.bin`.
 
-## O que ainda falta
+## Limitações
 
-Esta camada **não inicia uma VM ainda**. A API upstream declara callbacks com layouts específicos; não é seguro inventar protótipos C++ e chamar funções sem copiar os headers da mesma revisão exata da DLL. Ainda faltam ligar init/start/main-loop/shutdown, callbacks de vídeo, XAudio2, teclado, mouse e controle ao Launcher.
-
-## Colocação dos binários
-
-Veja [Dependencies/Qemu/README.md](../Dependencies/Qemu/README.md). Os binários não são incluídos no Git por padrão; devem ser obtidos como um conjunto UWP x64 compatível e conferidos antes da compilação.
+QEMU usa TCG para emular a CPU convidada. Direct3D 11/HLSL apresenta o framebuffer na GPU do Xbox; isso não é passthrough de GPU para o sistema convidado. A compilação e a validação do pacote não substituem o teste de boot no console.
