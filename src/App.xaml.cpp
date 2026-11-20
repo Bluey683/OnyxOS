@@ -394,6 +394,7 @@ namespace OnyxOS
                     }
 
                     InstallerPage^ installerPage = nullptr;
+                    GuestPage^ guestPage = nullptr;
                     SwapChainPanel^ activeGuestPanel = guestPanel;
                     if (!alreadyInstalled)
                     {
@@ -442,6 +443,28 @@ namespace OnyxOS
                                 OnyxLogger::Qemu(L"Installation completion explicitly confirmed; next boot will use VHDX only.");
                             });
                     }
+                    else
+                    {
+                        guestPage = ref new GuestPage();
+                        guestPage->SetGuestProfile(
+                            ref new String(session->config.id.c_str()),
+                            ref new String(session->config.name.c_str()));
+                        guestPage->SetRendererName(L"Direct3D 11 / HLSL");
+                        activeGuestPanel = guestPage->GetQemuSurface();
+                        root->Children->Clear();
+                        root->Children->Append(guestPage);
+                        guestPage->StopRequested += ref new Windows::Foundation::EventHandler<Object^>(
+                            [session, guestPage, root, layout, launchButton, stopButton, status](Object^, Object^)
+                            {
+                                session->host->Stop();
+                                guestPage->SetDisplayStatus(L"Máquina virtual parada.", false);
+                                root->Children->Clear();
+                                root->Children->Append(layout);
+                                launchButton->IsEnabled = true;
+                                stopButton->IsEnabled = false;
+                                status->Text = L"QEMU parado. A próxima inicialização usará o VHDX sem ISO.";
+                            });
+                    }
 
                     session->renderer = std::make_shared<onyx::graphics::QemuD3DRenderer>();
                     std::wstring rendererError;
@@ -450,8 +473,11 @@ namespace OnyxOS
                         status->Text = L"Falha ao inicializar Direct3D/HLSL: " + ref new String(rendererError.c_str());
                         launchButton->IsEnabled = true;
                         if (installerPage)
-                        {
                             installerPage->SetStatus(L"Falha ao iniciar Direct3D/HLSL. Volte ao OnyxOS e verifique o log.");
+                        if (guestPage)
+                        {
+                            root->Children->Clear();
+                            root->Children->Append(layout);
                         }
                         return;
                     }
@@ -461,16 +487,20 @@ namespace OnyxOS
                     auto dispatcher = status->Dispatcher;
                     auto renderer = session->renderer;
                     const bool started = session->host->Start(arguments,
-                        [dispatcher, status, renderer](const std::vector<std::uint32_t>& bgraFrame, int width, int height)
+                        [dispatcher, status, renderer, guestPage](const std::vector<std::uint32_t>& bgraFrame, int width, int height)
                         {
                             dispatcher->RunAsync(CoreDispatcherPriority::Normal,
-                                ref new DispatchedHandler([status, renderer, bgraFrame, width, height]()
+                                ref new DispatchedHandler([status, renderer, guestPage, bgraFrame, width, height]()
                                 {
                                     std::wstring renderError;
                                     if (!renderer->Present(bgraFrame, width, height, renderError))
                                         status->Text = L"Erro no renderer D3D11/HLSL: " + ref new String(renderError.c_str());
                                     else
+                                    {
                                         status->Text = L"Framebuffer apresentado pelo Direct3D 11 com pixel shader HLSL.";
+                                        if (guestPage)
+                                            guestPage->SetDisplayStatus(L"Framebuffer recebido do QEMU e apresentado pelo Direct3D 11 / HLSL.", true);
+                                    }
                                 }));
                         });
 
@@ -481,10 +511,16 @@ namespace OnyxOS
                         launchButton->IsEnabled = true;
                         if (installerPage)
                             installerPage->SetStatus(L"QEMU não iniciou. Verifique o runtime e os logs antes de tentar novamente.");
+                        if (guestPage)
+                        {
+                            root->Children->Clear();
+                            root->Children->Append(layout);
+                        }
                         return;
                     }
 
                     stopButton->IsEnabled = true;
+                    if (guestPage) guestPage->SetStopEnabled(true);
                     if (installerPage) session->installerVmStarted = true;
                     status->Text = L"QEMU solicitado. Aguardando inicialização e framebuffer...";
                     OnyxLogger::Qemu(L"QEMU worker thread started; awaiting guest initialization.");
