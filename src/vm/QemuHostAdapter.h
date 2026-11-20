@@ -44,8 +44,6 @@ namespace vm
         using MainLoopStepFn = int(*)(bool, int*);
         using ShutdownFn = int(*)();
         using JoinFn = int(*)(int*);
-        using VideoUpdateCallbackFn = void(*)(void*, const void*, int, int, int, int, int, int, int, int);
-        using RegisterVideoUpdateFn = void(*)(VideoUpdateCallbackFn, void*);
         using VideoCallbackFn = void(*)(void*, const void*, int, int, int, int);
         using KeyFn = int(*)(int, bool);
         using PointerRelFn = int(*)(int, int);
@@ -53,7 +51,6 @@ namespace vm
         using PointerButtonFn = int(*)(int, bool);
         using WakeFn = void(*)();
 
-        static void VideoUpdateThunk(void*, const void*, int, int, int, int, int, int, int, int);
         static void VideoThunk(void*, const void*, int, int, int, int);
         void Run(std::vector<std::string> arguments) noexcept;
         HMODULE m_module{ nullptr };
@@ -61,9 +58,10 @@ namespace vm
         MainLoopStepFn m_step{ nullptr };
         ShutdownFn m_shutdown{ nullptr };
         JoinFn m_join{ nullptr };
-        RegisterVideoUpdateFn m_videoUpdateRegister{ nullptr };
         using RegisterVideoFn = void(*)(VideoCallbackFn, void*);
+        using SetVideoFn = void(*)(VideoCallbackFn, void*);
         RegisterVideoFn m_videoRegister{ nullptr };
+        SetVideoFn m_videoSet{ nullptr };
         std::thread m_worker;
         std::atomic<bool> m_running{ false };
         std::atomic<bool> m_stopRequested{ false };
