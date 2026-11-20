@@ -56,7 +56,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
-      <AdditionalDependencies>windowsapp.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3d11.lib;dxgi.lib;d3dcompiler.lib;windowsapp.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
@@ -75,6 +75,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="src\\vm\\VirtualMachine.cpp"><CompileAsWinRT>false</CompileAsWinRT><LanguageStandard>stdcpp20</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
+    <ClCompile Include="src\\graphics\\QemuD3DRenderer.cpp"><CompileAsWinRT>true</CompileAsWinRT><LanguageStandard>stdcpp14</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
     <ClCompile Include="src\\vm\\QemuHostAdapter.cpp"><CompileAsWinRT>false</CompileAsWinRT><LanguageStandard>stdcpp20</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
     <ClCompile Include="src\\vm\\QemuInputBridge.cpp"><CompileAsWinRT>false</CompileAsWinRT><LanguageStandard>stdcpp20</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
     <ClCompile Include="src\\vm\\VhdxProvisioner.cpp"><CompileAsWinRT>false</CompileAsWinRT><LanguageStandard>stdcpp20</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
