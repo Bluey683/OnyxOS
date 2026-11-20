@@ -37,6 +37,7 @@ namespace
         bool isoSelected{ false };
         bool diskSelected{ false };
         bool qemuStoppedForInstaller{ false };
+        bool installerVmStarted{ false };
     };
 
     std::string ToUtf8(const std::wstring& value)
@@ -402,9 +403,15 @@ namespace OnyxOS
                         root->Children->Clear();
                         root->Children->Append(installerPage);
                         session->qemuStoppedForInstaller = false;
+                        session->installerVmStarted = false;
                         installerPage->StopRequested += ref new Windows::Foundation::EventHandler<Object^>(
                             [session, installerPage](Object^, Object^)
                             {
+                                if (!session->installerVmStarted)
+                                {
+                                    installerPage->SetStatus(L"QEMU ainda não iniciou. Não é possível concluir a instalação.");
+                                    return;
+                                }
                                 session->host->Stop();
                                 session->qemuStoppedForInstaller = true;
                                 installerPage->SetStopped();
@@ -412,9 +419,9 @@ namespace OnyxOS
                         installerPage->FinishRequested += ref new Windows::Foundation::EventHandler<Object^>(
                             [session, installerPage, root, layout, guestPanel, launchButton](Object^, Object^)
                             {
-                                if (!session->qemuStoppedForInstaller)
+                                if (!session->qemuStoppedForInstaller || !session->installerVmStarted)
                                 {
-                                    installerPage->SetStatus(L"Pare o QEMU depois de concluir e desligar o sistema.");
+                                    installerPage->SetStatus(L"Execute o instalador, desligue a máquina e depois pare o QEMU antes de confirmar.");
                                     return;
                                 }
                                 if (!onyx::vm::MarkInstallationComplete(session->config.id))
@@ -425,6 +432,7 @@ namespace OnyxOS
                                 session->config.isoPath.clear();
                                 session->isoSelected = false;
                                 session->qemuStoppedForInstaller = false;
+                                session->installerVmStarted = false;
                                 installerPage->GetGuestHost()->Children->Remove(guestPanel);
                                 layout->Children->Append(guestPanel);
                                 root->Children->Clear();
@@ -477,6 +485,7 @@ namespace OnyxOS
                     }
 
                     stopButton->IsEnabled = true;
+                    if (installerPage) session->installerVmStarted = true;
                     status->Text = L"QEMU solicitado. Aguardando inicialização e framebuffer...";
                     OnyxLogger::Qemu(L"QEMU worker thread started; awaiting guest initialization.");
                 });
