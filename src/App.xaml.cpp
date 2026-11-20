@@ -571,9 +571,10 @@ namespace OnyxOS
                             activeGuestPanel->CapturePointer(args->Pointer);
                         });
                     activeGuestPanel->PointerReleased += ref new Windows::UI::Xaml::Input::PointerEventHandler(
-                        [inputBridge](Object^, Windows::UI::Xaml::Input::PointerRoutedEventArgs^ args)
+                        [inputBridge, activeGuestPanel](Object^, Windows::UI::Xaml::Input::PointerRoutedEventArgs^ args)
                         {
-                            auto properties = args->GetCurrentPoint()->Properties;
+                            auto point = args->GetCurrentPoint(activeGuestPanel);
+                            auto properties = point->Properties;
                             inputBridge->SendPointerButton(0, properties->IsLeftButtonPressed);
                             inputBridge->SendPointerButton(1, properties->IsMiddleButtonPressed);
                             inputBridge->SendPointerButton(2, properties->IsRightButtonPressed);
