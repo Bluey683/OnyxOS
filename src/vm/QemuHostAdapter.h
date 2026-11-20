@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <deque>
 #include <functional>
 #include <thread>
 #include <atomic>
@@ -62,6 +63,10 @@ namespace vm
         static void LogThunkV2(void*, int, const char*);
         static void LogThunkLegacy(int, const char*, void*);
         static void LegacyVideoThunk(const void*, int, int, int, int, void*);
+        enum class InputEventType { KeyNumber, KeyQcode, PointerRelative, PointerAbsolute, PointerButton };
+        struct InputEvent { InputEventType type; int a{0}, b{0}, c{0}, d{0}; bool down{false}; };
+        bool QueueInput(const InputEvent& event) const noexcept;
+        void ProcessPendingInput() noexcept;
         void Run(std::vector<std::string> arguments) noexcept;
         HMODULE m_module{ nullptr };
         InitFn m_init{ nullptr };
@@ -92,6 +97,8 @@ namespace vm
         PointerAbsFn m_pointerAbs{ nullptr };
         PointerButtonFn m_pointerButton{ nullptr };
         WakeFn m_wake{ nullptr };
+        mutable std::mutex m_inputMutex;
+        mutable std::deque<InputEvent> m_inputQueue;
     };
 }
 
