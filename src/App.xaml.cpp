@@ -518,6 +518,10 @@ namespace OnyxOS
                         launchButton->IsEnabled = true;
                         return;
                     }
+                    // Enter immersive guest display automatically as soon as the VM page is shown.
+                    // The small "Mostrar controles" button remains available to restore the toolbar.
+                    if (installerPage) installerPage->EnterFullScreen();
+                    if (guestPage) guestPage->EnterFullScreen();
                     activeGuestPanel->Visibility = Visibility::Visible;
                     auto arguments = onyx::vm::BuildQemuArguments(session->config);
                     arguments.insert(arguments.begin(), "qemu-system-x86_64");
