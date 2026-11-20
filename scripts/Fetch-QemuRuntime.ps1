@@ -33,6 +33,8 @@ try {
 
     $sourceQemu = Join-Path $sourceRoot.FullName 'Dependencies/Qemu'
     $sourceRuntime = Join-Path $sourceRoot.FullName 'Dependencies/Runtime'
+    $sourceFirmware = Join-Path $sourceRoot.FullName 'qemu'
+    $firmwareDirectory = Join-Path $RepositoryRoot 'qemu'
     $mainDll = Join-Path $sourceQemu 'qemu-system-x86_64.dll'
     if (-not (Test-Path -LiteralPath $mainDll -PathType Leaf)) {
         throw "A DLL qemu-system-x86_64.dll não foi encontrada em $sourceQemu"
@@ -40,7 +42,8 @@ try {
 
     foreach ($sourceDirectory in @(
         @{ Source = $sourceQemu; Destination = $qemuDirectory },
-        @{ Source = $sourceRuntime; Destination = $runtimeDirectory }
+        @{ Source = $sourceRuntime; Destination = $runtimeDirectory },
+        @{ Source = $sourceFirmware; Destination = $firmwareDirectory }
     )) {
         if (-not (Test-Path -LiteralPath $sourceDirectory.Source -PathType Container)) {
             if ($sourceDirectory.Source -eq $sourceRuntime) {
