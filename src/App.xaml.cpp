@@ -494,7 +494,7 @@ namespace OnyxOS
                                 session->host->Stop();
                                 guestPage->SetDisplayStatus(L"Máquina virtual parada.", false);
                                 root->Children->Clear();
-                                root->Children->Append(layout);
+                                root->Children->Append(mainScroll);
                                 launchButton->IsEnabled = true;
                                 stopButton->IsEnabled = false;
                                 status->Text = L"QEMU parado. A próxima inicialização usará o VHDX sem ISO.";
@@ -514,7 +514,7 @@ namespace OnyxOS
                             session->qemuStoppedForInstaller = false;
                         }
                         root->Children->Clear();
-                        root->Children->Append(layout);
+                        root->Children->Append(mainScroll);
                         launchButton->IsEnabled = true;
                         return;
                     }
@@ -562,7 +562,7 @@ namespace OnyxOS
                                         session->qemuStoppedForInstaller = false;
                                     }
                                     root->Children->Clear();
-                                    root->Children->Append(layout);
+                                    root->Children->Append(mainScroll);
                                     return;
                                 }
 
@@ -600,7 +600,8 @@ namespace OnyxOS
             footer->Foreground = ref new SolidColorBrush(ColorHelper::FromArgb(255, 101, 117, 138));
             layout->Children->Append(footer);
 
-            root->Children->Append(layout);
+            mainScroll->Content = layout;
+            root->Children->Append(mainScroll);
             window->Content = root;
             window->Activate();
             OnyxLogger::App(L"Native launcher UI activated; profile, ISO/VHDX pickers and QEMU controls wired.");
