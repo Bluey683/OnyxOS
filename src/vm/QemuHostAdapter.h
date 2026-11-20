@@ -42,7 +42,8 @@ namespace onyx::vm
         using MainLoopStepFn = int(*)(bool, int*);
         using ShutdownFn = int(*)();
         using JoinFn = int(*)(int*);
-        using VideoUpdateCallbackFn = void(*)(void*, const void*, int, int, int, int, int, int, int, int);\n        using RegisterVideoUpdateFn = void(*)(VideoUpdateCallbackFn, void*);
+        using VideoUpdateCallbackFn = void(*)(void*, const void*, int, int, int, int, int, int, int, int);
+        using RegisterVideoUpdateFn = void(*)(VideoUpdateCallbackFn, void*);
         using VideoCallbackFn = void(*)(void*, const void*, int, int, int, int);
         using KeyFn = int(*)(int, bool);
         using PointerRelFn = int(*)(int, int);
