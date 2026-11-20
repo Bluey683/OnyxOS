@@ -86,7 +86,14 @@ namespace OnyxOS
     }
 
     void OnyxLogger::App(String^ message) { Write(L"App.txt", L"APP", message); }
-    void OnyxLogger::Qemu(String^ message) { Write(L"QEMU.txt", L"QEMU", message); }
+    void OnyxLogger::Qemu(String^ message)
+    {
+        // Keep a dedicated QEMU log and mirror the same diagnostic into App.txt.
+        // This makes launch/validation failures visible even in file viewers that
+        // only expose the primary application log.
+        Write(L"QEMU.txt", L"QEMU", message);
+        Write(L"App.txt", L"QEMU", message);
+    }
 
     void WriteQemuLogNative(const wchar_t* message)
     {
