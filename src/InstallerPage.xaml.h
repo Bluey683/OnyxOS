@@ -10,6 +10,7 @@ namespace OnyxOS
         Windows::UI::Xaml::Controls::Grid^ GetGuestHost();
         void SetStatus(Platform::String^ status);
         void SetStopped();
+        void EnterFullScreen();
 
         event Windows::Foundation::EventHandler<Platform::Object^>^ StopRequested;
         event Windows::Foundation::EventHandler<Platform::Object^>^ FinishRequested;
