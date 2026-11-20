@@ -277,13 +277,13 @@ namespace OnyxOS
                             else if (session->config.id == "arch") targetName = L"ArchLinux.vhdx";
                             else if (session->config.id == "macos") targetName = L"MacOS.vhdx";
 
-                            CreateDirectoryW(L"C:\\\\DevelopmentFiles", nullptr);
-                            CreateDirectoryW(L"C:\\\\DevelopmentFiles\\\\OnyxOS", nullptr);
-                            CreateDirectoryW(L"C:\\\\DevelopmentFiles\\\\OnyxOS\\\\VHDX", nullptr);
+                            CreateDirectoryW(L"C:\\DevelopmentFiles", nullptr);
+                            CreateDirectoryW(L"C:\\DevelopmentFiles\\\\OnyxOS", nullptr);
+                            CreateDirectoryW(L"C:\\DevelopmentFiles\\\\OnyxOS\\\\VHDX", nullptr);
                             std::wstring selectedPath(file->Path->Data());
                             if (!targetName.empty())
                             {
-                                std::wstring destination = L"C:\\\\DevelopmentFiles\\\\OnyxOS\\\\VHDX\\\\";
+                                std::wstring destination = L"C:\\DevelopmentFiles\\\\OnyxOS\\\\VHDX\\";
                                 destination += targetName;
                                 if (CopyFileW(selectedPath.c_str(), destination.c_str(), FALSE))
                                     selectedPath = destination;
