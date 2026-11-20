@@ -73,6 +73,7 @@ namespace vm
         std::condition_variable m_startCondition;
         bool m_startComplete{ false };
         bool m_startSucceeded{ false };
+        bool m_firstFrameReceived{ false };
         VideoFrameCallback m_videoCallback;
         bool m_compatible{ false };
         std::uint32_t m_apiVersion{ 0 };
