@@ -128,6 +128,9 @@ try {
     if (!$qemuEntry -or $entries[$qemuEntry] -lt 20000000) {
         throw "The final APPX does not contain the complete QEMU host DLL."
     }
+    if (!$entries.ContainsKey('qemu/bios-256k.bin') -or $entries['qemu/bios-256k.bin'] -le 0) {
+        throw "The final APPX does not contain qemu/bios-256k.bin; QEMU has no packaged x86 BIOS."
+    }
 
     $missing = @()
     foreach ($file in $runtimeFiles) {
