@@ -490,12 +490,14 @@ namespace OnyxOS
                         status->Text = L"Falha ao inicializar Direct3D/HLSL: " + ref new String(rendererError.c_str());
                         launchButton->IsEnabled = true;
                         if (installerPage)
-                            installerPage->SetStatus(L"Falha ao iniciar Direct3D/HLSL. Volte ao OnyxOS e verifique o log.");
-                        if (guestPage)
                         {
-                            root->Children->Clear();
-                            root->Children->Append(layout);
+                            installerPage->SetStatus(L"Falha ao iniciar Direct3D/HLSL. Voltando ao OnyxOS.");
+                            session->installerVmStarted = false;
+                            session->qemuStoppedForInstaller = false;
                         }
+                        root->Children->Clear();
+                        root->Children->Append(layout);
+                        launchButton->IsEnabled = true;
                         return;
                     }
                     activeGuestPanel->Visibility = Visibility::Visible;
@@ -523,16 +525,17 @@ namespace OnyxOS
 
                     if (!started)
                     {
-                        status->Text = L"Não foi possível iniciar a thread QEMU: " +
+                        status->Text = L"QEMU não inicializou: " +
                             ref new String(session->host->Error().c_str());
                         launchButton->IsEnabled = true;
                         if (installerPage)
-                            installerPage->SetStatus(L"QEMU não iniciou. Verifique o runtime e os logs antes de tentar novamente.");
-                        if (guestPage)
                         {
-                            root->Children->Clear();
-                            root->Children->Append(layout);
+                            installerPage->SetStatus(L"QEMU não iniciou. Voltando ao OnyxOS; consulte o log para ver o motivo.");
+                            session->installerVmStarted = false;
+                            session->qemuStoppedForInstaller = false;
                         }
+                        root->Children->Clear();
+                        root->Children->Append(layout);
                         return;
                     }
 
