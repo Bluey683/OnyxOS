@@ -374,7 +374,7 @@ namespace OnyxOS
             layout->Children->Append(actions);
 
             launchButton->Click += ref new RoutedEventHandler(
-                [session, status, launchButton, stopButton, guestPanel, root, layout](Object^, RoutedEventArgs^)
+                [session, status, launchButton, stopButton, guestPanel, root, layout, mainScroll](Object^, RoutedEventArgs^)
                 {
                     OnyxLogger::Qemu(L"Launch button clicked. Profile selected=" +
                         (session->profileSelected ? L"true" : L"false") +
@@ -456,7 +456,7 @@ namespace OnyxOS
                                 installerPage->SetStopped();
                             });
                         installerPage->FinishRequested += ref new Windows::Foundation::EventHandler<Object^>(
-                            [session, installerPage, root, layout, launchButton](Object^, Object^)
+                            [session, installerPage, root, layout, launchButton, mainScroll](Object^, Object^)
                             {
                                 if (!session->qemuStoppedForInstaller || !session->installerVmStarted)
                                 {
@@ -489,7 +489,7 @@ namespace OnyxOS
                         root->Children->Clear();
                         root->Children->Append(guestPage);
                         guestPage->StopRequested += ref new Windows::Foundation::EventHandler<Object^>(
-                            [session, guestPage, root, layout, launchButton, stopButton, status](Object^, Object^)
+                            [session, guestPage, root, layout, launchButton, stopButton, status, mainScroll](Object^, Object^)
                             {
                                 session->host->Stop();
                                 guestPage->SetDisplayStatus(L"Máquina virtual parada.", false);
@@ -548,7 +548,7 @@ namespace OnyxOS
                     }).then([session, dispatcher, status, launchButton, stopButton, installerPage, guestPage, root, layout](bool started)
                     {
                         dispatcher->RunAsync(CoreDispatcherPriority::Normal,
-                            ref new DispatchedHandler([session, status, launchButton, stopButton, installerPage, guestPage, root, layout, started]()
+                            ref new DispatchedHandler([session, status, launchButton, stopButton, installerPage, guestPage, root, layout, mainScroll, started]()
                             {
                                 if (!started)
                                 {
