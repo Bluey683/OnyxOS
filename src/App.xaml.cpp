@@ -88,6 +88,7 @@ namespace OnyxOS
         Windows::ApplicationModel::Activation::LaunchActivatedEventArgs^)
     {
         OnyxLogger::App(L"OnLaunched entered; building native C++ launcher UI.");
+        OnyxLogger::Qemu(L"QEMU diagnostic log initialized. Waiting for VM launch request.");
         try
         {
             auto window = Window::Current;
