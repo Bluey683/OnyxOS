@@ -90,6 +90,13 @@ Invoke-CheckedCommand $makeAppx @('unpack','/p',$finalAppx,'/d',$unpacked,'/o')
 foreach ($file in @((Get-Item -LiteralPath $qemu)) + $runtimeFiles) {
     Copy-Item -LiteralPath $file.FullName -Destination (Join-Path $unpacked $file.Name) -Force
 }
+
+# Include the HLSL source tracked in GitHub in the final APPX.
+$shaderSource=Join-Path $root 'graphics/shaders/onyxos.hlsl'
+if (!(Test-Path -LiteralPath $shaderSource)) { throw "HLSL shader source missing: $shaderSource" }
+$shaderPackageDir=Join-Path $unpacked 'Shaders'
+New-Item -ItemType Directory -Force -Path $shaderPackageDir | Out-Null
+Copy-Item -LiteralPath $shaderSource -Destination (Join-Path $shaderPackageDir 'onyxos.hlsl') -Force
 $rebuiltAppx=Join-Path $outPath 'OnyxOS-x64-repacked.appx'
 if (Test-Path $rebuiltAppx) { Remove-Item $rebuiltAppx -Force }
 Invoke-CheckedCommand $makeAppx @('pack','/d',$unpacked,'/p',$rebuiltAppx,'/o')
@@ -99,7 +106,29 @@ $zip=[IO.Compression.ZipFile]::OpenRead($finalAppx)
 try {
     $entries=@{}
     foreach($entry in $zip.Entries) { $entries[$entry.FullName.Replace('/','\')]=$entry.Length }
-    $qemuEntry=$entries.Keys | Where-Object { $_ -eq 'qemu-system-x86_64.dll' -or $_ -match '\\qemu-system-x86_64\.dll$' } | Select-Object -First 1
+    $qemuEntry=$entries.Keys | Where-Object { $_ -eq 'qemu-system-x86_64.dll' -or $_ -match '\\qemu-system-x86_64\.dll    if (!$qemuEntry -or $entries[$qemuEntry] -lt 20000000) { throw 'The final APPX does not contain the complete QEMU host DLL.' }
+    $missing=@()
+    foreach($file in $runtimeFiles) {
+        $found=$entries.Keys | Where-Object { $_ -eq $file.Name -or $_ -match ("\\{0}$" -f [regex]::Escape($file.Name)) } | Select-Object -First 1
+        if (!$found -or $entries[$found] -ne $file.Length) { $missing += $file.Name }
+    }
+    if ($missing.Count) { throw ('APPX missing runtime DLLs: '+($missing -join ', ')) }
+    Write-Host "Verified QEMU host and $($runtimeFiles.Count) runtime DLLs inside APPX." -ForegroundColor Green
+} finally { $zip.Dispose() }
+$vclibs=Join-Path $outPath 'Microsoft.VCLibs.x64.14.00.appx'
+$pf86=[Environment]::GetFolderPath('ProgramFilesX86')
+$candidates=@((Join-Path $pf86 'Microsoft SDKs/Windows Kits/10/ExtensionSDKs/Microsoft.VCLibs/14.0/AppX/Retail/x64/Microsoft.VCLibs.x64.14.00.appx'))
+if ($env:WindowsSdkDir) { $candidates += Join-Path $env:WindowsSdkDir 'ExtensionSDKs/Microsoft.VCLibs/14.0/AppX/Retail/x64/Microsoft.VCLibs.x64.14.00.appx' }
+$candidates=$candidates | Where-Object { $_ -and (Test-Path $_) }
+$source=$candidates | Select-Object -First 1
+if ($source) { Copy-Item $source $vclibs -Force }
+else { Invoke-WebRequest -Uri 'https://aka.ms/Microsoft.VCLibs.x64.14.00.appx' -OutFile $vclibs -UseBasicParsing }
+if (!(Test-Path $vclibs) -or (Get-Item $vclibs).Length -lt 100000) { throw 'Microsoft VCLibs x64 package missing or invalid.' }
+Write-Host "APPX: $finalAppx" -ForegroundColor Green
+Write-Host "VCLibs: $vclibs" -ForegroundColor Green
+Write-Warning 'Packaging validation is not a runtime test. QEMU boot, D3D guest-frame rendering, audio, networking and VHDX provisioning must be tested on the Xbox.'
+ } | Select-Object -First 1
+    if (!$entries.ContainsKey('Shaders\\onyxos.hlsl') -or $entries['Shaders\\onyxos.hlsl'] -le 0) { throw 'The final APPX does not contain Shaders/onyxos.hlsl.' }
     if (!$qemuEntry -or $entries[$qemuEntry] -lt 20000000) { throw 'The final APPX does not contain the complete QEMU host DLL.' }
     $missing=@()
     foreach($file in $runtimeFiles) {
