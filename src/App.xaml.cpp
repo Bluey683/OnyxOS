@@ -270,7 +270,7 @@ namespace OnyxOS
                             }
                             CreateDirectoryFromAppW(L"D:\\DevelopmentFiles", nullptr);
                             CreateDirectoryFromAppW(L"D:\\DevelopmentFiles\\OnyxOS", nullptr);
-                            CreateDirectoryW(L"D:\\DevelopmentFiles\\OnyxOS\\ISO", nullptr);
+                            CreateDirectoryFromAppW(L"D:\\DevelopmentFiles\\OnyxOS\\ISO", nullptr);
                             std::wstring isoName = L"D:\\DevelopmentFiles\\OnyxOS\\ISO\\";
                             isoName.append(session->config.id.begin(), session->config.id.end());
                             isoName += L".iso";
@@ -315,9 +315,9 @@ namespace OnyxOS
                             else if (session->config.id == "arch") targetName = L"ArchLinux.vhdx";
                             else if (session->config.id == "macos") targetName = L"MacOS.vhdx";
 
-                            CreateDirectoryW(L"D:\\DevelopmentFiles", nullptr);
-                            CreateDirectoryW(L"D:\\DevelopmentFiles\\OnyxOS", nullptr);
-                            CreateDirectoryW(L"D:\\DevelopmentFiles\\OnyxOS\\VHDX", nullptr);
+                            CreateDirectoryFromAppW(L"D:\\DevelopmentFiles", nullptr);
+                            CreateDirectoryFromAppW(L"D:\\DevelopmentFiles\\OnyxOS", nullptr);
+                            CreateDirectoryFromAppW(L"D:\\DevelopmentFiles\\OnyxOS\\VHDX", nullptr);
                             std::wstring selectedPath(file->Path->Data());
                             if (!targetName.empty())
                             {
