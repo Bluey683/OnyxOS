@@ -4,6 +4,7 @@
 #include "vm/QemuHostAdapter.h"
 #include "vm/VhdxProvisioner.h"
 #include "InstallerPage.xaml.h"
+#include "GuestPage.xaml.h"
 #include "graphics/QemuD3DRenderer.h"
 
 #include <memory>
@@ -447,8 +448,8 @@ namespace OnyxOS
                     {
                         guestPage = ref new GuestPage();
                         guestPage->SetGuestProfile(
-                            ref new String(session->config.id.c_str()),
-                            ref new String(session->config.name.c_str()));
+                            ref new String(ToWide(session->config.id).c_str()),
+                            ref new String(ToWide(session->config.name).c_str()));
                         guestPage->SetRendererName(L"Direct3D 11 / HLSL");
                         activeGuestPanel = guestPage->GetQemuSurface();
                         root->Children->Clear();
