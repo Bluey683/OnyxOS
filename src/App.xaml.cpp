@@ -263,13 +263,13 @@ namespace OnyxOS
                                 session->isoSelected = false;
                                 session->config.isoPath.clear();
                                 const DWORD error = GetLastError();
-                                status->Text = L"ISO inacessível ou inválida (erro " + error +
-                                    L"). O Xbox não conseguiu ler o cabeçalho ISO9660.";
+                                status->Text = ref new String((L"ISO inacessível ou inválida (erro " + std::to_wstring(error) +
+                                    L"). O Xbox não conseguiu ler o cabeçalho ISO9660.").c_str());
                                 OnyxLogger::Qemu(L"ISO rejected or inaccessible through UWP file APIs.");
                                 return;
                             }
                             CreateDirectoryFromAppW(L"D:\\DevelopmentFiles", nullptr);
-                            CreateDirectoryW(L"D:\\DevelopmentFiles\\OnyxOS", nullptr);
+                            CreateDirectoryFromAppW(L"D:\\DevelopmentFiles\\OnyxOS", nullptr);
                             CreateDirectoryW(L"D:\\DevelopmentFiles\\OnyxOS\\ISO", nullptr);
                             std::wstring isoName = L"D:\\DevelopmentFiles\\OnyxOS\\ISO\\";
                             isoName.append(session->config.id.begin(), session->config.id.end());
@@ -324,7 +324,7 @@ namespace OnyxOS
                                 std::wstring destination = L"D:\\DevelopmentFiles\\OnyxOS\\VHDX\\";
                                 destination += targetName;
                                 if (selectedPath != destination &&
-                                    !CopyFileW(selectedPath.c_str(), destination.c_str(), FALSE))
+                                    !CopyFileFromAppW(selectedPath.c_str(), destination.c_str(), FALSE))
                                 {
                                     session->diskSelected = false;
                                     status->Text = L"Não foi possível copiar o VHDX para DevelopmentFiles. Verifique o acesso do Xbox Dev Mode à pasta.";
