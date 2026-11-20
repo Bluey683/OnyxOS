@@ -543,16 +543,14 @@ namespace OnyxOS
                         {
                             inputBridge->SendVirtualKey(static_cast<int>(args->VirtualKey), false);
                         });
-                    // SwapChainPanel input is captured through CoreIndependentInputSource.
-                    // This is the UWP path used by the upstream QEMU host; routed XAML
-                    // pointer events are unreliable over a native composition surface.
-                    session->pointerInput = activeGuestPanel->CreateCoreIndependentInputSource(
-                        CoreInputDeviceTypes::Mouse | CoreInputDeviceTypes::Touch | CoreInputDeviceTypes::Pen);
-                    auto pointerInput = session->pointerInput;
-                    pointerInput->PointerMoved += ref new Windows::Foundation::TypedEventHandler<Object^, Windows::UI::Core::PointerEventArgs^>(
-                        [inputBridge, activeGuestPanel](Object^, Windows::UI::Core::PointerEventArgs^ args)
+                    // Use routed XAML pointer events on the guest surface.
+                    // Do not run CoreIndependentInputSource::Dispatcher::ProcessEvents
+                    // from a ThreadPool task: its dispatcher belongs to the UI thread,
+                    // and pumping it from another thread can terminate the app at launch.
+                    activeGuestPanel->PointerMoved += ref new PointerEventHandler(
+                        [inputBridge, activeGuestPanel](Object^, PointerRoutedEventArgs^ args)
                         {
-                            auto point = args->CurrentPoint;
+                            auto point = args->GetCurrentPoint(activeGuestPanel);
                             auto properties = point->Properties;
                             inputBridge->SendPointerPosition(point->Position.X, point->Position.Y,
                                 activeGuestPanel->ActualWidth, activeGuestPanel->ActualHeight);
@@ -560,39 +558,33 @@ namespace OnyxOS
                             inputBridge->SendPointerButton(1, properties->IsMiddleButtonPressed);
                             inputBridge->SendPointerButton(2, properties->IsRightButtonPressed);
                         });
-                    pointerInput->PointerPressed += ref new Windows::Foundation::TypedEventHandler<Object^, Windows::UI::Core::PointerEventArgs^>(
-                        [inputBridge, activeGuestPanel](Object^, Windows::UI::Core::PointerEventArgs^ args)
+                    activeGuestPanel->PointerPressed += ref new PointerEventHandler(
+                        [inputBridge, activeGuestPanel](Object^, PointerRoutedEventArgs^ args)
                         {
-                            auto point = args->CurrentPoint;
+                            auto point = args->GetCurrentPoint(activeGuestPanel);
                             auto properties = point->Properties;
                             inputBridge->SendPointerPosition(point->Position.X, point->Position.Y,
                                 activeGuestPanel->ActualWidth, activeGuestPanel->ActualHeight);
                             inputBridge->SendPointerButton(0, properties->IsLeftButtonPressed);
                             inputBridge->SendPointerButton(1, properties->IsMiddleButtonPressed);
                             inputBridge->SendPointerButton(2, properties->IsRightButtonPressed);
+                            activeGuestPanel->CapturePointer(args->Pointer);
                         });
-                    pointerInput->PointerReleased += ref new Windows::Foundation::TypedEventHandler<Object^, Windows::UI::Core::PointerEventArgs^>(
-                        [inputBridge, activeGuestPanel](Object^, Windows::UI::Core::PointerEventArgs^ args)
+                    activeGuestPanel->PointerReleased += ref new PointerEventHandler(
+                        [inputBridge](Object^, PointerRoutedEventArgs^ args)
                         {
-                            auto point = args->CurrentPoint;
-                            auto properties = point->Properties;
-                            inputBridge->SendPointerPosition(point->Position.X, point->Position.Y,
-                                activeGuestPanel->ActualWidth, activeGuestPanel->ActualHeight);
+                            auto properties = args->GetCurrentPoint()->Properties;
                             inputBridge->SendPointerButton(0, properties->IsLeftButtonPressed);
                             inputBridge->SendPointerButton(1, properties->IsMiddleButtonPressed);
                             inputBridge->SendPointerButton(2, properties->IsRightButtonPressed);
                         });
-                    pointerInput->PointerCaptureLost += ref new Windows::Foundation::TypedEventHandler<Object^, Windows::UI::Core::PointerEventArgs^>(
-                        [inputBridge](Object^, Windows::UI::Core::PointerEventArgs^)
+                    activeGuestPanel->PointerCaptureLost += ref new PointerEventHandler(
+                        [inputBridge](Object^, PointerRoutedEventArgs^)
                         {
                             inputBridge->SendPointerButton(0, false);
                             inputBridge->SendPointerButton(1, false);
                             inputBridge->SendPointerButton(2, false);
                         });
-                    Concurrency::create_task([pointerInput]()
-                    {
-                        pointerInput->Dispatcher->ProcessEvents(Windows::UI::Core::CoreProcessEventsOption::ProcessUntilQuit);
-                    });
                     OnyxLogger::Qemu(L"Keyboard, mouse and pointer input handlers attached to the active guest surface.");
 
                     // Enter immersive guest display automatically as soon as the VM page is shown.
