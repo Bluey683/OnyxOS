@@ -394,12 +394,15 @@ namespace OnyxOS
                     }
 
                     InstallerPage^ installerPage = nullptr;
+                    SwapChainPanel^ activeGuestPanel = guestPanel;
                     if (!alreadyInstalled)
                     {
                         installerPage = ref new InstallerPage();
                         installerPage->SetStatus(L"Inicializando QEMU pela ISO selecionada. Conclua o instalador do sistema e desligue a máquina antes de confirmar.");
-                        layout->Children->Remove(guestPanel);
-                        installerPage->GetGuestHost()->Children->Append(guestPanel);
+                        activeGuestPanel = ref new SwapChainPanel();
+                        activeGuestPanel->HorizontalAlignment = HorizontalAlignment::Stretch;
+                        activeGuestPanel->VerticalAlignment = VerticalAlignment::Stretch;
+                        installerPage->GetGuestHost()->Children->Append(activeGuestPanel);
                         root->Children->Clear();
                         root->Children->Append(installerPage);
                         session->qemuStoppedForInstaller = false;
@@ -417,7 +420,7 @@ namespace OnyxOS
                                 installerPage->SetStopped();
                             });
                         installerPage->FinishRequested += ref new Windows::Foundation::EventHandler<Object^>(
-                            [session, installerPage, root, layout, guestPanel, launchButton](Object^, Object^)
+                            [session, installerPage, root, layout, launchButton](Object^, Object^)
                             {
                                 if (!session->qemuStoppedForInstaller || !session->installerVmStarted)
                                 {
@@ -433,8 +436,6 @@ namespace OnyxOS
                                 session->isoSelected = false;
                                 session->qemuStoppedForInstaller = false;
                                 session->installerVmStarted = false;
-                                installerPage->GetGuestHost()->Children->Remove(guestPanel);
-                                layout->Children->Append(guestPanel);
                                 root->Children->Clear();
                                 root->Children->Append(layout);
                                 launchButton->IsEnabled = true;
@@ -442,10 +443,9 @@ namespace OnyxOS
                             });
                     }
 
-                    if (!session->renderer)
-                        session->renderer = std::make_shared<onyx::graphics::QemuD3DRenderer>();
+                    session->renderer = std::make_shared<onyx::graphics::QemuD3DRenderer>();
                     std::wstring rendererError;
-                    if (!session->renderer->Initialize(guestPanel, rendererError))
+                    if (!session->renderer->Initialize(activeGuestPanel, rendererError))
                     {
                         status->Text = L"Falha ao inicializar Direct3D/HLSL: " + ref new String(rendererError.c_str());
                         launchButton->IsEnabled = true;
@@ -455,7 +455,7 @@ namespace OnyxOS
                         }
                         return;
                     }
-                    guestPanel->Visibility = Visibility::Visible;
+                    activeGuestPanel->Visibility = Visibility::Visible;
                     auto arguments = onyx::vm::BuildQemuArguments(session->config);
                     arguments.insert(arguments.begin(), "qemu-system-x86_64");
                     auto dispatcher = status->Dispatcher;
