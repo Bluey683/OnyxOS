@@ -72,7 +72,7 @@ namespace vm
         if (path.empty()) return false;
         HANDLE file = CreateFile2(path.c_str(), GENERIC_READ,
             FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-            nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+            OPEN_EXISTING, nullptr);
         if (file == INVALID_HANDLE_VALUE) return false;
 
         LARGE_INTEGER size = {};
@@ -92,7 +92,7 @@ namespace vm
         if (path.empty()) return false;
         HANDLE file = CreateFile2(path.c_str(), GENERIC_READ,
             FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-            nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+            OPEN_EXISTING, nullptr);
         if (file == INVALID_HANDLE_VALUE) return false;
         LARGE_INTEGER size = {};
         bool valid = GetFileSizeEx(file, &size) && size.QuadPart >= 17ll * 2048ll;
@@ -126,8 +126,7 @@ namespace vm
         if (path.empty()) return false;
         CreateDirectoryW(L"C:\\DevelopmentFiles\\OnyxOS", nullptr);
         CreateDirectoryW(L"C:\\DevelopmentFiles\\OnyxOS\\State", nullptr);
-        HANDLE file = CreateFile2(path.c_str(), GENERIC_WRITE, 0, nullptr,
-            CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+        HANDLE file = CreateFile2(path.c_str(), GENERIC_WRITE, 0, CREATE_ALWAYS, nullptr);
         if (file == INVALID_HANDLE_VALUE) return false;
         const char marker[] = "OnyxOS installation confirmed by user.\r\n";
         DWORD written = 0;
