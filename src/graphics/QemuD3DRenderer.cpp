@@ -79,7 +79,28 @@ bool QemuD3DRenderer::Present(const std::vector<std::uint32_t>& bgra,int width,i
     if(width!=m_guestWidth||height!=m_guestHeight)if(!CreateGuestTexture(width,height,error))return false;
     m_context->UpdateSubresource(m_guestTexture.Get(),0,nullptr,bgra.data(),static_cast<UINT>(width*4),0);
     const float clear[4]={0.02f,0.02f,0.03f,1.0f};m_context->OMSetRenderTargets(1,m_target.GetAddressOf(),nullptr);
-    D3D11_VIEWPORT vp{};vp.Width=1920.0f;vp.Height=1080.0f;vp.MinDepth=0.0f;vp.MaxDepth=1.0f;
+    // Fit the guest framebuffer inside the actual swap-chain bounds.
+    // Never stretch/crop a 4:3 or unusual guest mode across the 16:9 Xbox panel.
+    DXGI_SWAP_CHAIN_DESC1 swapDesc{};
+    m_swapChain->GetDesc1(&swapDesc);
+    const float targetWidth = static_cast<float>(swapDesc.Width);
+    const float targetHeight = static_cast<float>(swapDesc.Height);
+    const float guestAspect = static_cast<float>(width) / static_cast<float>(height);
+    const float targetAspect = targetWidth / targetHeight;
+    D3D11_VIEWPORT vp{};
+    if (guestAspect > targetAspect)
+    {
+        vp.Width = targetWidth;
+        vp.Height = targetWidth / guestAspect;
+        vp.TopLeftY = (targetHeight - vp.Height) * 0.5f;
+    }
+    else
+    {
+        vp.Height = targetHeight;
+        vp.Width = targetHeight * guestAspect;
+        vp.TopLeftX = (targetWidth - vp.Width) * 0.5f;
+    }
+    vp.MinDepth=0.0f;vp.MaxDepth=1.0f;
     m_context->RSSetViewports(1,&vp);m_context->ClearRenderTargetView(m_target.Get(),clear);
     m_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     m_context->VSSetShader(m_vertexShader.Get(),nullptr,0);m_context->PSSetShader(m_pixelShader.Get(),nullptr,0);
