@@ -53,8 +53,14 @@ namespace vm
         using PointerAbsFn = int(*)(int, int, int, int);
         using PointerButtonFn = int(*)(int, bool);
         using WakeFn = void(*)();
+        using LogCallbackV2Fn = void(*)(void*, int, const char*);
+        using LogCallbackLegacyFn = void(*)(int, const char*, void*);
+        using RegisterLogV2Fn = void(*)(LogCallbackV2Fn, void*);
+        using SetLogLegacyFn = void(*)(LogCallbackLegacyFn, void*);
 
         static void VideoThunk(void*, const void*, int, int, int, int);
+        static void LogThunkV2(void*, int, const char*);
+        static void LogThunkLegacy(int, const char*, void*);
         static void LegacyVideoThunk(const void*, int, int, int, int, void*);
         void Run(std::vector<std::string> arguments) noexcept;
         HMODULE m_module{ nullptr };
@@ -65,6 +71,8 @@ namespace vm
         using RegisterVideoFn = void(*)(VideoCallbackFn, void*);
         using SetVideoFn = void(*)(LegacyVideoCallbackFn, void*);
         RegisterVideoFn m_videoRegister{ nullptr };
+        RegisterLogV2Fn m_logRegister{ nullptr };
+        SetLogLegacyFn m_logSet{ nullptr };
         SetVideoFn m_videoSet{ nullptr };
         std::thread m_worker;
         std::atomic<bool> m_running{ false };
