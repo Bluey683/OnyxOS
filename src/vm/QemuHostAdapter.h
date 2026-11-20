@@ -27,7 +27,7 @@ namespace vm
         const std::wstring& Error() const noexcept { return m_error; }
         const std::vector<std::string>& MissingExports() const noexcept { return m_missing; }
 
-        using VideoFrameCallback = std::function<void(const void*, int, int, int, int)>;
+        using VideoFrameCallback = std::function<void(const std::vector<std::uint32_t>&, int, int)>;
         bool Start(const std::vector<std::string>& arguments, VideoFrameCallback onVideoFrame = {});
         void Stop() noexcept;
         bool IsRunning() const noexcept { return m_running.load(); }
