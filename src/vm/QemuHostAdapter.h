@@ -42,7 +42,7 @@ namespace onyx::vm
         using MainLoopStepFn = int(*)(bool, int*);
         using ShutdownFn = int(*)();
         using JoinFn = int(*)(int*);
-        using VideoUpdateCallbackFn = void(*)(void*, const void*, int, int, int, int, int, int, int, int);
+        using VideoUpdateCallbackFn = void(*)(void*, const void*, int, int, int, int, int, int, int, int);\n        using RegisterVideoUpdateFn = void(*)(VideoUpdateCallbackFn, void*);
         using VideoCallbackFn = void(*)(void*, const void*, int, int, int, int);
         using KeyFn = int(*)(int, bool);
         using PointerRelFn = int(*)(int, int);
@@ -58,7 +58,7 @@ namespace onyx::vm
         MainLoopStepFn m_step{ nullptr };
         ShutdownFn m_shutdown{ nullptr };
         JoinFn m_join{ nullptr };
-        VideoUpdateCallbackFn m_videoUpdateRegister{ nullptr };
+        RegisterVideoUpdateFn m_videoUpdateRegister{ nullptr };
         using RegisterVideoFn = void(*)(VideoCallbackFn, void*);
         RegisterVideoFn m_videoRegister{ nullptr };
         std::thread m_worker;
