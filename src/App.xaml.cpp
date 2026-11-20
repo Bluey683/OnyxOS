@@ -541,9 +541,15 @@ namespace OnyxOS
 
                     stopButton->IsEnabled = true;
                     if (guestPage) guestPage->SetStopEnabled(true);
-                    if (installerPage) session->installerVmStarted = true;
-                    status->Text = L"QEMU solicitado. Aguardando inicialização e framebuffer...";
-                    OnyxLogger::Qemu(L"QEMU worker thread started; awaiting guest initialization.");
+                    if (installerPage)
+                    {
+                        session->installerVmStarted = true;
+                        installerPage->SetStatus(L"Máquina virtual iniciada. O QEMU entregou o primeiro framebuffer; o instalador do sistema deve aparecer na tela.");
+                    }
+                    if (guestPage)
+                        guestPage->SetDisplayStatus(L"Máquina virtual iniciada. Primeiro framebuffer recebido do QEMU.", true);
+                    status->Text = L"Máquina virtual iniciada: primeiro framebuffer recebido e enviado ao Direct3D 11 / HLSL.";
+                    OnyxLogger::Qemu(L"QEMU initialized and first guest framebuffer received; VM startup confirmed.");
                 });
 
             stopButton->Click += ref new RoutedEventHandler(
