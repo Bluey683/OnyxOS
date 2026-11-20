@@ -104,7 +104,8 @@ namespace vm
         add("-cpu", configuration.cpuModel);
         add("-m", std::to_string(configuration.memoryMB));
         add("-smp", std::to_string(configuration.cpuCount));
-        add("-display", "none"); // The host renderer presents the guest framebuffer.
+        add("-display", "host"); // QEMU-UWP-Host custom display backend feeds Direct3D.
+        add("-L", "qemu"); // Packaged QEMU BIOS/firmware directory.
         add("-drive", "file=" + configuration.diskPath + ",if=virtio,format=vhdx");
         if (!configuration.isoPath.empty())
         {
