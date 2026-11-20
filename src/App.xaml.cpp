@@ -130,6 +130,16 @@ namespace OnyxOS
             status->TextWrapping = TextWrapping::Wrap;
             status->Margin = Thickness(0, 8, 0, 0);
             status->Foreground = ref new SolidColorBrush(ColorHelper::FromArgb(255, 229, 184, 95));
+
+            if (!onyx::vm::EnsureDevelopmentFilesDirectories())
+            {
+                status->Text = L"Não foi possível criar as pastas em D:\\DevelopmentFiles\\OnyxOS. Verifique o acesso ao armazenamento DevelopmentFiles do Xbox Dev Mode.";
+                OnyxLogger::App(L"Failed to create OnyxOS folders under D:\\DevelopmentFiles.");
+            }
+            else
+            {
+                OnyxLogger::App(L"DevelopmentFiles folders ready on D:.");
+            }
             layout->Children->Append(status);
 
             auto guestPanel = ref new SwapChainPanel();
