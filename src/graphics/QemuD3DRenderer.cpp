@@ -40,7 +40,7 @@ bool QemuD3DRenderer::Initialize(Windows::UI::Xaml::Controls::SwapChainPanel^ pa
     if (FAILED(hr = m_device.As(&dxgiDevice)) || FAILED(hr = dxgiDevice->GetAdapter(&adapter)) ||
         FAILED(hr = adapter->GetParent(IID_PPV_ARGS(&factory)))) { error = HrText(L"Obtenção da fábrica DXGI falhou", hr); return false; }
     DXGI_SWAP_CHAIN_DESC1 desc{};
-    desc.Width=1280; desc.Height=720; desc.Format=DXGI_FORMAT_B8G8R8A8_UNORM;
+    desc.Width=1920; desc.Height=1080; desc.Format=DXGI_FORMAT_B8G8R8A8_UNORM;
     desc.SampleDesc.Count=1; desc.BufferUsage=DXGI_USAGE_RENDER_TARGET_OUTPUT; desc.BufferCount=2;
     desc.Scaling=DXGI_SCALING_STRETCH; desc.SwapEffect=DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL; desc.AlphaMode=DXGI_ALPHA_MODE_IGNORE;
     if (FAILED(hr=factory->CreateSwapChainForComposition(m_device.Get(),&desc,nullptr,&m_swapChain))) { error=HrText(L"CreateSwapChainForComposition falhou",hr); return false; }
@@ -79,7 +79,7 @@ bool QemuD3DRenderer::Present(const std::vector<std::uint32_t>& bgra,int width,i
     if(width!=m_guestWidth||height!=m_guestHeight)if(!CreateGuestTexture(width,height,error))return false;
     m_context->UpdateSubresource(m_guestTexture.Get(),0,nullptr,bgra.data(),static_cast<UINT>(width*4),0);
     const float clear[4]={0.02f,0.02f,0.03f,1.0f};m_context->OMSetRenderTargets(1,m_target.GetAddressOf(),nullptr);
-    D3D11_VIEWPORT vp{};vp.Width=1280.0f;vp.Height=720.0f;vp.MinDepth=0.0f;vp.MaxDepth=1.0f;
+    D3D11_VIEWPORT vp{};vp.Width=1920.0f;vp.Height=1080.0f;vp.MinDepth=0.0f;vp.MaxDepth=1.0f;
     m_context->RSSetViewports(1,&vp);m_context->ClearRenderTargetView(m_target.Get(),clear);
     m_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     m_context->VSSetShader(m_vertexShader.Get(),nullptr,0);m_context->PSSetShader(m_pixelShader.Get(),nullptr,0);
