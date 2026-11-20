@@ -535,26 +535,24 @@ namespace OnyxOS
                     // itself is not a focusable Control; pointer events are measured in panel pixels.
                     session->input = std::make_shared<onyx::vm::QemuInputBridge>(*session->host);
                     auto inputBridge = session->input;
-                    // A tiny invisible TextBox is the actual XAML keyboard focus target.
-                    // SwapChainPanel does not accept focus, so CoreWindow-only handlers
-                    // can miss physical USB keyboard input while the guest page is active.
-                    if (activeKeyboardSink != nullptr)
-                    {
-                        activeKeyboardSink->KeyDown += ref new Windows::UI::Xaml::Input::KeyEventHandler(
-                            [inputBridge](Object^, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ args)
-                            {
-                                inputBridge->SendVirtualKey(static_cast<int>(args->Key), true);
-                                args->Handled = true;
-                            });
-                        activeKeyboardSink->KeyUp += ref new Windows::UI::Xaml::Input::KeyEventHandler(
-                            [inputBridge](Object^, Windows::UI::Xaml::Input::KeyRoutedEventArgs^ args)
-                            {
-                                inputBridge->SendVirtualKey(static_cast<int>(args->Key), false);
-                                args->Handled = true;
-                            });
-                        activeKeyboardSink->Focus(FocusState::Programmatic);
-                        OnyxLogger::Qemu(L"Physical keyboard routed through focused XAML keyboard sink.");
-                    }
+                    // Capture hardware keyboard input at CoreWindow level, as required
+                    // by Xbox/UWP. XAML TextBox focus is not reliable over SwapChainPanel.
+                    auto coreWindow = Window::Current->CoreWindow;
+                    coreWindow->KeyDown += ref new Windows::Foundation::TypedEventHandler<
+                        Windows::UI::Core::CoreWindow^, Windows::UI::Core::KeyEventArgs^>(
+                        [inputBridge](Windows::UI::Core::CoreWindow^, Windows::UI::Core::KeyEventArgs^ args)
+                        {
+                            inputBridge->SendVirtualKey(static_cast<int>(args->VirtualKey), true);
+                            args->Handled = true;
+                        });
+                    coreWindow->KeyUp += ref new Windows::Foundation::TypedEventHandler<
+                        Windows::UI::Core::CoreWindow^, Windows::UI::Core::KeyEventArgs^>(
+                        [inputBridge](Windows::UI::Core::CoreWindow^, Windows::UI::Core::KeyEventArgs^ args)
+                        {
+                            inputBridge->SendVirtualKey(static_cast<int>(args->VirtualKey), false);
+                            args->Handled = true;
+                        });
+                    OnyxLogger::Qemu(L"Physical keyboard connected through CoreWindow KeyDown/KeyUp.");
                     // Use routed XAML pointer events on the guest surface.
                     // Do not run CoreIndependentInputSource::Dispatcher::ProcessEvents
                     // from a ThreadPool task: its dispatcher belongs to the UI thread,
