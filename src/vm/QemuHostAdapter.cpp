@@ -225,6 +225,8 @@ namespace onyx::vm
                 m_startSucceeded = false;
             }
             m_startCondition.notify_all();
+            RoUninitialize();
+            OnyxOS::WriteQemuLogNative(L"WinRT MTA apartment released after QEMU init failure.");
             return;
         }
         {
