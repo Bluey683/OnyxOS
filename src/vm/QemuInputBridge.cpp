@@ -10,18 +10,59 @@ namespace onyx { namespace vm
 {
     int QemuInputBridge::MapVirtualKey(int key) noexcept
     {
-        if (key >= 0x30 && key <= 0x39) return key;
-        if (key >= 0x41 && key <= 0x5A) return key + 0x20;
-        if (key >= 0x70 && key <= 0x7B) return 282 + key - 0x70;
+        // QEMU host key-number API uses SDL 1.x key symbols.
+        if (key >= 0x30 && key <= 0x39) return key;             // 0-9
+        if (key >= 0x41 && key <= 0x5A) return key + 0x20;      // a-z
+        if (key >= 0x70 && key <= 0x7B) return 282 + key - 0x70; // F1-F12
+        if (key >= 0x60 && key <= 0x69) return 256 + key - 0x60; // keypad 0-9
         switch (key)
         {
-        case 0x08: return 8; case 0x09: return 9; case 0x0D: return 13;
-        case 0x10: return 304; case 0x11: return 306; case 0x12: return 308;
-        case 0x1B: return 27; case 0x20: return 32; case 0x21: return 280;
-        case 0x22: return 281; case 0x23: return 279; case 0x24: return 278;
-        case 0x25: return 276; case 0x26: return 273; case 0x27: return 275;
-        case 0x28: return 274; case 0x2D: return 277; case 0x2E: return 127;
-        case 0x14: return 301; default: return 0;
+        case 0x08: return 8;       // Backspace
+        case 0x09: return 9;       // Tab
+        case 0x0D: return 13;      // Enter
+        case 0x10: return 304;     // Left Shift
+        case 0x11: return 306;     // Left Ctrl
+        case 0x12: return 308;     // Left Alt
+        case 0x1B: return 27;      // Escape
+        case 0x20: return 32;      // Space
+        case 0x21: return 280;     // Page Up
+        case 0x22: return 281;     // Page Down
+        case 0x23: return 279;     // End
+        case 0x24: return 278;     // Home
+        case 0x25: return 276;     // Left
+        case 0x26: return 273;     // Up
+        case 0x27: return 275;     // Right
+        case 0x28: return 274;     // Down
+        case 0x2D: return 277;     // Insert
+        case 0x2E: return 127;     // Delete
+        case 0x14: return 301;     // Caps Lock
+        case 0x5B: return 310;     // Left Windows
+        case 0x5C: return 309;     // Right Windows
+        case 0x6A: return 267;     // Keypad *
+        case 0x6B: return 270;     // Keypad +
+        case 0x6D: return 269;     // Keypad -
+        case 0x6E: return 266;     // Keypad .
+        case 0x6F: return  '/' ;   // Keypad /
+        case 0x90: return 300;     // Num Lock
+        case 0x91: return 302;     // Scroll Lock
+        case 0xA0: return 304;     // Left Shift
+        case 0xA1: return 303;     // Right Shift
+        case 0xA2: return 306;     // Left Ctrl
+        case 0xA3: return 305;     // Right Ctrl
+        case 0xA4: return 308;     // Left Alt
+        case 0xA5: return 307;     // Right Alt
+        case 0xBA: return ';';
+        case 0xBB: return '=';
+        case 0xBC: return ',';
+        case 0xBD: return '-';
+        case 0xBE: return '.';
+        case 0xBF: return '/';
+        case 0xC0: return '`';
+        case 0xDB: return '[';
+        case 0xDC: return '\\';
+        case 0xDD: return ']';
+        case 0xDE: return '\\'';
+        default: return 0;
         }
     }
 
