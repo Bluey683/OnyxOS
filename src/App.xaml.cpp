@@ -2,6 +2,8 @@
 #include "OnyxLogger.h"
 #include "vm/VirtualMachine.h"
 #include "vm/QemuHostAdapter.h"
+#include "vm/VhdxProvisioner.h"
+#include "InstallerPage.xaml.h"
 #include "graphics/QemuD3DRenderer.h"
 
 #include <memory>
@@ -34,6 +36,7 @@ namespace
         bool profileSelected{ false };
         bool isoSelected{ false };
         bool diskSelected{ false };
+        bool qemuStoppedForInstaller{ false };
     };
 
     std::string ToUtf8(const std::wstring& value)
@@ -171,6 +174,16 @@ namespace OnyxOS
                         session->config.isoPath.clear();
                         session->config.diskPath.clear();
 
+                        const auto bundledDisk = onyx::vm::FindDevelopmentFilesVhdx(profileId);
+                        if (!bundledDisk.empty())
+                        {
+                            session->config.diskPath = ToUtf8(bundledDisk);
+                            session->diskSelected = true;
+                        }
+                        const bool alreadyInstalled =
+                            onyx::vm::IsInstallationMarkedComplete(profileId);
+                        session->isoSelected = alreadyInstalled;
+
                         if (!session->config.enabled)
                         {
                             status->Text = L"Perfil experimental indisponível para inicialização.";
@@ -270,11 +283,29 @@ namespace OnyxOS
             layout->Children->Append(actions);
 
             launchButton->Click += ref new RoutedEventHandler(
-                [session, status, launchButton, stopButton, guestPanel](Object^, RoutedEventArgs^)
+                [session, status, launchButton, stopButton, guestPanel, root, layout](Object^, RoutedEventArgs^)
                 {
-                    if (!session->profileSelected || !session->isoSelected || !session->diskSelected)
+                    const bool alreadyInstalled =
+                        onyx::vm::IsInstallationMarkedComplete(session->config.id);
+                    if (!session->profileSelected || !session->diskSelected ||
+                        (!alreadyInstalled && !session->isoSelected))
                     {
-                        status->Text = L"Selecione um perfil, uma ISO e um disco VHDX antes de iniciar.";
+                        status->Text = L"Selecione um perfil e um VHDX válido. Para a primeira instalação, selecione também uma ISO.";
+                        return;
+                    }
+                    if (!onyx::vm::IsValidVhdxFile(ToWide(session->config.diskPath)))
+                    {
+                        status->Text = L"O VHDX não passou na verificação de cabeçalho. A máquina não será iniciada.";
+                        return;
+                    }
+                    if (alreadyInstalled)
+                    {
+                        session->config.isoPath.clear();
+                        session->isoSelected = false;
+                    }
+                    else if (!onyx::vm::IsRecognizedIsoFile(ToWide(session->config.isoPath)))
+                    {
+                        status->Text = L"A ISO não foi reconhecida. Selecione uma ISO válida antes de instalar.";
                         return;
                     }
 
@@ -297,6 +328,47 @@ namespace OnyxOS
                         return;
                     }
 
+                    InstallerPage^ installerPage = nullptr;
+                    if (!alreadyInstalled)
+                    {
+                        installerPage = ref new InstallerPage();
+                        installerPage->SetStatus(L"Inicializando QEMU pela ISO selecionada. Conclua o instalador do sistema e desligue a máquina antes de confirmar.");
+                        layout->Children->Remove(guestPanel);
+                        installerPage->GetGuestHost()->Children->Append(guestPanel);
+                        root->Children->Clear();
+                        root->Children->Append(installerPage);
+                        session->qemuStoppedForInstaller = false;
+                        installerPage->StopRequested += ref new Windows::Foundation::EventHandler<Object^>(
+                            [session, installerPage](Object^, Object^)
+                            {
+                                session->host->Stop();
+                                session->qemuStoppedForInstaller = true;
+                                installerPage->SetStopped();
+                            });
+                        installerPage->FinishRequested += ref new Windows::Foundation::EventHandler<Object^>(
+                            [session, installerPage, root, layout, guestPanel](Object^, Object^)
+                            {
+                                if (!session->qemuStoppedForInstaller)
+                                {
+                                    installerPage->SetStatus(L"Pare o QEMU depois de concluir e desligar o sistema.");
+                                    return;
+                                }
+                                if (!onyx::vm::MarkInstallationComplete(session->config.id))
+                                {
+                                    installerPage->SetStatus(L"Não foi possível gravar o estado em DevelopmentFiles. Verifique a permissão da pasta.");
+                                    return;
+                                }
+                                session->config.isoPath.clear();
+                                session->isoSelected = false;
+                                session->qemuStoppedForInstaller = false;
+                                installerPage->GetGuestHost()->Children->Remove(guestPanel);
+                                layout->Children->Append(guestPanel);
+                                root->Children->Clear();
+                                root->Children->Append(layout);
+                                OnyxLogger::Qemu(L"Installation completion explicitly confirmed; next boot will use VHDX only.");
+                            });
+                    }
+
                     if (!session->renderer)
                         session->renderer = std::make_shared<onyx::graphics::QemuD3DRenderer>();
                     std::wstring rendererError;
@@ -304,6 +376,10 @@ namespace OnyxOS
                     {
                         status->Text = L"Falha ao inicializar Direct3D/HLSL: " + ref new String(rendererError.c_str());
                         launchButton->IsEnabled = true;
+                        if (installerPage)
+                        {
+                            installerPage->SetStatus(L"Falha ao iniciar Direct3D/HLSL. Volte ao OnyxOS e verifique o log.");
+                        }
                         return;
                     }
                     guestPanel->Visibility = Visibility::Visible;
@@ -330,6 +406,8 @@ namespace OnyxOS
                         status->Text = L"Não foi possível iniciar a thread QEMU: " +
                             ref new String(session->host->Error().c_str());
                         launchButton->IsEnabled = true;
+                        if (installerPage)
+                            installerPage->SetStatus(L"QEMU não iniciou. Verifique o runtime e os logs antes de tentar novamente.");
                         return;
                     }
 
