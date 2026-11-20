@@ -441,6 +441,7 @@ namespace OnyxOS
                         activeGuestPanel->HorizontalAlignment = HorizontalAlignment::Stretch;
                         activeGuestPanel->VerticalAlignment = VerticalAlignment::Stretch;
                         installerPage->GetGuestHost()->Children->Append(activeGuestPanel);
+                        root->Padding = Thickness(0);
                         root->Children->Clear();
                         root->Children->Append(installerPage);
                         session->qemuStoppedForInstaller = false;
@@ -475,6 +476,7 @@ namespace OnyxOS
                                 session->qemuStoppedForInstaller = false;
                                 session->installerVmStarted = false;
                                 root->Children->Clear();
+                                root->Padding = Thickness(32);
                                 root->Children->Append(mainScroll);
                                 launchButton->IsEnabled = true;
                                 OnyxLogger::Qemu(L"Installation completion explicitly confirmed; next boot will use VHDX only.");
@@ -488,6 +490,7 @@ namespace OnyxOS
                             ref new String(ToWide(session->config.name).c_str()));
                         guestPage->SetRendererName(L"Direct3D 11 / HLSL");
                         activeGuestPanel = guestPage->GetQemuSurface();
+                        root->Padding = Thickness(0);
                         root->Children->Clear();
                         root->Children->Append(guestPage);
                         guestPage->StopRequested += ref new Windows::Foundation::EventHandler<Object^>(
