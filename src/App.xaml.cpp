@@ -367,17 +367,24 @@ namespace OnyxOS
             launchButton->Click += ref new RoutedEventHandler(
                 [session, status, launchButton, stopButton, guestPanel, root, layout](Object^, RoutedEventArgs^)
                 {
+                    OnyxLogger::Qemu(L"Launch button clicked. Profile selected=" +
+                        (session->profileSelected ? L"true" : L"false") +
+                        L"; ISO selected=" + (session->isoSelected ? L"true" : L"false") +
+                        L"; VHDX selected=" + (session->diskSelected ? L"true" : L"false") +
+                        L"; profile=" + ref new String(session->config.id.c_str()));
                     const bool alreadyInstalled =
                         onyx::vm::IsInstallationMarkedComplete(session->config.id);
                     if (!session->profileSelected || !session->diskSelected ||
                         (!alreadyInstalled && !session->isoSelected))
                     {
                         status->Text = L"Selecione um perfil e um VHDX válido. Para a primeira instalação, selecione também uma ISO.";
+                        OnyxLogger::Qemu(L"Launch blocked: profile, VHDX or required ISO not selected.");
                         return;
                     }
                     if (!onyx::vm::IsValidVhdxFile(ToWide(session->config.diskPath)))
                     {
                         status->Text = L"O VHDX não passou na verificação de cabeçalho. A máquina não será iniciada.";
+                        OnyxLogger::Qemu(L"Launch blocked: VHDX validation failed: " + ref new String(session->config.diskPath.c_str()));
                         return;
                     }
                     if (alreadyInstalled)
@@ -388,6 +395,7 @@ namespace OnyxOS
                     else if (!onyx::vm::IsRecognizedIsoFile(ToWide(session->config.isoPath)))
                     {
                         status->Text = L"A ISO não foi reconhecida. Selecione uma ISO válida antes de instalar.";
+                        OnyxLogger::Qemu(L"Launch blocked: ISO validation failed: " + ref new String(session->config.isoPath.c_str()));
                         return;
                     }
 
@@ -395,6 +403,7 @@ namespace OnyxOS
                     if (!validation.valid)
                     {
                         status->Text = ref new String(ToWide(validation.message).c_str());
+                        OnyxLogger::Qemu(L"Launch blocked by VM configuration validation: " + ref new String(ToWide(validation.message).c_str()));
                         return;
                     }
 
