@@ -13,5 +13,6 @@ namespace vm
     // A small marker is written only after the user confirms the guest installer finished.
     bool IsInstallationMarkedComplete(const std::string& profileId);
     bool MarkInstallationComplete(const std::string& profileId);
+    void ClearInstallationMark(const std::string& profileId);
 }
 }
