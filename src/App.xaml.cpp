@@ -197,7 +197,11 @@ namespace OnyxOS
                             std::to_wstring(session->config.displayRefreshHz) + L" Hz" +
                             L"\nMemória: " + std::to_wstring(session->config.memoryMB) +
                             L" MB | CPU: " + std::to_wstring(session->config.cpuCount) +
-                            L"\nAgora escolha a ISO e o disco VHDX.";
+                            (session->diskSelected
+                                ? (alreadyInstalled
+                                    ? L"\nVHDX encontrado em DevelopmentFiles. Sistema marcado como instalado; iniciará direto pelo disco."
+                                    : L"\nVHDX encontrado em DevelopmentFiles. Se ainda não instalou, escolha a ISO.")
+                                : L"\nColoque o VHDX em C:\\DevelopmentFiles\\OnyxOS\\VHDX ou selecione manualmente.");
                         status->Text = ref new String(details.c_str());
                         OnyxLogger::App(L"VM profile stored for QEMU launch: " + name);
                     });
@@ -383,7 +387,7 @@ namespace OnyxOS
                                 installerPage->SetStopped();
                             });
                         installerPage->FinishRequested += ref new Windows::Foundation::EventHandler<Object^>(
-                            [session, installerPage, root, layout, guestPanel](Object^, Object^)
+                            [session, installerPage, root, layout, guestPanel, launchButton](Object^, Object^)
                             {
                                 if (!session->qemuStoppedForInstaller)
                                 {
@@ -402,6 +406,7 @@ namespace OnyxOS
                                 layout->Children->Append(guestPanel);
                                 root->Children->Clear();
                                 root->Children->Append(layout);
+                                launchButton->IsEnabled = true;
                                 OnyxLogger::Qemu(L"Installation completion explicitly confirmed; next boot will use VHDX only.");
                             });
                     }
