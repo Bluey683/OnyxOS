@@ -96,6 +96,10 @@ namespace onyx::vm
 
     void QemuHostAdapter::Run(std::vector<std::string> arguments) noexcept
     {
+        // qemu_host_init follows the normal QEMU argv contract: argv[0] is
+        // the executable name, followed by the command-line options.
+        if (arguments.empty() || arguments.front() != "qemu-system-x86_64")
+            arguments.insert(arguments.begin(), "qemu-system-x86_64");
         std::vector<const char*> argv;
         argv.reserve(arguments.size());
         for (const auto& arg : arguments) argv.push_back(arg.c_str());
