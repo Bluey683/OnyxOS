@@ -60,7 +60,9 @@ namespace vm
                 continue;
             if (GetLastError() != ERROR_ALREADY_EXISTS)
                 return false;
-            const DWORD attributes = GetFileAttributesExFromAppW(directory);
+            WIN32_FILE_ATTRIBUTE_DATA attributesData{};
+            const bool attributesOk = GetFileAttributesExFromAppW(directory, GetFileExInfoStandard, &attributesData) != FALSE;
+            const DWORD attributes = attributesOk ? attributesData.dwFileAttributes : INVALID_FILE_ATTRIBUTES;
             if (attributes == INVALID_FILE_ATTRIBUTES ||
                 !(attributes & FILE_ATTRIBUTE_DIRECTORY))
                 return false;
@@ -82,7 +84,9 @@ namespace vm
         {
             std::wstring candidate(root);
             candidate += filename;
-            const DWORD attributes = GetFileAttributesW(candidate.c_str());
+            WIN32_FILE_ATTRIBUTE_DATA attributesData{};
+            const bool attributesOk = GetFileAttributesExFromAppW(candidate.c_str(), GetFileExInfoStandard, &attributesData) != FALSE;
+            const DWORD attributes = attributesOk ? attributesData.dwFileAttributes : INVALID_FILE_ATTRIBUTES;
             if (attributes != INVALID_FILE_ATTRIBUTES &&
                 !(attributes & FILE_ATTRIBUTE_DIRECTORY) &&
                 IsValidVhdxFile(candidate))
@@ -111,10 +115,56 @@ namespace vm
         return valid;
     }
 
+    std::wstring FindDevelopmentFilesIso(const std::string& profileId)
+    {
+        const wchar_t* filename = nullptr;
+        if (profileId == "windows10") filename = L"Windows10.iso";
+        else if (profileId == "windows11") filename = L"Windows11.iso";
+        else if (profileId == "debian") filename = L"Debian.iso";
+        else if (profileId == "ubuntu") filename = L"Ubuntu.iso";
+        else if (profileId == "arch") filename = L"ArchLinux.iso";
+        else if (profileId == "macos") filename = L"MacOS.iso";
+        if (!filename) return {};
+
+        const std::wstring roots[] = {
+            L"D:\\DevelopmentFiles\\OnyxOS\\ISO\\",
+            L"D:\\DevelopmentFiles\\OnyxOS\\",
+            L"D:\\DevelopmentFiles\\"
+        };
+        for (const auto& root : roots)
+        {
+            const std::wstring candidate = root + filename;
+            if (IsRecognizedIsoFile(candidate))
+                return candidate;
+        }
+
+        WIN32_FIND_DATAW data{};
+        const std::wstring pattern = L"D:\\DevelopmentFiles\\OnyxOS\\ISO\\*.iso";
+        HANDLE search = FindFirstFileExFromAppW(pattern.c_str(), FindExInfoBasic,
+            &data, FindExSearchNameMatch, nullptr, 0);
+        if (search != INVALID_HANDLE_VALUE)
+        {
+            do
+            {
+                if (!(data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+                {
+                    const std::wstring candidate = roots[0] + data.cFileName;
+                    if (IsRecognizedIsoFile(candidate))
+                    {
+                        FindClose(search);
+                        return candidate;
+                    }
+                }
+            } while (FindNextFileW(search, &data));
+            FindClose(search);
+        }
+        return {};
+    }
+
     bool IsRecognizedIsoFile(const std::wstring& path)
     {
         if (path.empty()) return false;
-        HANDLE file = CreateFile2(path.c_str(), GENERIC_READ,
+        HANDLE file = CreateFile2FromAppW(path.c_str(), GENERIC_READ,
             FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
             OPEN_EXISTING, nullptr);
         if (file == INVALID_HANDLE_VALUE) return false;
@@ -139,7 +189,9 @@ namespace vm
     {
         const auto path = StatePathForProfile(profileId);
         if (path.empty()) return false;
-        const DWORD attributes = GetFileAttributesW(path.c_str());
+        WIN32_FILE_ATTRIBUTE_DATA attributesData{};
+        const DWORD attributes = GetFileAttributesExFromAppW(path.c_str(), GetFileExInfoStandard, &attributesData)
+            ? attributesData.dwFileAttributes : INVALID_FILE_ATTRIBUTES;
         return attributes != INVALID_FILE_ATTRIBUTES &&
             !(attributes & FILE_ATTRIBUTE_DIRECTORY);
     }
@@ -148,9 +200,9 @@ namespace vm
     {
         const auto path = StatePathForProfile(profileId);
         if (path.empty()) return false;
-        CreateDirectoryW(L"D:\\DevelopmentFiles\\OnyxOS", nullptr);
+        CreateDirectoryFromAppW(L"D:\\DevelopmentFiles\\OnyxOS", nullptr);
         CreateDirectoryW(L"D:\\DevelopmentFiles\\OnyxOS\\State", nullptr);
-        HANDLE file = CreateFile2(path.c_str(), GENERIC_WRITE, 0, CREATE_ALWAYS, nullptr);
+        HANDLE file = CreateFile2FromAppW(path.c_str(), GENERIC_WRITE, 0, CREATE_ALWAYS, nullptr);
         if (file == INVALID_HANDLE_VALUE) return false;
         const char marker[] = "OnyxOS installation confirmed by user.\r\n";
         DWORD written = 0;
