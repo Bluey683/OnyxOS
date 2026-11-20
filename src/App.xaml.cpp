@@ -256,8 +256,15 @@ namespace OnyxOS
                             std::wstring isoName = L"C:\\DevelopmentFiles\\OnyxOS\\ISO\\";
                             isoName.append(session->config.id.begin(), session->config.id.end());
                             isoName += L".iso";
-                            if (CopyFileW(selectedIso.c_str(), isoName.c_str(), FALSE))
-                                selectedIso = isoName;
+                            if (selectedIso != isoName &&
+                                !CopyFileW(selectedIso.c_str(), isoName.c_str(), FALSE))
+                            {
+                                session->isoSelected = false;
+                                status->Text = L"Não foi possível copiar a ISO para DevelopmentFiles. Verifique o acesso do Xbox Dev Mode à pasta.";
+                                OnyxLogger::Qemu(L"ISO copy to DevelopmentFiles failed.");
+                                return;
+                            }
+                            selectedIso = isoName;
                             session->config.isoPath = ToUtf8(selectedIso);
                             session->isoSelected = !session->config.isoPath.empty();
                             onyx::vm::ClearInstallationMark(session->config.id);
@@ -298,8 +305,15 @@ namespace OnyxOS
                             {
                                 std::wstring destination = L"C:\\DevelopmentFiles\\OnyxOS\\VHDX\\";
                                 destination += targetName;
-                                if (CopyFileW(selectedPath.c_str(), destination.c_str(), FALSE))
-                                    selectedPath = destination;
+                                if (selectedPath != destination &&
+                                    !CopyFileW(selectedPath.c_str(), destination.c_str(), FALSE))
+                                {
+                                    session->diskSelected = false;
+                                    status->Text = L"Não foi possível copiar o VHDX para DevelopmentFiles. Verifique o acesso do Xbox Dev Mode à pasta.";
+                                    OnyxLogger::Qemu(L"VHDX copy to DevelopmentFiles failed.");
+                                    return;
+                                }
+                                selectedPath = destination;
                             }
 
                             if (!onyx::vm::IsValidVhdxFile(selectedPath))
