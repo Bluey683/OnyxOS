@@ -100,6 +100,17 @@ namespace OnyxOS
             auto layout = ref new StackPanel();
             layout->Spacing = 14;
 
+            // Keep the entire launcher reachable with the Xbox controller.
+            // A permanently visible vertical scrollbar gives users a clear
+            // indication that more controls are available below the fold.
+            auto mainScroll = ref new ScrollViewer();
+            mainScroll->VerticalScrollBarVisibility = ScrollBarVisibility::Visible;
+            mainScroll->VerticalScrollMode = ScrollMode::Enabled;
+            mainScroll->HorizontalScrollBarVisibility = ScrollBarVisibility::Disabled;
+            mainScroll->HorizontalScrollMode = ScrollMode::Disabled;
+            mainScroll->ZoomMode = ZoomMode::Disabled;
+            mainScroll->IsTabStop = true;
+
             auto heading = ref new TextBlock();
             heading->Text = L"ONYXOS";
             heading->FontSize = 34;
@@ -225,10 +236,7 @@ namespace OnyxOS
                 profiles->Children->Append(button);
             }
 
-            auto scroll = ref new ScrollViewer();
-            scroll->VerticalScrollBarVisibility = ScrollBarVisibility::Auto;
-            scroll->Content = profiles;
-            layout->Children->Append(scroll);
+            layout->Children->Append(profiles);
 
             auto pickers = ref new StackPanel();
             pickers->Orientation = Orientation::Horizontal;
@@ -465,7 +473,7 @@ namespace OnyxOS
                                 session->qemuStoppedForInstaller = false;
                                 session->installerVmStarted = false;
                                 root->Children->Clear();
-                                root->Children->Append(layout);
+                                root->Children->Append(mainScroll);
                                 launchButton->IsEnabled = true;
                                 OnyxLogger::Qemu(L"Installation completion explicitly confirmed; next boot will use VHDX only.");
                             });
