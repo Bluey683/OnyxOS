@@ -61,7 +61,7 @@ namespace onyx { namespace vm
         case 0xDB: return '[';
         case 0xDC: return '\\';
         case 0xDD: return ']';
-        case 0xDE: return '\\'';
+        case 0xDE: return 39;
         default: return 0;
         }
     }
