@@ -114,6 +114,12 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="graphics\shaders\onyxos.hlsl">
+      <Link>Shaders\onyxos.hlsl</Link>
+      <DeploymentContent>true</DeploymentContent>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
     <Page Include="src\App.xaml"><Generator>MSBuild:Compile</Generator><SubType>Designer</SubType></Page>
     <Page Include="src\MainPage.xaml"><Generator>MSBuild:Compile</Generator><SubType>Designer</SubType></Page>
     <Page Include="src\GuestPage.xaml"><Generator>MSBuild:Compile</Generator><SubType>Designer</SubType></Page>
