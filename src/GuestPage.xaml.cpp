@@ -46,11 +46,16 @@ namespace OnyxOS
         StopRequested(this, nullptr);
     }
 
-    void GuestPage::FullScreenButton_Click(Object^, RoutedEventArgs^)
+    void GuestPage::EnterFullScreen()
     {
         HeaderPanel->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
         FooterPanel->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
         ShowControlsButton->Visibility = Windows::UI::Xaml::Visibility::Visible;
+    }
+
+    void GuestPage::FullScreenButton_Click(Object^, RoutedEventArgs^)
+    {
+        EnterFullScreen();
     }
 
     void GuestPage::ShowControlsButton_Click(Object^, RoutedEventArgs^)
