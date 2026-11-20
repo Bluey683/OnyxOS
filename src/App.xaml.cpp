@@ -505,51 +505,64 @@ namespace OnyxOS
                     arguments.insert(arguments.begin(), "qemu-system-x86_64");
                     auto dispatcher = status->Dispatcher;
                     auto renderer = session->renderer;
-                    const bool started = session->host->Start(arguments,
-                        [dispatcher, status, renderer, guestPage](const std::vector<std::uint32_t>& bgraFrame, int width, int height)
-                        {
-                            dispatcher->RunAsync(CoreDispatcherPriority::Normal,
-                                ref new DispatchedHandler([status, renderer, guestPage, bgraFrame, width, height]()
+                    status->Text = L"QEMU iniciando em segundo plano: carregando BIOS, ISO e VHDX...";
+                    OnyxLogger::Qemu(L"Starting QEMU asynchronously; waiting for the first guest framebuffer.");
+                    auto onVideoFrame = [dispatcher, status, renderer, guestPage](const std::vector<std::uint32_t>& bgraFrame, int width, int height)
+                    {
+                        dispatcher->RunAsync(CoreDispatcherPriority::Normal,
+                            ref new DispatchedHandler([status, renderer, guestPage, bgraFrame, width, height]()
+                            {
+                                std::wstring renderError;
+                                if (!renderer->Present(bgraFrame, width, height, renderError))
+                                    status->Text = L"Erro no renderer D3D11/HLSL: " + ref new String(renderError.c_str());
+                                else
                                 {
-                                    std::wstring renderError;
-                                    if (!renderer->Present(bgraFrame, width, height, renderError))
-                                        status->Text = L"Erro no renderer D3D11/HLSL: " + ref new String(renderError.c_str());
-                                    else
+                                    status->Text = L"Framebuffer apresentado pelo Direct3D 11 com pixel shader HLSL.";
+                                    if (guestPage)
+                                        guestPage->SetDisplayStatus(L"Framebuffer recebido do QEMU e apresentado pelo Direct3D 11 / HLSL.", true);
+                                }
+                            }));
+                    };
+
+                    concurrency::create_task([session, arguments, onVideoFrame]()
+                    {
+                        return session->host->Start(arguments, onVideoFrame);
+                    }).then([session, dispatcher, status, launchButton, stopButton, installerPage, guestPage, root, layout](bool started)
+                    {
+                        dispatcher->RunAsync(CoreDispatcherPriority::Normal,
+                            ref new DispatchedHandler([session, status, launchButton, stopButton, installerPage, guestPage, root, layout, started]()
+                            {
+                                if (!started)
+                                {
+                                    status->Text = L"QEMU não iniciou: " + ref new String(session->host->Error().c_str());
+                                    launchButton->IsEnabled = true;
+                                    stopButton->IsEnabled = false;
+                                    if (installerPage)
                                     {
-                                        status->Text = L"Framebuffer apresentado pelo Direct3D 11 com pixel shader HLSL.";
-                                        if (guestPage)
-                                            guestPage->SetDisplayStatus(L"Framebuffer recebido do QEMU e apresentado pelo Direct3D 11 / HLSL.", true);
+                                        installerPage->SetStatus(L"QEMU não iniciou. Voltando ao OnyxOS; consulte QEMU.txt para ver o erro.");
+                                        session->installerVmStarted = false;
+                                        session->qemuStoppedForInstaller = false;
                                     }
-                                }));
-                        });
+                                    root->Children->Clear();
+                                    root->Children->Append(layout);
+                                    return;
+                                }
 
-                    if (!started)
-                    {
-                        status->Text = L"QEMU não inicializou: " +
-                            ref new String(session->host->Error().c_str());
-                        launchButton->IsEnabled = true;
-                        if (installerPage)
-                        {
-                            installerPage->SetStatus(L"QEMU não iniciou. Voltando ao OnyxOS; consulte o log para ver o motivo.");
-                            session->installerVmStarted = false;
-                            session->qemuStoppedForInstaller = false;
-                        }
-                        root->Children->Clear();
-                        root->Children->Append(layout);
-                        return;
-                    }
+                                stopButton->IsEnabled = true;
+                                if (guestPage)
+                                    guestPage->SetStopEnabled(true);
+                                if (installerPage)
+                                {
+                                    session->installerVmStarted = true;
+                                    installerPage->SetStatus(L"Máquina virtual iniciada. O QEMU entregou o primeiro framebuffer; o instalador do sistema deve aparecer na tela.");
+                                }
+                                if (guestPage)
+                                    guestPage->SetDisplayStatus(L"Máquina virtual iniciada. Primeiro framebuffer recebido do QEMU.", true);
+                                status->Text = L"Máquina virtual iniciada: primeiro framebuffer recebido e enviado ao Direct3D 11 / HLSL.";
+                                OnyxLogger::Qemu(L"QEMU initialized and first guest framebuffer received; VM startup confirmed.");
+                            }));
+                    });
 
-                    stopButton->IsEnabled = true;
-                    if (guestPage) guestPage->SetStopEnabled(true);
-                    if (installerPage)
-                    {
-                        session->installerVmStarted = true;
-                        installerPage->SetStatus(L"Máquina virtual iniciada. O QEMU entregou o primeiro framebuffer; o instalador do sistema deve aparecer na tela.");
-                    }
-                    if (guestPage)
-                        guestPage->SetDisplayStatus(L"Máquina virtual iniciada. Primeiro framebuffer recebido do QEMU.", true);
-                    status->Text = L"Máquina virtual iniciada: primeiro framebuffer recebido e enviado ao Direct3D 11 / HLSL.";
-                    OnyxLogger::Qemu(L"QEMU initialized and first guest framebuffer received; VM startup confirmed.");
                 });
 
             stopButton->Click += ref new RoutedEventHandler(
