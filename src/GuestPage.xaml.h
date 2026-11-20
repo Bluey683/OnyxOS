@@ -20,5 +20,9 @@ namespace OnyxOS
         void StopButton_Click(
             Platform::Object^ sender,
             Windows::UI::Xaml::RoutedEventArgs^ args);
+        void FullScreenButton_Click(Platform::Object^ sender,
+            Windows::UI::Xaml::RoutedEventArgs^ args);
+        void ShowControlsButton_Click(Platform::Object^ sender,
+            Windows::UI::Xaml::RoutedEventArgs^ args);
     };
 }
