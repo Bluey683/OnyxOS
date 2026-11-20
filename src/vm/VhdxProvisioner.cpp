@@ -24,7 +24,7 @@ namespace vm
         std::wstring StatePathForProfile(const std::string& id)
         {
             if (id.empty()) return {};
-            std::wstring path = L"C:\\DevelopmentFiles\\OnyxOS\\State\\";
+            std::wstring path = L"D:\\DevelopmentFiles\\OnyxOS\\State\\";
             path.append(id.begin(), id.end());
             path += L".installed";
             return path;
@@ -50,9 +50,9 @@ namespace vm
         if (!filename) return {};
 
         const wchar_t* roots[] = {
-            L"C:\\DevelopmentFiles\\OnyxOS\\VHDX\\",
-            L"C:\\DevelopmentFiles\\OnyxOS\\",
-            L"C:\\DevelopmentFiles\\"
+            L"D:\\DevelopmentFiles\\OnyxOS\\VHDX\\",
+            L"D:\\DevelopmentFiles\\OnyxOS\\",
+            L"D:\\DevelopmentFiles\\"
         };
         for (const auto root : roots)
         {
@@ -124,8 +124,8 @@ namespace vm
     {
         const auto path = StatePathForProfile(profileId);
         if (path.empty()) return false;
-        CreateDirectoryW(L"C:\\DevelopmentFiles\\OnyxOS", nullptr);
-        CreateDirectoryW(L"C:\\DevelopmentFiles\\OnyxOS\\State", nullptr);
+        CreateDirectoryW(L"D:\\DevelopmentFiles\\OnyxOS", nullptr);
+        CreateDirectoryW(L"D:\\DevelopmentFiles\\OnyxOS\\State", nullptr);
         HANDLE file = CreateFile2(path.c_str(), GENERIC_WRITE, 0, CREATE_ALWAYS, nullptr);
         if (file == INVALID_HANDLE_VALUE) return false;
         const char marker[] = "OnyxOS installation confirmed by user.\r\n";
