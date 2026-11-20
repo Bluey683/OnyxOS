@@ -34,10 +34,11 @@ namespace onyx::vm
         for (auto name : required)
             if (!GetProcAddress(m_module, name)) m_missing.emplace_back(name);
 
-        m_videoUpdateRegister = reinterpret_cast<RegisterVideoUpdateFn>(GetProcAddress(m_module, "qemu_host_register_video_update_callback"));
+        // Match the upstream QEMU-UWP-Host ABI: V2 uses register_video_callback;
+        // legacy uses set_video_callback. Do not call the undocumented update variant.
         m_videoRegister = reinterpret_cast<RegisterVideoFn>(GetProcAddress(m_module, "qemu_host_register_video_callback"));
-        if (!m_videoUpdateRegister && !m_videoRegister &&
-            !GetProcAddress(m_module, "qemu_host_set_video_callback"))
+        m_videoSet = reinterpret_cast<SetVideoFn>(GetProcAddress(m_module, "qemu_host_set_video_callback"));
+        if (!m_videoRegister && !m_videoSet)
             m_missing.emplace_back("QEMU video callback registration");
 
         if (!m_missing.empty())
@@ -84,10 +85,10 @@ namespace onyx::vm
             return false;
         }
         m_videoCallback = std::move(onVideoFrame);
-        if (m_videoUpdateRegister)
-            m_videoUpdateRegister(&QemuHostAdapter::VideoUpdateThunk, this);
-        else if (m_videoRegister)
+        if (m_videoRegister)
             m_videoRegister(&QemuHostAdapter::VideoThunk, this);
+        else if (m_videoSet)
+            m_videoSet(&QemuHostAdapter::VideoThunk, this);
         m_stopRequested = false;
         try { m_worker = std::thread(&QemuHostAdapter::Run, this, arguments); }
         catch (...) { m_error = L"Não foi possível criar a thread do QEMU."; return false; }
@@ -142,12 +143,6 @@ namespace onyx::vm
         m_running = false;
     }
 
-    void QemuHostAdapter::VideoUpdateThunk(void* opaque, const void* pixels, int width, int height, int stride, int format, int x, int y, int updateWidth, int updateHeight)
-    {
-        auto self = static_cast<QemuHostAdapter*>(opaque);
-        if (self && self->m_videoCallback) self->m_videoCallback(pixels, width, height, stride, format);
-    }
-
     void QemuHostAdapter::VideoThunk(void* opaque, const void* pixels, int width, int height, int stride, int format)
     {
         auto self = static_cast<QemuHostAdapter*>(opaque);
@@ -159,7 +154,7 @@ namespace onyx::vm
         if (m_module) FreeLibrary(m_module);
         m_module = nullptr; m_compatible = false; m_apiVersion = 0;
         m_init = nullptr; m_step = nullptr; m_shutdown = nullptr; m_join = nullptr;
-        m_videoUpdateRegister = nullptr; m_videoRegister = nullptr;
+        m_videoRegister = nullptr; m_videoSet = nullptr;
         m_keyNumber = nullptr; m_keyQcode = nullptr; m_pointerRel = nullptr;
         m_pointerAbs = nullptr; m_pointerButton = nullptr; m_wake = nullptr;
         m_videoCallback = {};
