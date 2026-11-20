@@ -44,6 +44,29 @@ namespace vm
         }
     }
 
+    bool EnsureDevelopmentFilesDirectories()
+    {
+        const wchar_t* directories[] = {
+            L"D:\\DevelopmentFiles",
+            L"D:\\DevelopmentFiles\\OnyxOS",
+            L"D:\\DevelopmentFiles\\OnyxOS\\VHDX",
+            L"D:\\DevelopmentFiles\\OnyxOS\\ISO",
+            L"D:\\DevelopmentFiles\\OnyxOS\\State"
+        };
+        for (const auto directory : directories)
+        {
+            if (CreateDirectoryW(directory, nullptr))
+                continue;
+            if (GetLastError() != ERROR_ALREADY_EXISTS)
+                return false;
+            const DWORD attributes = GetFileAttributesW(directory);
+            if (attributes == INVALID_FILE_ATTRIBUTES ||
+                !(attributes & FILE_ATTRIBUTE_DIRECTORY))
+                return false;
+        }
+        return true;
+    }
+
     std::wstring FindDevelopmentFilesVhdx(const std::string& profileId)
     {
         const wchar_t* filename = DiskNameForProfile(profileId);
