@@ -589,7 +589,10 @@ namespace OnyxOS
                             inputBridge->SendPointerButton(1, false);
                             inputBridge->SendPointerButton(2, false);
                         });
-                    pointerInput->Start();
+                    Concurrency::create_task([pointerInput]()
+                    {
+                        pointerInput->Dispatcher->ProcessEvents(Windows::UI::Core::CoreProcessEventsOption::ProcessUntilQuit);
+                    });
                     OnyxLogger::Qemu(L"Keyboard, mouse and pointer input handlers attached to the active guest surface.");
 
                     // Enter immersive guest display automatically as soon as the VM page is shown.
