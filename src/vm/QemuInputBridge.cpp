@@ -35,16 +35,14 @@ namespace onyx { namespace vm
     {
         m_surfaceWidth=(width>1?width:1920); m_surfaceHeight=(height>1?height:1080);
         m_gamepadX=x; m_gamepadY=y;
-        if (!m_havePointer) { m_lastX=x; m_lastY=y; m_havePointer=true; return; }
-        const int dx=static_cast<int>(std::lround(x-m_lastX));
-        const int dy=static_cast<int>(std::lround(y-m_lastY));
-        m_lastX=x; m_lastY=y;
-        if (dx || dy)
-        {
-            if (!m_host.SendPointerRelative(dx,dy))
-                m_host.SendPointerAbsolute(static_cast<int>(x),static_cast<int>(y),static_cast<int>(m_surfaceWidth),static_cast<int>(m_surfaceHeight));
-            m_host.WakeMainLoop();
-        }
+        const int dx=m_havePointer?static_cast<int>(std::lround(x-m_lastX)):0;
+        const int dy=m_havePointer?static_cast<int>(std::lround(y-m_lastY)):0;
+        m_lastX=x; m_lastY=y; m_havePointer=true;
+        // Send absolute tablet coordinates immediately, including the first event.
+        m_host.SendPointerAbsolute(static_cast<int>(x),static_cast<int>(y),
+            static_cast<int>(m_surfaceWidth),static_cast<int>(m_surfaceHeight));
+        if (dx || dy) m_host.SendPointerRelative(dx,dy);
+        m_host.WakeMainLoop();
     }
 
     void QemuInputBridge::SendPointerButton(int button, bool down) noexcept
