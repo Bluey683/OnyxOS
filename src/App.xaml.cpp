@@ -237,11 +237,20 @@ namespace OnyxOS
                         [session, status](StorageFile^ file)
                         {
                             if (file == nullptr) return;
-                            session->config.isoPath = ToUtf8(file->Path->Data());
+                            const std::wstring isoPath(file->Path->Data());
+                            if (!onyx::vm::IsRecognizedIsoFile(isoPath))
+                            {
+                                session->isoSelected = false;
+                                session->config.isoPath.clear();
+                                status->Text = L"ISO não reconhecida. Escolha uma imagem ISO9660 válida.";
+                                OnyxLogger::Qemu(L"ISO rejected: ISO9660 primary volume descriptor not found.");
+                                return;
+                            }
+                            session->config.isoPath = ToUtf8(isoPath);
                             session->isoSelected = !session->config.isoPath.empty();
-                            status->Text = L"ISO selecionada: " + file->Name +
-                                L"\nAgora selecione o disco VHDX.";
-                            OnyxLogger::Qemu(L"ISO selected: " + file->Name);
+                            status->Text = L"ISO reconhecida: " + file->Name +
+                                L"\\nAgora selecione ou confirme o disco VHDX.";
+                            OnyxLogger::Qemu(L"Recognized ISO selected: " + file->Name);
                         }, task_continuation_context::use_current());
                 });
 
@@ -260,11 +269,39 @@ namespace OnyxOS
                         [session, status](StorageFile^ file)
                         {
                             if (file == nullptr) return;
-                            session->config.diskPath = ToUtf8(file->Path->Data());
-                            session->diskSelected = !session->config.diskPath.empty();
-                            status->Text = L"Disco selecionado: " + file->Name +
-                                L"\nISO e VHDX prontos para validar e iniciar.";
-                            OnyxLogger::Qemu(L"VHDX selected: " + file->Name);
+                            std::wstring targetName;
+                            if (session->config.id == "windows10") targetName = L"Windows10.vhdx";
+                            else if (session->config.id == "windows11") targetName = L"Windows11.vhdx";
+                            else if (session->config.id == "debian") targetName = L"Debian.vhdx";
+                            else if (session->config.id == "ubuntu") targetName = L"Ubuntu.vhdx";
+                            else if (session->config.id == "arch") targetName = L"ArchLinux.vhdx";
+                            else if (session->config.id == "macos") targetName = L"MacOS.vhdx";
+
+                            CreateDirectoryW(L"C:\\\\DevelopmentFiles", nullptr);
+                            CreateDirectoryW(L"C:\\\\DevelopmentFiles\\\\OnyxOS", nullptr);
+                            CreateDirectoryW(L"C:\\\\DevelopmentFiles\\\\OnyxOS\\\\VHDX", nullptr);
+                            std::wstring selectedPath(file->Path->Data());
+                            if (!targetName.empty())
+                            {
+                                std::wstring destination = L"C:\\\\DevelopmentFiles\\\\OnyxOS\\\\VHDX\\\\";
+                                destination += targetName;
+                                if (CopyFileW(selectedPath.c_str(), destination.c_str(), FALSE))
+                                    selectedPath = destination;
+                            }
+
+                            if (!onyx::vm::IsValidVhdxFile(selectedPath))
+                            {
+                                session->diskSelected = false;
+                                session->config.diskPath.clear();
+                                status->Text = L"VHDX inválido ou inacessível. Verifique o arquivo antes de iniciar.";
+                                OnyxLogger::Qemu(L"VHDX rejected by container signature validation.");
+                                return;
+                            }
+                            session->config.diskPath = ToUtf8(selectedPath);
+                            session->diskSelected = true;
+                            status->Text = L"VHDX reconhecido: " + file->Name +
+                                L"\\nDisco validado. O caminho de DevelopmentFiles será usado quando a cópia for permitida.";
+                            OnyxLogger::Qemu(L"Validated VHDX selected: " + file->Name);
                         }, task_continuation_context::use_current());
                 });
 
