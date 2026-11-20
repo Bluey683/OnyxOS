@@ -6,7 +6,7 @@
 
 namespace wgi = winrt::Windows::Gaming::Input;
 
-namespace onyx::vm
+namespace onyx { namespace vm
 {
     int QemuInputBridge::MapVirtualKey(int key) noexcept
     {
@@ -90,8 +90,8 @@ namespace onyx::vm
         {
             if(!m_host.SendPointerRelative(dx,dy))
             {
-                m_gamepadX=std::clamp(m_gamepadX+dx,0.0f,m_surfaceWidth-1.0f);
-                m_gamepadY=std::clamp(m_gamepadY+dy,0.0f,m_surfaceHeight-1.0f);
+                m_gamepadX=std::max(0.0f, std::min(m_gamepadX+dx,m_surfaceWidth-1.0f));
+                m_gamepadY=std::max(0.0f, std::min(m_gamepadY+dy,m_surfaceHeight-1.0f));
                 m_host.SendPointerAbsolute(static_cast<int>(m_gamepadX),static_cast<int>(m_gamepadY),static_cast<int>(m_surfaceWidth),static_cast<int>(m_surfaceHeight));
             }
             m_host.WakeMainLoop();
@@ -113,4 +113,4 @@ namespace onyx::vm
         if(m_middle)SendPointerButton(2,false);
         m_left=m_right=m_middle=false; m_previousButtons=0;
     }
-}
+}}
