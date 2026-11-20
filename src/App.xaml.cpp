@@ -547,8 +547,8 @@ namespace OnyxOS
                     // Do not run CoreIndependentInputSource::Dispatcher::ProcessEvents
                     // from a ThreadPool task: its dispatcher belongs to the UI thread,
                     // and pumping it from another thread can terminate the app at launch.
-                    activeGuestPanel->PointerMoved += ref new PointerEventHandler(
-                        [inputBridge, activeGuestPanel](Object^, PointerRoutedEventArgs^ args)
+                    activeGuestPanel->PointerMoved += ref new Windows::UI::Xaml::Input::PointerEventHandler(
+                        [inputBridge, activeGuestPanel](Object^, Windows::UI::Xaml::Input::PointerRoutedEventArgs^ args)
                         {
                             auto point = args->GetCurrentPoint(activeGuestPanel);
                             auto properties = point->Properties;
@@ -558,8 +558,8 @@ namespace OnyxOS
                             inputBridge->SendPointerButton(1, properties->IsMiddleButtonPressed);
                             inputBridge->SendPointerButton(2, properties->IsRightButtonPressed);
                         });
-                    activeGuestPanel->PointerPressed += ref new PointerEventHandler(
-                        [inputBridge, activeGuestPanel](Object^, PointerRoutedEventArgs^ args)
+                    activeGuestPanel->PointerPressed += ref new Windows::UI::Xaml::Input::PointerEventHandler(
+                        [inputBridge, activeGuestPanel](Object^, Windows::UI::Xaml::Input::PointerRoutedEventArgs^ args)
                         {
                             auto point = args->GetCurrentPoint(activeGuestPanel);
                             auto properties = point->Properties;
@@ -570,16 +570,16 @@ namespace OnyxOS
                             inputBridge->SendPointerButton(2, properties->IsRightButtonPressed);
                             activeGuestPanel->CapturePointer(args->Pointer);
                         });
-                    activeGuestPanel->PointerReleased += ref new PointerEventHandler(
-                        [inputBridge](Object^, PointerRoutedEventArgs^ args)
+                    activeGuestPanel->PointerReleased += ref new Windows::UI::Xaml::Input::PointerEventHandler(
+                        [inputBridge](Object^, Windows::UI::Xaml::Input::PointerRoutedEventArgs^ args)
                         {
                             auto properties = args->GetCurrentPoint()->Properties;
                             inputBridge->SendPointerButton(0, properties->IsLeftButtonPressed);
                             inputBridge->SendPointerButton(1, properties->IsMiddleButtonPressed);
                             inputBridge->SendPointerButton(2, properties->IsRightButtonPressed);
                         });
-                    activeGuestPanel->PointerCaptureLost += ref new PointerEventHandler(
-                        [inputBridge](Object^, PointerRoutedEventArgs^)
+                    activeGuestPanel->PointerCaptureLost += ref new Windows::UI::Xaml::Input::PointerEventHandler(
+                        [inputBridge](Object^, Windows::UI::Xaml::Input::PointerRoutedEventArgs^)
                         {
                             inputBridge->SendPointerButton(0, false);
                             inputBridge->SendPointerButton(1, false);
