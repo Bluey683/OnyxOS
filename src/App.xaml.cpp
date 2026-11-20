@@ -12,6 +12,7 @@
 #include <vector>
 #include <ppltasks.h>
 #include <windows.h>
+#include <fileapifromapp.h>
 #include <windows.storage.h>
 #include <windows.storage.pickers.h>
 
@@ -194,7 +195,10 @@ namespace OnyxOS
                         }
                         const bool alreadyInstalled =
                             onyx::vm::IsInstallationMarkedComplete(profileId);
-                        session->isoSelected = alreadyInstalled;
+                        const auto existingIso = onyx::vm::FindDevelopmentFilesIso(profileId);
+                        session->isoSelected = !alreadyInstalled && !existingIso.empty();
+                        if (session->isoSelected)
+                            session->config.isoPath = ToUtf8(existingIso);
 
                         if (!session->config.enabled)
                         {
@@ -258,18 +262,20 @@ namespace OnyxOS
                             {
                                 session->isoSelected = false;
                                 session->config.isoPath.clear();
-                                status->Text = L"ISO não reconhecida. Escolha uma imagem ISO9660 válida.";
-                                OnyxLogger::Qemu(L"ISO rejected: ISO9660 primary volume descriptor not found.");
+                                const DWORD error = GetLastError();
+                                status->Text = L"ISO inacessível ou inválida (erro " + error +
+                                    L"). O Xbox não conseguiu ler o cabeçalho ISO9660.";
+                                OnyxLogger::Qemu(L"ISO rejected or inaccessible through UWP file APIs.");
                                 return;
                             }
-                            CreateDirectoryW(L"D:\\DevelopmentFiles", nullptr);
+                            CreateDirectoryFromAppW(L"D:\\DevelopmentFiles", nullptr);
                             CreateDirectoryW(L"D:\\DevelopmentFiles\\OnyxOS", nullptr);
                             CreateDirectoryW(L"D:\\DevelopmentFiles\\OnyxOS\\ISO", nullptr);
                             std::wstring isoName = L"D:\\DevelopmentFiles\\OnyxOS\\ISO\\";
                             isoName.append(session->config.id.begin(), session->config.id.end());
                             isoName += L".iso";
                             if (selectedIso != isoName &&
-                                !CopyFileW(selectedIso.c_str(), isoName.c_str(), FALSE))
+                                !CopyFileFromAppW(selectedIso.c_str(), isoName.c_str(), FALSE))
                             {
                                 session->isoSelected = false;
                                 status->Text = L"Não foi possível copiar a ISO para DevelopmentFiles. Verifique o acesso do Xbox Dev Mode à pasta.";
