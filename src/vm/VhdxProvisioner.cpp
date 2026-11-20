@@ -1,6 +1,7 @@
 #include "VhdxProvisioner.h"
 
 #include <windows.h>
+#include <fileapifromapp.h>
 #include <cstdint>
 #include <string>
 
@@ -55,11 +56,11 @@ namespace vm
         };
         for (const auto directory : directories)
         {
-            if (CreateDirectoryW(directory, nullptr))
+            if (CreateDirectoryFromAppW(directory, nullptr))
                 continue;
             if (GetLastError() != ERROR_ALREADY_EXISTS)
                 return false;
-            const DWORD attributes = GetFileAttributesW(directory);
+            const DWORD attributes = GetFileAttributesExFromAppW(directory);
             if (attributes == INVALID_FILE_ATTRIBUTES ||
                 !(attributes & FILE_ATTRIBUTE_DIRECTORY))
                 return false;
@@ -93,7 +94,7 @@ namespace vm
     bool IsValidVhdxFile(const std::wstring& path)
     {
         if (path.empty()) return false;
-        HANDLE file = CreateFile2(path.c_str(), GENERIC_READ,
+        HANDLE file = CreateFile2FromAppW(path.c_str(), GENERIC_READ,
             FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
             OPEN_EXISTING, nullptr);
         if (file == INVALID_HANDLE_VALUE) return false;
@@ -162,7 +163,7 @@ namespace vm
     void ClearInstallationMark(const std::string& profileId)
     {
         const auto path = StatePathForProfile(profileId);
-        if (!path.empty()) DeleteFileW(path.c_str());
+        if (!path.empty()) DeleteFileFromAppW(path.c_str());
     }
 
 }
