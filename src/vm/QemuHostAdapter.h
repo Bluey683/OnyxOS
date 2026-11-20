@@ -7,7 +7,9 @@
 #include <atomic>
 #include <windows.h>
 
-namespace onyx::vm
+namespace onyx
+{
+namespace vm
 {
     class QemuHostAdapter final
     {
@@ -76,4 +78,6 @@ namespace onyx::vm
         PointerButtonFn m_pointerButton{ nullptr };
         WakeFn m_wake{ nullptr };
     };
+}
+
 }
