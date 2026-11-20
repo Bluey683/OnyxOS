@@ -35,6 +35,9 @@ try {
     $sourceRuntime = Join-Path $sourceRoot.FullName 'Dependencies/Runtime'
     $sourceFirmware = Join-Path $sourceRoot.FullName 'qemu'
     $firmwareDirectory = Join-Path $RepositoryRoot 'qemu'
+    # Create every destination before copying files. The upstream firmware
+    # directory is outside Dependencies and may not exist in a clean checkout.
+    New-Item -ItemType Directory -Force -Path $qemuDirectory, $runtimeDirectory, $firmwareDirectory | Out-Null
     $mainDll = Join-Path $sourceQemu 'qemu-system-x86_64.dll'
     if (-not (Test-Path -LiteralPath $mainDll -PathType Leaf)) {
         throw "A DLL qemu-system-x86_64.dll não foi encontrada em $sourceQemu"
