@@ -123,6 +123,11 @@ namespace onyx::vm
             return false;
         }
         m_videoCallback = std::move(onVideoFrame);
+        {
+            std::lock_guard<std::mutex> lock(m_startMutex);
+            m_startComplete = false;
+            m_startSucceeded = false;
+        }
         if (m_videoRegister)
             m_videoRegister(&QemuHostAdapter::VideoThunk, this);
         else if (m_videoSet)
@@ -130,6 +135,22 @@ namespace onyx::vm
         m_stopRequested = false;
         try { m_worker = std::thread(&QemuHostAdapter::Run, this, arguments); }
         catch (...) { m_error = L"Não foi possível criar a thread do QEMU."; return false; }
+        std::unique_lock<std::mutex> lock(m_startMutex);
+        if (!m_startCondition.wait_for(lock, std::chrono::seconds(20),
+            [this] { return m_startComplete; }))
+        {
+            m_error = L"Tempo esgotado aguardando qemu_host_init (20 segundos).";
+            lock.unlock();
+            Stop();
+            return false;
+        }
+        const bool initialized = m_startSucceeded;
+        lock.unlock();
+        if (!initialized)
+        {
+            if (m_worker.joinable()) m_worker.join();
+            return false;
+        }
         return true;
     }
 
@@ -150,8 +171,20 @@ namespace onyx::vm
             m_error = L"qemu_host_init falhou: " + std::to_wstring(initResult);
             OnyxOS::WriteQemuLogNative(m_error.c_str());
             m_running = false;
+            {
+                std::lock_guard<std::mutex> lock(m_startMutex);
+                m_startComplete = true;
+                m_startSucceeded = false;
+            }
+            m_startCondition.notify_all();
             return;
         }
+        {
+            std::lock_guard<std::mutex> lock(m_startMutex);
+            m_startComplete = true;
+            m_startSucceeded = true;
+        }
+        m_startCondition.notify_all();
         OnyxOS::WriteQemuLogNative(L"QEMU initialized; entering main loop.");
         int status = 0;
         while (!m_stopRequested)
