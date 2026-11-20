@@ -2,7 +2,7 @@
 #include "QemuHostAdapter.h"
 #include <cstdint>
 
-namespace onyx::vm
+namespace onyx { namespace vm
 {
     class QemuInputBridge final
     {
@@ -24,4 +24,4 @@ namespace onyx::vm
         bool m_havePointer{false};
         bool m_left{false}, m_right{false}, m_middle{false};
     };
-}
+}}
