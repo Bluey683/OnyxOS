@@ -293,11 +293,11 @@ namespace OnyxOS
                     arguments.insert(arguments.begin(), "qemu-system-x86_64");
                     auto dispatcher = status->Dispatcher;
                     const bool started = session->host->Start(arguments,
-                        [dispatcher, status](const void*, int width, int height, int, int)
+                        [dispatcher, status](const std::vector<std::uint32_t>& bgraFrame, int width, int height)
                         {
-                            const std::wstring message = L"QEMU enviou framebuffer " +
+                            const std::wstring message = L"Framebuffer QEMU recebido e convertido para BGRA32: " +
                                 std::to_wstring(width) + L"x" + std::to_wstring(height) +
-                                L". Apresentação Direct3D/HLSL ainda precisa ser ligada.";
+                                L" (" + std::to_wstring(bgraFrame.size()) + L" pixels). Renderizador Direct3D/HLSL ainda não conectado.";
                             dispatcher->RunAsync(CoreDispatcherPriority::Normal,
                                 ref new DispatchedHandler([status, message]()
                                 {
