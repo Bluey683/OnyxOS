@@ -1,8 +1,117 @@
 #include "VhdxProvisioner.h"
-namespace onyx::vm {
-DiskProvisioningResult CreateVhdxForInstall(const DiskProvisioningRequest& r) {
-if(r.profileId.empty()||r.destinationPath.empty())return {false,L"Profile and VHDX destination are required."};
-if(r.sizeBytes<16ull*1024*1024*1024)return {false,L"Virtual disk must be at least 16 GiB."};
-return {false,L"Automatic VHDX creation is not available yet: the referenced QEMU UWP runtime does not ship qemu-img or a disk-creation export. No empty file will be mislabeled as a valid VHDX."};
+
+#include <windows.h>
+#include <cstdint>
+#include <string>
+
+namespace onyx
+{
+namespace vm
+{
+    namespace
+    {
+        const wchar_t* DiskNameForProfile(const std::string& id)
+        {
+            if (id == "windows10") return L"Windows10.vhdx";
+            if (id == "windows11") return L"Windows11.vhdx";
+            if (id == "debian") return L"Debian.vhdx";
+            if (id == "ubuntu") return L"Ubuntu.vhdx";
+            if (id == "arch") return L"ArchLinux.vhdx";
+            if (id == "macos") return L"MacOS.vhdx";
+            return nullptr;
+        }
+
+        std::wstring StatePathForProfile(const std::string& id)
+        {
+            if (id.empty()) return {};
+            std::wstring path = L"C:\\DevelopmentFiles\\OnyxOS\\State\\";
+            path.append(id.begin(), id.end());
+            path += L".installed";
+            return path;
+        }
+
+        bool ReadSignature(HANDLE file, std::uint64_t offset, const char* expected)
+        {
+            LARGE_INTEGER position;
+            position.QuadPart = static_cast<LONGLONG>(offset);
+            if (!SetFilePointerEx(file, position, nullptr, FILE_BEGIN)) return false;
+            char actual[8] = {};
+            DWORD read = 0;
+            return ReadFile(file, actual, 4, &read, nullptr) &&
+                read == 4 && actual[0] == expected[0] &&
+                actual[1] == expected[1] && actual[2] == expected[2] &&
+                actual[3] == expected[3];
+        }
+    }
+
+    std::wstring FindDevelopmentFilesVhdx(const std::string& profileId)
+    {
+        const wchar_t* filename = DiskNameForProfile(profileId);
+        if (!filename) return {};
+
+        const wchar_t* roots[] = {
+            L"C:\\DevelopmentFiles\\OnyxOS\\VHDX\\",
+            L"C:\\DevelopmentFiles\\OnyxOS\\",
+            L"C:\\DevelopmentFiles\\"
+        };
+        for (const auto root : roots)
+        {
+            std::wstring candidate(root);
+            candidate += filename;
+            const DWORD attributes = GetFileAttributesW(candidate.c_str());
+            if (attributes != INVALID_FILE_ATTRIBUTES &&
+                !(attributes & FILE_ATTRIBUTE_DIRECTORY) &&
+                IsValidVhdxFile(candidate))
+                return candidate;
+        }
+        return {};
+    }
+
+    bool IsValidVhdxFile(const std::wstring& path)
+    {
+        if (path.empty()) return false;
+        HANDLE file = CreateFileW(path.c_str(), GENERIC_READ,
+            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+            nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+        if (file == INVALID_HANDLE_VALUE) return false;
+
+        LARGE_INTEGER size = {};
+        const bool largeEnough = GetFileSizeEx(file, &size) &&
+            size.QuadPart >= 3ll * 1024ll * 1024ll;
+        const bool valid = largeEnough &&
+            ReadSignature(file, 0, "vhdx") &&
+            ReadSignature(file, 64ull * 1024ull, "head") &&
+            ReadSignature(file, 128ull * 1024ull, "head") &&
+            ReadSignature(file, 192ull * 1024ull, "regi");
+        CloseHandle(file);
+        return valid;
+    }
+
+    bool IsInstallationMarkedComplete(const std::string& profileId)
+    {
+        const auto path = StatePathForProfile(profileId);
+        if (path.empty()) return false;
+        const DWORD attributes = GetFileAttributesW(path.c_str());
+        return attributes != INVALID_FILE_ATTRIBUTES &&
+            !(attributes & FILE_ATTRIBUTE_DIRECTORY);
+    }
+
+    bool MarkInstallationComplete(const std::string& profileId)
+    {
+        const auto path = StatePathForProfile(profileId);
+        if (path.empty()) return false;
+        CreateDirectoryW(L"C:\\DevelopmentFiles\\OnyxOS", nullptr);
+        CreateDirectoryW(L"C:\\DevelopmentFiles\\OnyxOS\\State", nullptr);
+        HANDLE file = CreateFileW(path.c_str(), GENERIC_WRITE, 0, nullptr,
+            CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+        if (file == INVALID_HANDLE_VALUE) return false;
+        const char marker[] = "OnyxOS installation confirmed by user.\r\n";
+        DWORD written = 0;
+        const bool ok = WriteFile(file, marker,
+            static_cast<DWORD>(sizeof(marker) - 1), &written, nullptr) &&
+            written == sizeof(marker) - 1;
+        CloseHandle(file);
+        return ok;
+    }
 }
 }
