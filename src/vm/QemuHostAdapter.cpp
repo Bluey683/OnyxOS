@@ -76,6 +76,8 @@ namespace onyx::vm
         // legacy uses set_video_callback. Do not call the undocumented update variant.
         m_videoRegister = reinterpret_cast<RegisterVideoFn>(GetProcAddress(m_module, "qemu_host_register_video_callback"));
         m_videoSet = reinterpret_cast<SetVideoFn>(GetProcAddress(m_module, "qemu_host_set_video_callback"));
+        m_logRegister = reinterpret_cast<RegisterLogV2Fn>(GetProcAddress(m_module, "qemu_host_register_log_callback"));
+        m_logSet = reinterpret_cast<SetLogLegacyFn>(GetProcAddress(m_module, "qemu_host_set_log_callback"));
         if (!m_videoRegister && !m_videoSet)
             m_missing.emplace_back("QEMU video callback registration");
 
@@ -129,6 +131,15 @@ namespace onyx::vm
             m_startSucceeded = false;
             m_firstFrameReceived = false;
         }
+        if (m_logRegister) {
+            m_logRegister(&QemuHostAdapter::LogThunkV2, this);
+            OnyxOS::WriteQemuLogNative(L"Registered QEMU v2 native log callback.");
+        } else if (m_logSet) {
+            m_logSet(&QemuHostAdapter::LogThunkLegacy, this);
+            OnyxOS::WriteQemuLogNative(L"Registered legacy QEMU native log callback.");
+        } else {
+            OnyxOS::WriteQemuLogNative(L"WARNING: QEMU DLL has no native log callback export.");
+        }
         if (m_videoRegister)
             m_videoRegister(&QemuHostAdapter::VideoThunk, this);
         else if (m_videoSet)
@@ -176,6 +187,11 @@ namespace onyx::vm
         argv.reserve(arguments.size());
         for (const auto& arg : arguments) argv.push_back(arg.c_str());
         m_running = true;
+        OnyxOS::WriteQemuLogNative(L"QEMU argv:");
+        for (const auto& arg : arguments) {
+            const int count = MultiByteToWideChar(CP_UTF8, 0, arg.c_str(), -1, nullptr, 0);
+            if (count > 1) { std::wstring wide(static_cast<std::size_t>(count), L"\\0"[0]); MultiByteToWideChar(CP_UTF8, 0, arg.c_str(), -1, wide.data(), count); wide.resize(static_cast<std::size_t>(count - 1)); OnyxOS::WriteQemuLogNative(wide.c_str()); }
+        }
         OnyxOS::WriteQemuLogNative(L"Calling qemu_host_init.");
         const int initResult = m_init(static_cast<int>(argv.size()), argv.data());
         if (initResult != 0)
@@ -227,6 +243,22 @@ namespace onyx::vm
         m_running = false;
     }
 
+    void QemuHostAdapter::LogThunkV2(void*, int level, const char* message)
+    {
+        if (!message) return;
+        const int count = MultiByteToWideChar(CP_UTF8, 0, message, -1, nullptr, 0);
+        if (count <= 1) return;
+        std::wstring wide(static_cast<std::size_t>(count), L"\\0"[0]);
+        MultiByteToWideChar(CP_UTF8, 0, message, -1, wide.data(), count);
+        wide.resize(static_cast<std::size_t>(count - 1));
+        OnyxOS::WriteQemuLogNative((L"[QEMU native level " + std::to_wstring(level) + L"] " + wide).c_str());
+    }
+
+    void QemuHostAdapter::LogThunkLegacy(int level, const char* message, void* opaque)
+    {
+        LogThunkV2(opaque, level, message);
+    }
+
     void QemuHostAdapter::VideoThunk(void* opaque, const void* pixels, int width, int height, int stride, int format)
     {
         auto self = static_cast<QemuHostAdapter*>(opaque);
@@ -255,6 +287,7 @@ namespace onyx::vm
         m_module = nullptr; m_compatible = false; m_apiVersion = 0;
         m_init = nullptr; m_step = nullptr; m_shutdown = nullptr; m_join = nullptr;
         m_videoRegister = nullptr; m_videoSet = nullptr;
+        m_logRegister = nullptr; m_logSet = nullptr;
         m_keyNumber = nullptr; m_keyQcode = nullptr; m_pointerRel = nullptr;
         m_pointerAbs = nullptr; m_pointerButton = nullptr; m_wake = nullptr;
         m_videoCallback = {};
