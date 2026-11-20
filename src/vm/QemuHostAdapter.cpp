@@ -34,7 +34,7 @@ namespace onyx::vm
         for (auto name : required)
             if (!GetProcAddress(m_module, name)) m_missing.emplace_back(name);
 
-        m_videoUpdateRegister = reinterpret_cast<VideoUpdateCallbackFn>(GetProcAddress(m_module, "qemu_host_register_video_update_callback"));
+        m_videoUpdateRegister = reinterpret_cast<RegisterVideoUpdateFn>(GetProcAddress(m_module, "qemu_host_register_video_update_callback"));
         m_videoRegister = reinterpret_cast<RegisterVideoFn>(GetProcAddress(m_module, "qemu_host_register_video_callback"));
         if (!m_videoUpdateRegister && !m_videoRegister &&
             !GetProcAddress(m_module, "qemu_host_set_video_callback"))
