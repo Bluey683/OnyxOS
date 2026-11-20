@@ -241,8 +241,8 @@ namespace OnyxOS
                         [session, status](StorageFile^ file)
                         {
                             if (file == nullptr) return;
-                            const std::wstring isoPath(file->Path->Data());
-                            if (!onyx::vm::IsRecognizedIsoFile(isoPath))
+                            std::wstring selectedIso(file->Path->Data());
+                            if (!onyx::vm::IsRecognizedIsoFile(selectedIso))
                             {
                                 session->isoSelected = false;
                                 session->config.isoPath.clear();
@@ -250,11 +250,20 @@ namespace OnyxOS
                                 OnyxLogger::Qemu(L"ISO rejected: ISO9660 primary volume descriptor not found.");
                                 return;
                             }
-                            session->config.isoPath = ToUtf8(isoPath);
+                            CreateDirectoryW(L"C:\\DevelopmentFiles", nullptr);
+                            CreateDirectoryW(L"C:\\DevelopmentFiles\\OnyxOS", nullptr);
+                            CreateDirectoryW(L"C:\\DevelopmentFiles\\OnyxOS\\ISO", nullptr);
+                            std::wstring isoName = L"C:\\DevelopmentFiles\\OnyxOS\\ISO\\";
+                            isoName.append(session->config.id.begin(), session->config.id.end());
+                            isoName += L".iso";
+                            if (CopyFileW(selectedIso.c_str(), isoName.c_str(), FALSE))
+                                selectedIso = isoName;
+                            session->config.isoPath = ToUtf8(selectedIso);
                             session->isoSelected = !session->config.isoPath.empty();
+                            onyx::vm::ClearInstallationMark(session->config.id);
                             status->Text = L"ISO reconhecida: " + file->Name +
-                                L"\\nAgora selecione ou confirme o disco VHDX.";
-                            OnyxLogger::Qemu(L"Recognized ISO selected: " + file->Name);
+                                L"\\nA instalação/reinstalação será iniciada pelo ISO.";
+                            OnyxLogger::Qemu(L"Recognized ISO selected; installation marker cleared for reinstall.");
                         }, task_continuation_context::use_current());
                 });
 
@@ -283,11 +292,11 @@ namespace OnyxOS
 
                             CreateDirectoryW(L"C:\\DevelopmentFiles", nullptr);
                             CreateDirectoryW(L"C:\\DevelopmentFiles\\OnyxOS", nullptr);
-                            CreateDirectoryW(L"C:\\DevelopmentFiles\\OnyxOS\\\\VHDX", nullptr);
+                            CreateDirectoryW(L"C:\\DevelopmentFiles\\OnyxOS\\VHDX", nullptr);
                             std::wstring selectedPath(file->Path->Data());
                             if (!targetName.empty())
                             {
-                                std::wstring destination = L"C:\\DevelopmentFiles\\OnyxOS\\\\VHDX\\";
+                                std::wstring destination = L"C:\\DevelopmentFiles\\OnyxOS\\VHDX\\";
                                 destination += targetName;
                                 if (CopyFileW(selectedPath.c_str(), destination.c_str(), FALSE))
                                     selectedPath = destination;
