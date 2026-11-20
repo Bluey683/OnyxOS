@@ -19,5 +19,9 @@ namespace OnyxOS
             Windows::UI::Xaml::RoutedEventArgs^ args);
         void FinishInstallerButton_Click(Platform::Object^ sender,
             Windows::UI::Xaml::RoutedEventArgs^ args);
+        void FullScreenButton_Click(Platform::Object^ sender,
+            Windows::UI::Xaml::RoutedEventArgs^ args);
+        void ShowControlsButton_Click(Platform::Object^ sender,
+            Windows::UI::Xaml::RoutedEventArgs^ args);
     };
 }
