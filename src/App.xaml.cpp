@@ -2,6 +2,7 @@
 #include "OnyxLogger.h"
 #include "vm/VirtualMachine.h"
 #include "vm/QemuHostAdapter.h"
+#include "vm/QemuInputBridge.h"
 #include "vm/VhdxProvisioner.h"
 #include "InstallerPage.xaml.h"
 #include "GuestPage.xaml.h"
@@ -35,6 +36,7 @@ namespace
         std::shared_ptr<onyx::vm::QemuHostAdapter> host =
             std::make_shared<onyx::vm::QemuHostAdapter>();
         std::shared_ptr<onyx::graphics::QemuD3DRenderer> renderer;
+        std::shared_ptr<onyx::vm::QemuInputBridge> input;
         bool profileSelected{ false };
         bool isoSelected{ false };
         bool diskSelected{ false };
@@ -518,6 +520,67 @@ namespace OnyxOS
                         launchButton->IsEnabled = true;
                         return;
                     }
+                    // Route Xbox keyboard and pointer input from the guest surface into QEMU.
+                    // CoreWindow receives physical/USB keyboard events even when the SwapChainPanel
+                    // itself is not a focusable Control; pointer events are measured in panel pixels.
+                    session->input = std::make_shared<onyx::vm::QemuInputBridge>(*session->host);
+                    auto inputBridge = session->input;
+                    auto coreWindow = Window::Current->CoreWindow;
+                    coreWindow->KeyDown += ref new Windows::UI::Core::KeyEventHandler(
+                        [inputBridge](Windows::UI::Core::CoreWindow^, Windows::UI::Core::KeyEventArgs^ args)
+                        {
+                            inputBridge->SendVirtualKey(static_cast<int>(args->VirtualKey), true);
+                        });
+                    coreWindow->KeyUp += ref new Windows::UI::Core::KeyEventHandler(
+                        [inputBridge](Windows::UI::Core::CoreWindow^, Windows::UI::Core::KeyEventArgs^ args)
+                        {
+                            inputBridge->SendVirtualKey(static_cast<int>(args->VirtualKey), false);
+                        });
+                    activeGuestPanel->PointerMoved += ref new Windows::UI::Xaml::Input::PointerEventHandler(
+                        [inputBridge, activeGuestPanel](Object^, Windows::UI::Xaml::Input::PointerRoutedEventArgs^ args)
+                        {
+                            auto point = args->GetCurrentPoint(activeGuestPanel);
+                            inputBridge->SendPointerPosition(point->Position.X, point->Position.Y,
+                                activeGuestPanel->ActualWidth, activeGuestPanel->ActualHeight);
+                        });
+                    activeGuestPanel->PointerPressed += ref new Windows::UI::Xaml::Input::PointerEventHandler(
+                        [inputBridge, activeGuestPanel](Object^, Windows::UI::Xaml::Input::PointerRoutedEventArgs^ args)
+                        {
+                            auto point = args->GetCurrentPoint(activeGuestPanel);
+                            auto properties = point->Properties;
+                            if (properties->IsLeftButtonPressed) inputBridge->SendPointerButton(0, true);
+                            if (properties->IsRightButtonPressed) inputBridge->SendPointerButton(2, true);
+                            if (properties->IsMiddleButtonPressed) inputBridge->SendPointerButton(1, true);
+                            activeGuestPanel->CapturePointer(args->Pointer);
+                            inputBridge->SendPointerPosition(point->Position.X, point->Position.Y,
+                                activeGuestPanel->ActualWidth, activeGuestPanel->ActualHeight);
+                        });
+                    activeGuestPanel->PointerReleased += ref new Windows::UI::Xaml::Input::PointerEventHandler(
+                        [inputBridge](Object^, Windows::UI::Xaml::Input::PointerRoutedEventArgs^ args)
+                        {
+                            auto properties = args->GetCurrentPoint(nullptr)->Properties;
+                            if (!properties->IsLeftButtonPressed) inputBridge->SendPointerButton(0, false);
+                            if (!properties->IsRightButtonPressed) inputBridge->SendPointerButton(2, false);
+                            if (!properties->IsMiddleButtonPressed) inputBridge->SendPointerButton(1, false);
+                        });
+                    activeGuestPanel->PointerCanceled += ref new Windows::UI::Xaml::Input::PointerEventHandler(
+                        [inputBridge](Object^, Windows::UI::Xaml::Input::PointerRoutedEventArgs^)
+                        {
+                            inputBridge->SendPointerButton(0, false);
+                            inputBridge->SendPointerButton(1, false);
+                            inputBridge->SendPointerButton(2, false);
+                        });
+                    activeGuestPanel->PointerWheelChanged += ref new Windows::UI::Xaml::Input::PointerEventHandler(
+                        [inputBridge](Object^, Windows::UI::Xaml::Input::PointerRoutedEventArgs^ args)
+                        {
+                            const int delta = args->GetCurrentPoint(nullptr)->Properties->MouseWheelDelta;
+                            if (delta != 0)
+                                inputBridge->SendVirtualKey(delta > 0 ? 0x26 : 0x28, true);
+                            if (delta != 0)
+                                inputBridge->SendVirtualKey(delta > 0 ? 0x26 : 0x28, false);
+                        });
+                    OnyxLogger::Qemu(L"Keyboard, mouse and pointer input handlers attached to the active guest surface.");
+
                     // Enter immersive guest display automatically as soon as the VM page is shown.
                     // The small "Mostrar controles" button remains available to restore the toolbar.
                     if (installerPage) installerPage->EnterFullScreen();
