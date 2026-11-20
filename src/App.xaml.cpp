@@ -60,7 +60,7 @@ namespace OnyxOS
             layout->Children->Append(prompt);
 
             auto hint = ref new TextBlock();
-            hint->Text = L"Selecione um perfil para preparar sua maquina virtual.";
+            hint->Text = L"Selecione um perfil para preparar sua m\u00E1quina virtual.";
             hint->FontSize = 15;
             hint->Foreground = ref new SolidColorBrush(ColorHelper::FromArgb(255, 154, 169, 188));
             layout->Children->Append(hint);
