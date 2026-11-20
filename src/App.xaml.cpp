@@ -2,6 +2,7 @@
 #include "OnyxLogger.h"
 #include "vm/VirtualMachine.h"
 #include "vm/QemuHostAdapter.h"
+#include "graphics/QemuD3DRenderer.h"
 
 #include <memory>
 #include <string>
@@ -29,6 +30,7 @@ namespace
         onyx::vm::VmConfiguration config;
         std::shared_ptr<onyx::vm::QemuHostAdapter> host =
             std::make_shared<onyx::vm::QemuHostAdapter>();
+        std::shared_ptr<onyx::graphics::QemuD3DRenderer> renderer;
         bool profileSelected{ false };
         bool isoSelected{ false };
         bool diskSelected{ false };
@@ -124,6 +126,12 @@ namespace OnyxOS
             status->Margin = Thickness(0, 8, 0, 0);
             status->Foreground = ref new SolidColorBrush(ColorHelper::FromArgb(255, 229, 184, 95));
             layout->Children->Append(status);
+
+            auto guestPanel = ref new SwapChainPanel();
+            guestPanel->Height = 420;
+            guestPanel->MinHeight = 240;
+            guestPanel->Visibility = Visibility::Collapsed;
+            layout->Children->Append(guestPanel);
 
             auto profiles = ref new StackPanel();
             profiles->Spacing = 5;
@@ -262,7 +270,7 @@ namespace OnyxOS
             layout->Children->Append(actions);
 
             launchButton->Click += ref new RoutedEventHandler(
-                [session, status, launchButton, stopButton](Object^, RoutedEventArgs^)
+                [session, status, launchButton, stopButton, guestPanel](Object^, RoutedEventArgs^)
                 {
                     if (!session->profileSelected || !session->isoSelected || !session->diskSelected)
                     {
@@ -289,19 +297,31 @@ namespace OnyxOS
                         return;
                     }
 
+                    if (!session->renderer)
+                        session->renderer = std::make_shared<onyx::graphics::QemuD3DRenderer>();
+                    std::wstring rendererError;
+                    if (!session->renderer->Initialize(guestPanel, rendererError))
+                    {
+                        status->Text = L"Falha ao inicializar Direct3D/HLSL: " + ref new String(rendererError.c_str());
+                        launchButton->IsEnabled = true;
+                        return;
+                    }
+                    guestPanel->Visibility = Visibility::Visible;
                     auto arguments = onyx::vm::BuildQemuArguments(session->config);
                     arguments.insert(arguments.begin(), "qemu-system-x86_64");
                     auto dispatcher = status->Dispatcher;
+                    auto renderer = session->renderer;
                     const bool started = session->host->Start(arguments,
-                        [dispatcher, status](const std::vector<std::uint32_t>& bgraFrame, int width, int height)
+                        [dispatcher, status, renderer](const std::vector<std::uint32_t>& bgraFrame, int width, int height)
                         {
-                            const std::wstring message = L"Framebuffer QEMU recebido e convertido para BGRA32: " +
-                                std::to_wstring(width) + L"x" + std::to_wstring(height) +
-                                L" (" + std::to_wstring(bgraFrame.size()) + L" pixels). Renderizador Direct3D/HLSL ainda não conectado.";
                             dispatcher->RunAsync(CoreDispatcherPriority::Normal,
-                                ref new DispatchedHandler([status, message]()
+                                ref new DispatchedHandler([status, renderer, bgraFrame, width, height]()
                                 {
-                                    status->Text = ref new String(message.c_str());
+                                    std::wstring renderError;
+                                    if (!renderer->Present(bgraFrame, width, height, renderError))
+                                        status->Text = L"Erro no renderer D3D11/HLSL: " + ref new String(renderError.c_str());
+                                    else
+                                        status->Text = L"Framebuffer apresentado pelo Direct3D 11 com pixel shader HLSL.";
                                 }));
                         });
 
