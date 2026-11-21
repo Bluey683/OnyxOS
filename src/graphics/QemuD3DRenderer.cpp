@@ -114,9 +114,12 @@ bool QemuD3DRenderer::Present(const std::vector<std::uint32_t>& bgra,int width,i
     // Fill the complete Xbox display surface. The previous aspect-ratio
     // letterboxing left large unused bands on some guest modes and looked like
     // the installer was only occupying part of the screen.
+    DXGI_SWAP_CHAIN_DESC1 surfaceDesc{};
+    HRESULT surfaceHr = m_swapChain->GetDesc1(&surfaceDesc);
+    if (FAILED(surfaceHr)) { error = HrText(L"Leitura do tamanho da superfície falhou", surfaceHr); return false; }
     D3D11_VIEWPORT vp{};
     vp.TopLeftX=0.0f; vp.TopLeftY=0.0f;
-    vp.Width=targetWidth; vp.Height=targetHeight;
+    vp.Width=static_cast<float>(surfaceDesc.Width); vp.Height=static_cast<float>(surfaceDesc.Height);
     vp.MinDepth=0.0f; vp.MaxDepth=1.0f;
     m_context->RSSetViewports(1,&vp);m_context->ClearRenderTargetView(m_target.Get(),clear);
     m_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
