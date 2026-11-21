@@ -65,8 +65,9 @@ namespace OnyxOS
 
     void GuestPage::ShowControlsButton_Click(Object^, RoutedEventArgs^)
     {
-        HeaderPanel->Visibility = Windows::UI::Xaml::Visibility::Visible;
-        FooterPanel->Visibility = Windows::UI::Xaml::Visibility::Visible;
-        ShowControlsButton->Visibility = Windows::UI::Xaml::Visibility::Collapsed;
+        const bool controlsVisible = HeaderPanel->Visibility == Windows::UI::Xaml::Visibility::Visible;
+        HeaderPanel->Visibility = controlsVisible ? Windows::UI::Xaml::Visibility::Collapsed : Windows::UI::Xaml::Visibility::Visible;
+        FooterPanel->Visibility = controlsVisible ? Windows::UI::Xaml::Visibility::Collapsed : Windows::UI::Xaml::Visibility::Visible;
+        ShowControlsButton->Content = controlsVisible ? L"Mostrar controles" : L"Ocultar controles";
     }
 }
