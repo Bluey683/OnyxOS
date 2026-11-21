@@ -97,12 +97,25 @@ namespace onyx { namespace vm
         if (was!=now) m_host.SendKeyNumber(key,now);
     }
 
+    void QemuInputBridge::SetVirtualKeyboardMode(bool enabled) noexcept
+    {
+        if (m_virtualKeyboardMode == enabled) return;
+        ReleaseAll();
+        m_virtualKeyboardMode = enabled;
+    }
+
     void QemuInputBridge::PollGamepad() noexcept
     {
         const auto pads=wgi::Gamepad::Gamepads();
         if (!pads || pads.Size()==0) { ReleaseAll(); return; }
         const auto reading=pads.GetAt(0).GetCurrentReading();
         const auto bits=static_cast<std::uint32_t>(reading.Buttons);
+        if (m_virtualKeyboardMode)
+        {
+            // XAML handles controller focus navigation while the virtual keyboard is open.
+            m_previousButtons = bits;
+            return;
+        }
         const auto mask=[](wgi::GamepadButtons b){return static_cast<std::uint32_t>(b);};
         UpdateGamepadKey(mask(wgi::GamepadButtons::DPadUp),273,bits);
         UpdateGamepadKey(mask(wgi::GamepadButtons::DPadDown),274,bits);
