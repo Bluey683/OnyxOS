@@ -59,6 +59,24 @@ namespace OnyxOS
         EnterFullScreen();
     }
 
+    void InstallerPage::KeyboardToggleButton_Click(Object^, RoutedEventArgs^)
+    {
+        const bool show = VirtualKeyboardPanel->Visibility != Windows::UI::Xaml::Visibility::Visible;
+        VirtualKeyboardPanel->Visibility = show ? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
+        KeyboardToggleButton->Content = show ? L"Fechar teclado" : L"Teclado";
+        if (VirtualKeyboardModeChanged) VirtualKeyboardModeChanged(this, show ? L"1" : L"0");
+        if (show) Key1Button->Focus(Windows::UI::Xaml::FocusState::Programmatic);
+        else KeyboardSink->Focus(Windows::UI::Xaml::FocusState::Programmatic);
+    }
+
+    void InstallerPage::VirtualKeyButton_Click(Object^ sender, RoutedEventArgs^)
+    {
+        auto button = dynamic_cast<Windows::UI::Xaml::Controls::Button^>(sender);
+        if (button == nullptr || button->Tag == nullptr || !VirtualKeyRequested) return;
+        auto key = dynamic_cast<String^>(button->Tag);
+        if (key != nullptr) VirtualKeyRequested(this, key);
+    }
+
     void InstallerPage::ShowControlsButton_Click(Object^, RoutedEventArgs^)
     {
         const bool controlsVisible = HeaderPanel->Visibility == Windows::UI::Xaml::Visibility::Visible;
