@@ -58,5 +58,26 @@
                        Text="QEMU: aguardando inicialização"
                        Foreground="#DCE6F2" FontSize="13"/>
         </Border>
+        <Button x:Name="KeyboardToggleButton" Content="Teclado" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="16,64,16,0" MinWidth="130" Click="KeyboardToggleButton_Click"/>
+        <Border x:Name="VirtualKeyboardPanel" VerticalAlignment="Bottom" Background="#F0182434" BorderBrush="#52657D" BorderThickness="1" Padding="10" Visibility="Collapsed">
+            <StackPanel Spacing="5">
+                <TextBlock Text="TECLADO VIRTUAL • DIRECIONAL PARA ESCOLHER / A PARA PRESSIONAR" Foreground="#DCE6F2" FontSize="12" TextWrapping="Wrap"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="4">
+                    <Button x:Name="Key1Button" Content="1" Tag="49" Click="VirtualKeyButton_Click" MinWidth="42"/><Button Content="2" Tag="50" Click="VirtualKeyButton_Click" MinWidth="42"/><Button Content="3" Tag="51" Click="VirtualKeyButton_Click" MinWidth="42"/><Button Content="4" Tag="52" Click="VirtualKeyButton_Click" MinWidth="42"/><Button Content="5" Tag="53" Click="VirtualKeyButton_Click" MinWidth="42"/><Button Content="6" Tag="54" Click="VirtualKeyButton_Click" MinWidth="42"/><Button Content="7" Tag="55" Click="VirtualKeyButton_Click" MinWidth="42"/><Button Content="8" Tag="56" Click="VirtualKeyButton_Click" MinWidth="42"/><Button Content="9" Tag="57" Click="VirtualKeyButton_Click" MinWidth="42"/><Button Content="0" Tag="48" Click="VirtualKeyButton_Click" MinWidth="42"/><Button Content="⌫" Tag="8" Click="VirtualKeyButton_Click" MinWidth="58"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="4">
+                    <Button Content="Q" Tag="81" Click="VirtualKeyButton_Click" MinWidth="42"/><Button Content="W" Tag="87" Click="VirtualKeyButton_Click" MinWidth="42"/><Button Content="E" Tag="69" Click="VirtualKeyButton_Click" MinWidth="42"/><Button Content="R" Tag="82" Click="VirtualKeyButton_Click" MinWidth="42"/><Button Content="T" Tag="84" Click="VirtualKeyButton_Click" MinWidth="42"/><Button Content="Y" Tag="89" Click="VirtualKeyButton_Click" MinWidth="42"/><Button Content="U" Tag="85" Click="VirtualKeyButton_Click" MinWidth="42"/><Button Content="I" Tag="73" Click="VirtualKeyButton_Click" MinWidth="42"/><Button Content="O" Tag="79" Click="VirtualKeyButton_Click" MinWidth="42"/><Button Content="P" Tag="80" Click="VirtualKeyButton_Click" MinWidth="42"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="4">
+                    <Button Content="A" Tag="65" Click="VirtualKeyButton_Click" MinWidth="42"/><Button Content="S" Tag="83" Click="VirtualKeyButton_Click" MinWidth="42"/><Button Content="D" Tag="68" Click="VirtualKeyButton_Click" MinWidth="42"/><Button Content="F" Tag="70" Click="VirtualKeyButton_Click" MinWidth="42"/><Button Content="G" Tag="71" Click="VirtualKeyButton_Click" MinWidth="42"/><Button Content="H" Tag="72" Click="VirtualKeyButton_Click" MinWidth="42"/><Button Content="J" Tag="74" Click="VirtualKeyButton_Click" MinWidth="42"/><Button Content="K" Tag="75" Click="VirtualKeyButton_Click" MinWidth="42"/><Button Content="L" Tag="76" Click="VirtualKeyButton_Click" MinWidth="42"/><Button Content="Enter" Tag="13" Click="VirtualKeyButton_Click" MinWidth="76"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="4">
+                    <Button Content="Shift" Tag="16" Click="VirtualKeyButton_Click" MinWidth="62"/><Button Content="Z" Tag="90" Click="VirtualKeyButton_Click" MinWidth="42"/><Button Content="X" Tag="88" Click="VirtualKeyButton_Click" MinWidth="42"/><Button Content="C" Tag="67" Click="VirtualKeyButton_Click" MinWidth="42"/><Button Content="V" Tag="86" Click="VirtualKeyButton_Click" MinWidth="42"/><Button Content="B" Tag="66" Click="VirtualKeyButton_Click" MinWidth="42"/><Button Content="N" Tag="78" Click="VirtualKeyButton_Click" MinWidth="42"/><Button Content="M" Tag="77" Click="VirtualKeyButton_Click" MinWidth="42"/><Button Content="," Tag="188" Click="VirtualKeyButton_Click" MinWidth="42"/><Button Content="." Tag="190" Click="VirtualKeyButton_Click" MinWidth="42"/><Button Content="Esc" Tag="27" Click="VirtualKeyButton_Click" MinWidth="58"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="4">
+                    <Button Content="Tab" Tag="9" Click="VirtualKeyButton_Click" MinWidth="58"/><Button Content="Ctrl" Tag="17" Click="VirtualKeyButton_Click" MinWidth="58"/><Button Content="Alt" Tag="18" Click="VirtualKeyButton_Click" MinWidth="58"/><Button Content="Espaço" Tag="32" Click="VirtualKeyButton_Click" MinWidth="190"/><Button Content="-" Tag="189" Click="VirtualKeyButton_Click" MinWidth="42"/><Button Content="/" Tag="191" Click="VirtualKeyButton_Click" MinWidth="42"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
     </Grid>
 </Page>
