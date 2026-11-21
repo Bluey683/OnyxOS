@@ -1,7 +1,7 @@
 OnyxOS Xbox Dev Mode storage layout
 
 Place the extracted VHDX files in:
-C:\DevelopmentFiles\OnyxOS\VHDX\
+D:\DevelopmentFiles\OnyxOS\VHDX\
 
 Expected filenames:
 - Windows10.vhdx
@@ -13,10 +13,10 @@ Expected filenames:
 
 The app copies a manually selected VHDX into this folder when Xbox Dev Mode permits the copy.
 Installer ISO images selected in the app are copied to:
-C:\DevelopmentFiles\OnyxOS\ISO\
+D:\DevelopmentFiles\OnyxOS\ISO\
 
 Installation confirmation markers are stored in:
-C:\DevelopmentFiles\OnyxOS\State\
+D:\DevelopmentFiles\OnyxOS\State\
 
 The VHDX files are not copied into LocalState. The app checks the VHDX container signatures before passing a disk path to QEMU.
 A first-time install boots from the selected ISO. After the guest installer has completed and the VM is shut down, the user must confirm "Instalação concluída". The marker then allows future boots directly from the VHDX without the installer ISO.
