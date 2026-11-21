@@ -563,6 +563,32 @@ namespace OnyxOS
                     // itself is not a focusable Control; pointer events are measured in panel pixels.
                     session->input = std::make_shared<onyx::vm::QemuInputBridge>(*session->host);
                     auto inputBridge = session->input;
+                    auto shiftActive = std::make_shared<bool>(false);
+                    auto sendOnScreenKey = [inputBridge, shiftActive](String^ keyText)
+                    {
+                        const int key = _wtoi(keyText->Data());
+                        if (key <= 0) return;
+                        if (key == 0x10) { *shiftActive = !*shiftActive; return; }
+                        const bool uppercase = key >= 0x41 && key <= 0x5A && *shiftActive;
+                        if (uppercase) inputBridge->SendVirtualKey(0x10, true);
+                        inputBridge->SendVirtualKey(key, true);
+                        inputBridge->SendVirtualKey(key, false);
+                        if (uppercase) inputBridge->SendVirtualKey(0x10, false);
+                    };
+                    if (guestPage)
+                    {
+                        guestPage->VirtualKeyRequested += ref new Windows::Foundation::EventHandler<String^>(
+                            [sendOnScreenKey](Object^, String^ key) { sendOnScreenKey(key); });
+                        guestPage->VirtualKeyboardModeChanged += ref new Windows::Foundation::EventHandler<String^>(
+                            [inputBridge](Object^, String^ enabled) { inputBridge->SetVirtualKeyboardMode(enabled == L"1"); });
+                    }
+                    if (installerPage)
+                    {
+                        installerPage->VirtualKeyRequested += ref new Windows::Foundation::EventHandler<String^>(
+                            [sendOnScreenKey](Object^, String^ key) { sendOnScreenKey(key); });
+                        installerPage->VirtualKeyboardModeChanged += ref new Windows::Foundation::EventHandler<String^>(
+                            [inputBridge](Object^, String^ enabled) { inputBridge->SetVirtualKeyboardMode(enabled == L"1"); });
+                    }
 
                     // Xbox controllers do not reliably arrive as CoreWindow keyboard
                     // events. Poll Windows.Gaming.Input on the UI dispatcher and route
