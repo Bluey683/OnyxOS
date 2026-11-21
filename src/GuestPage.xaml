@@ -77,6 +77,9 @@
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="4">
                     <Button Content="Tab" Tag="9" Click="VirtualKeyButton_Click" MinWidth="58"/><Button Content="Ctrl" Tag="17" Click="VirtualKeyButton_Click" MinWidth="58"/><Button Content="Alt" Tag="18" Click="VirtualKeyButton_Click" MinWidth="58"/><Button Content="Espaço" Tag="32" Click="VirtualKeyButton_Click" MinWidth="190"/><Button Content="-" Tag="189" Click="VirtualKeyButton_Click" MinWidth="42"/><Button Content="/" Tag="191" Click="VirtualKeyButton_Click" MinWidth="42"/>
                 </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="4">
+                    <Button Content="←" Tag="37" Click="VirtualKeyButton_Click" MinWidth="52"/><Button Content="↑" Tag="38" Click="VirtualKeyButton_Click" MinWidth="52"/><Button Content="↓" Tag="40" Click="VirtualKeyButton_Click" MinWidth="52"/><Button Content="→" Tag="39" Click="VirtualKeyButton_Click" MinWidth="52"/><Button Content="Home" Tag="36" Click="VirtualKeyButton_Click" MinWidth="66"/><Button Content="End" Tag="35" Click="VirtualKeyButton_Click" MinWidth="66"/><Button Content="Del" Tag="46" Click="VirtualKeyButton_Click" MinWidth="58"/><Button Content="PgUp" Tag="33" Click="VirtualKeyButton_Click" MinWidth="58"/><Button Content="PgDn" Tag="34" Click="VirtualKeyButton_Click" MinWidth="58"/>
+                </StackPanel>
             </StackPanel>
         </Border>
     </Grid>
