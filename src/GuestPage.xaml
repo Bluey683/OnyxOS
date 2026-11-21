@@ -50,8 +50,7 @@
 
         <Button x:Name="ShowControlsButton" Content="Mostrar controles"
                 HorizontalAlignment="Right" VerticalAlignment="Top"
-                Margin="16" Visibility="Collapsed"
-                Click="ShowControlsButton_Click"/>
+                Margin="16" Visibility="Visible" Click="ShowControlsButton_Click"/>
 
         <Border x:Name="FooterPanel" VerticalAlignment="Bottom"
                 Background="#DD111C2A" Padding="16,8">
