@@ -44,8 +44,8 @@ bool QemuD3DRenderer::Initialize(Windows::UI::Xaml::Controls::SwapChainPanel^ pa
     DXGI_SWAP_CHAIN_DESC1 desc{};
     const float scaleX = panel->CompositionScaleX > 0.0f ? panel->CompositionScaleX : 1.0f;
     const float scaleY = panel->CompositionScaleY > 0.0f ? panel->CompositionScaleY : 1.0f;
-    desc.Width = static_cast<UINT>((std::max)(1.0f, std::round(panel->ActualWidth * scaleX)));
-    desc.Height = static_cast<UINT>((std::max)(1.0f, std::round(panel->ActualHeight * scaleY)));
+    desc.Width = static_cast<UINT>(((std::round(panel->ActualWidth * scaleX) > 1.0f) ? std::round(panel->ActualWidth * scaleX) : 1.0f));
+    desc.Height = static_cast<UINT>(((std::round(panel->ActualHeight * scaleY) > 1.0f) ? std::round(panel->ActualHeight * scaleY) : 1.0f));
     if (desc.Width < 64 || desc.Height < 64) { desc.Width = 1920; desc.Height = 1080; }
     desc.Format=DXGI_FORMAT_B8G8R8A8_UNORM;
     desc.SampleDesc.Count=1; desc.BufferUsage=DXGI_USAGE_RENDER_TARGET_OUTPUT; desc.BufferCount=2;
@@ -75,8 +75,8 @@ bool QemuD3DRenderer::Resize(Windows::UI::Xaml::Controls::SwapChainPanel^ panel,
     if (!panel || !m_swapChain) { error = L"SwapChainPanel ou swap chain ausente durante o redimensionamento."; return false; }
     const float scaleX = panel->CompositionScaleX > 0.0f ? panel->CompositionScaleX : 1.0f;
     const float scaleY = panel->CompositionScaleY > 0.0f ? panel->CompositionScaleY : 1.0f;
-    const UINT width = static_cast<UINT>((std::max)(1.0f, std::round(panel->ActualWidth * scaleX)));
-    const UINT height = static_cast<UINT>((std::max)(1.0f, std::round(panel->ActualHeight * scaleY)));
+    const UINT width = static_cast<UINT>(((std::round(panel->ActualWidth * scaleX) > 1.0f) ? std::round(panel->ActualWidth * scaleX) : 1.0f));
+    const UINT height = static_cast<UINT>(((std::round(panel->ActualHeight * scaleY) > 1.0f) ? std::round(panel->ActualHeight * scaleY) : 1.0f));
     if (width < 64 || height < 64) return true; // Wait for the XAML layout pass.
     DXGI_SWAP_CHAIN_DESC1 current{};
     HRESULT hr = m_swapChain->GetDesc1(&current);
