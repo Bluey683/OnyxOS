@@ -14,6 +14,8 @@ namespace OnyxOS
         void EnterFullScreen();
 
         event Windows::Foundation::EventHandler<Platform::Object^>^ StopRequested;
+        event Windows::Foundation::EventHandler<Platform::String^>^ VirtualKeyRequested;
+        event Windows::Foundation::EventHandler<Platform::String^>^ VirtualKeyboardModeChanged;
         event Windows::Foundation::EventHandler<Platform::Object^>^ FinishRequested;
 
     private:
@@ -24,6 +26,10 @@ namespace OnyxOS
         void FullScreenButton_Click(Platform::Object^ sender,
             Windows::UI::Xaml::RoutedEventArgs^ args);
         void ShowControlsButton_Click(Platform::Object^ sender,
+            Windows::UI::Xaml::RoutedEventArgs^ args);
+        void KeyboardToggleButton_Click(Platform::Object^ sender,
+            Windows::UI::Xaml::RoutedEventArgs^ args);
+        void VirtualKeyButton_Click(Platform::Object^ sender,
             Windows::UI::Xaml::RoutedEventArgs^ args);
     };
 }
