@@ -537,6 +537,13 @@ namespace OnyxOS
                     auto inputBridge = session->input;
                     // Capture hardware keyboard input at CoreWindow level, as required
                     // by Xbox/UWP. XAML TextBox focus is not reliable over SwapChainPanel.
+                    // Keep a real XAML focus target active so the Xbox CoreWindow
+                    // receives keyboard events while the SwapChainPanel displays video.
+                    if (activeKeyboardSink)
+                    {
+                        activeKeyboardSink->IsTabStop = true;
+                        activeKeyboardSink->Focus(Windows::UI::Xaml::FocusState::Programmatic);
+                    }
                     auto coreWindow = Window::Current->CoreWindow;
                     coreWindow->KeyDown += ref new Windows::Foundation::TypedEventHandler<
                         Windows::UI::Core::CoreWindow^, Windows::UI::Core::KeyEventArgs^>(
