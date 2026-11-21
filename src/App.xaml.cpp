@@ -212,16 +212,16 @@ namespace OnyxOS
                     L"LastSelectedProfile", ref new String(profileId.c_str()));
 
                 std::wstring details = L"Selecionado: " + std::wstring(name->Data()) +
-                    L"\\nVídeo: " + std::to_wstring(session->config.displayWidth) + L"x" +
+                    L"\nVídeo: " + std::to_wstring(session->config.displayWidth) + L"x" +
                     std::to_wstring(session->config.displayHeight) + L" @ " +
                     std::to_wstring(session->config.displayRefreshHz) + L" Hz" +
-                    L"\\nMemória: " + std::to_wstring(session->config.memoryMB) +
+                    L"\nMemória: " + std::to_wstring(session->config.memoryMB) +
                     L" MB | CPU: " + std::to_wstring(session->config.cpuCount) +
                     (session->diskSelected
                         ? (alreadyInstalled
-                            ? L"\\nVHDX encontrado em DevelopmentFiles. Sistema marcado como instalado; iniciará direto pelo disco."
-                            : (session->isoSelected ? L"\\nVHDX e ISO encontrados em DevelopmentFiles. A instalação pode iniciar." : L"\\nVHDX encontrado em DevelopmentFiles. Coloque a ISO em D:\\\\DevelopmentFiles\\\\OnyxOS\\\\ISO ou selecione manualmente."))
-                        : L"\\nColoque o VHDX em D:\\\\DevelopmentFiles\\\\OnyxOS\\\\VHDX ou selecione manualmente.");
+                            ? L"\nVHDX encontrado em DevelopmentFiles. Sistema marcado como instalado; iniciará direto pelo disco."
+                            : (session->isoSelected ? L"\nVHDX e ISO encontrados em DevelopmentFiles. A instalação pode iniciar." : L"\nVHDX encontrado em DevelopmentFiles. Coloque a ISO em D:\\DevelopmentFiles\\OnyxOS\\ISO ou selecione manualmente."))
+                        : L"\nColoque o VHDX em D:\\DevelopmentFiles\\OnyxOS\\VHDX ou selecione manualmente.");
                 status->Text = ref new String(details.c_str());
                 OnyxLogger::App(L"VM profile stored for QEMU launch: " + name);
             };
@@ -327,7 +327,7 @@ namespace OnyxOS
                             session->isoSelected = !session->config.isoPath.empty();
                             onyx::vm::ClearInstallationMark(session->config.id);
                             status->Text = L"ISO reconhecida: " + file->Name +
-                                L"\\nA instalação/reinstalação será iniciada pelo ISO.";
+                                L"\nA instalação/reinstalação será iniciada pelo ISO.";
                             OnyxLogger::Qemu(L"Recognized ISO selected; installation marker cleared for reinstall.");
                         }, task_continuation_context::use_current());
                 });
@@ -385,7 +385,7 @@ namespace OnyxOS
                             session->config.diskPath = ToUtf8(selectedPath);
                             session->diskSelected = true;
                             status->Text = L"VHDX reconhecido: " + file->Name +
-                                L"\\nDisco validado. O caminho de DevelopmentFiles será usado quando a cópia for permitida.";
+                                L"\nDisco validado. O caminho de DevelopmentFiles será usado quando a cópia for permitida.";
                             OnyxLogger::Qemu(L"Validated VHDX selected: " + file->Name);
                         }, task_continuation_context::use_current());
                 });
