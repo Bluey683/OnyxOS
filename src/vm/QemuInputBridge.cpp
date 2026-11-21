@@ -111,28 +111,31 @@ namespace onyx { namespace vm
         UpdateGamepadKey(mask(wgi::GamepadButtons::A),13,bits);
         UpdateGamepadKey(mask(wgi::GamepadButtons::B),27,bits);
 
-        const bool left=(bits&mask(wgi::GamepadButtons::X))!=0;
-        const bool right=(bits&mask(wgi::GamepadButtons::Y))!=0;
+        // A/B are mouse clicks in the guest (not host-window keyboard events).
+        const bool left=(bits&mask(wgi::GamepadButtons::A))!=0;
+        const bool right=(bits&mask(wgi::GamepadButtons::B))!=0;
         if(left!=m_left){SendPointerButton(0,left);m_left=left;}
         if(right!=m_right){SendPointerButton(2,right);m_right=right;}
 
-        constexpr double deadzone=0.18;
+        // Use absolute tablet coordinates for every stick movement. Relative
+        // mouse support is optional in some packaged QEMU host builds; relying
+        // on it made the Xbox stick appear completely dead on those builds.
+        constexpr double deadzone=0.16;
         const auto scale=[deadzone](double v)
         {
             const double mag=std::abs(v);
             if(mag<=deadzone)return 0;
             const double n=(mag-deadzone)/(1.0-deadzone);
-            return static_cast<int>(std::lround(std::copysign(n*14.0,v)));
+            return static_cast<int>(std::lround(std::copysign(n*22.0,v)));
         };
-        const int dx=scale(reading.LeftThumbstickX), dy=-scale(reading.LeftThumbstickY);
+        const int dx=scale(reading.LeftThumbstickX);
+        const int dy=-scale(reading.LeftThumbstickY);
         if(dx||dy)
         {
-            if(!m_host.SendPointerRelative(dx,dy))
-            {
-                m_gamepadX=std::max(0.0f, std::min(m_gamepadX+dx,m_surfaceWidth-1.0f));
-                m_gamepadY=std::max(0.0f, std::min(m_gamepadY+dy,m_surfaceHeight-1.0f));
-                m_host.SendPointerAbsolute(static_cast<int>(m_gamepadX),static_cast<int>(m_gamepadY),static_cast<int>(m_surfaceWidth),static_cast<int>(m_surfaceHeight));
-            }
+            m_gamepadX=std::max(0.0f,std::min(m_gamepadX+dx,m_surfaceWidth-1.0f));
+            m_gamepadY=std::max(0.0f,std::min(m_gamepadY+dy,m_surfaceHeight-1.0f));
+            m_host.SendPointerAbsolute(static_cast<int>(m_gamepadX),static_cast<int>(m_gamepadY),
+                static_cast<int>(m_surfaceWidth),static_cast<int>(m_surfaceHeight));
             m_host.WakeMainLoop();
         }
         m_previousButtons=bits;
