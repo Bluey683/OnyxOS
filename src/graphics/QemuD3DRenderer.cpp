@@ -111,32 +111,13 @@ bool QemuD3DRenderer::Present(const std::vector<std::uint32_t>& bgra,int width,i
     if(width!=m_guestWidth||height!=m_guestHeight)if(!CreateGuestTexture(width,height,error))return false;
     m_context->UpdateSubresource(m_guestTexture.Get(),0,nullptr,bgra.data(),static_cast<UINT>(width*4),0);
     const float clear[4]={0.02f,0.02f,0.03f,1.0f};m_context->OMSetRenderTargets(1,m_target.GetAddressOf(),nullptr);
-    // Resolution-independent "fit" scaling: preserve the guest aspect ratio
-    // for common modes such as 800x600 (4:3), 1024x768, 1280x720 and 1920x1080.
-    // Center the complete guest image inside the Xbox swap-chain surface; never
-    // stretch a 4:3 desktop to 16:9 or crop content beyond the visible panel.
-    DXGI_SWAP_CHAIN_DESC1 swapDesc{};
-    m_swapChain->GetDesc1(&swapDesc);
-    const float targetWidth = static_cast<float>(swapDesc.Width);
-    const float targetHeight = static_cast<float>(swapDesc.Height);
-    const float guestAspect = static_cast<float>(width) / static_cast<float>(height);
-    const float targetAspect = targetWidth / targetHeight;
+    // Fill the complete Xbox display surface. The previous aspect-ratio
+    // letterboxing left large unused bands on some guest modes and looked like
+    // the installer was only occupying part of the screen.
     D3D11_VIEWPORT vp{};
-    if (guestAspect >= targetAspect)
-    {
-        vp.Width = targetWidth;
-        vp.Height = targetWidth / guestAspect;
-        vp.TopLeftX = 0.0f;
-        vp.TopLeftY = (targetHeight - vp.Height) * 0.5f;
-    }
-    else
-    {
-        vp.Height = targetHeight;
-        vp.Width = targetHeight * guestAspect;
-        vp.TopLeftX = (targetWidth - vp.Width) * 0.5f;
-        vp.TopLeftY = 0.0f;
-    }
-    vp.MinDepth=0.0f;vp.MaxDepth=1.0f;
+    vp.TopLeftX=0.0f; vp.TopLeftY=0.0f;
+    vp.Width=targetWidth; vp.Height=targetHeight;
+    vp.MinDepth=0.0f; vp.MaxDepth=1.0f;
     m_context->RSSetViewports(1,&vp);m_context->ClearRenderTargetView(m_target.Get(),clear);
     m_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     m_context->VSSetShader(m_vertexShader.Get(),nullptr,0);m_context->PSSetShader(m_pixelShader.Get(),nullptr,0);
