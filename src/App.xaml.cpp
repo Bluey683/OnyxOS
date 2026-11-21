@@ -209,7 +209,7 @@ namespace OnyxOS
                 }
 
                 ApplicationData::Current->LocalSettings->Values->Insert(
-                    L"LastSelectedProfile", ref new String(profileId.c_str()));
+                    L"LastSelectedProfile", ref new String(ToWide(profileId).c_str()));
 
                 std::wstring details = L"Selecionado: " + std::wstring(name->Data()) +
                     L"\nVídeo: " + std::to_wstring(session->config.displayWidth) + L"x" +
@@ -258,7 +258,7 @@ namespace OnyxOS
                 String^ savedProfile = safe_cast<String^>(localValues->Lookup(L"LastSelectedProfile"));
                 for (int i = 0; i < 6; ++i)
                 {
-                    if (savedProfile == ref new String(profileIds[i]))
+                    if (savedProfile == ref new String(ToWide(profileIds[i]).c_str()))
                     {
                         selectProfile(profileIds[i], ref new String(names[i]));
                         OnyxLogger::App(L"Restored last selected menu profile after relaunch.");
