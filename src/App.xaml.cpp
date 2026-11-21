@@ -177,6 +177,55 @@ namespace OnyxOS
                 "windows10", "windows11", "debian", "ubuntu", "arch", "macos"
             };
 
+            // Keep the last selected menu profile when the user closes and
+            // reopens OnyxOS. Only the selection is restored; QEMU is never
+            // started automatically.
+            auto selectProfile = [session, status](std::string profileId, String^ name)
+            {
+                session->config = onyx::vm::CreateProfile(profileId);
+                session->profileSelected = session->config.enabled;
+                session->isoSelected = false;
+                session->diskSelected = false;
+                session->config.isoPath.clear();
+                session->config.diskPath.clear();
+
+                const auto bundledDisk = onyx::vm::FindDevelopmentFilesVhdx(profileId);
+                if (!bundledDisk.empty())
+                {
+                    session->config.diskPath = ToUtf8(bundledDisk);
+                    session->diskSelected = true;
+                }
+                const bool alreadyInstalled = onyx::vm::IsInstallationMarkedComplete(profileId);
+                const auto existingIso = onyx::vm::FindDevelopmentFilesIso(profileId);
+                session->isoSelected = !alreadyInstalled && !existingIso.empty();
+                if (session->isoSelected)
+                    session->config.isoPath = ToUtf8(existingIso);
+
+                if (!session->config.enabled)
+                {
+                    status->Text = L"Perfil experimental indisponível para inicialização.";
+                    OnyxLogger::App(L"Disabled experimental profile selected: " + name);
+                    return;
+                }
+
+                ApplicationData::Current->LocalSettings->Values->Insert(
+                    L"LastSelectedProfile", ref new String(profileId.c_str()));
+
+                std::wstring details = L"Selecionado: " + std::wstring(name->Data()) +
+                    L"\\nVídeo: " + std::to_wstring(session->config.displayWidth) + L"x" +
+                    std::to_wstring(session->config.displayHeight) + L" @ " +
+                    std::to_wstring(session->config.displayRefreshHz) + L" Hz" +
+                    L"\\nMemória: " + std::to_wstring(session->config.memoryMB) +
+                    L" MB | CPU: " + std::to_wstring(session->config.cpuCount) +
+                    (session->diskSelected
+                        ? (alreadyInstalled
+                            ? L"\\nVHDX encontrado em DevelopmentFiles. Sistema marcado como instalado; iniciará direto pelo disco."
+                            : (session->isoSelected ? L"\\nVHDX e ISO encontrados em DevelopmentFiles. A instalação pode iniciar." : L"\\nVHDX encontrado em DevelopmentFiles. Coloque a ISO em D:\\\\DevelopmentFiles\\\\OnyxOS\\\\ISO ou selecione manualmente."))
+                        : L"\\nColoque o VHDX em D:\\\\DevelopmentFiles\\\\OnyxOS\\\\VHDX ou selecione manualmente.");
+                status->Text = ref new String(details.c_str());
+                OnyxLogger::App(L"VM profile stored for QEMU launch: " + name);
+            };
+
             for (int i = 0; i < 6; ++i)
             {
                 String^ name = ref new String(names[i]);
@@ -194,50 +243,28 @@ namespace OnyxOS
                 button->BorderThickness = Thickness(1);
 
                 button->Click += ref new RoutedEventHandler(
-                    [session, status, name, profileId](Object^, RoutedEventArgs^)
+                    [selectProfile, name, profileId](Object^, RoutedEventArgs^)
                     {
-                        session->config = onyx::vm::CreateProfile(profileId);
-                        session->profileSelected = session->config.enabled;
-                        session->isoSelected = false;
-                        session->diskSelected = false;
-                        session->config.isoPath.clear();
-                        session->config.diskPath.clear();
-
-                        const auto bundledDisk = onyx::vm::FindDevelopmentFilesVhdx(profileId);
-                        if (!bundledDisk.empty())
-                        {
-                            session->config.diskPath = ToUtf8(bundledDisk);
-                            session->diskSelected = true;
-                        }
-                        const bool alreadyInstalled =
-                            onyx::vm::IsInstallationMarkedComplete(profileId);
-                        const auto existingIso = onyx::vm::FindDevelopmentFilesIso(profileId);
-                        session->isoSelected = !alreadyInstalled && !existingIso.empty();
-                        if (session->isoSelected)
-                            session->config.isoPath = ToUtf8(existingIso);
-
-                        if (!session->config.enabled)
-                        {
-                            status->Text = L"Perfil experimental indisponível para inicialização.";
-                            OnyxLogger::App(L"Disabled experimental profile selected: " + name);
-                            return;
-                        }
-
-                        std::wstring details = L"Selecionado: " + std::wstring(name->Data()) +
-                            L"\nVídeo: " + std::to_wstring(session->config.displayWidth) + L"x" +
-                            std::to_wstring(session->config.displayHeight) + L" @ " +
-                            std::to_wstring(session->config.displayRefreshHz) + L" Hz" +
-                            L"\nMemória: " + std::to_wstring(session->config.memoryMB) +
-                            L" MB | CPU: " + std::to_wstring(session->config.cpuCount) +
-                            (session->diskSelected
-                                ? (alreadyInstalled
-                                    ? L"\nVHDX encontrado em DevelopmentFiles. Sistema marcado como instalado; iniciará direto pelo disco."
-                                    : (session->isoSelected ? L"\nVHDX e ISO encontrados em DevelopmentFiles. A instalação pode iniciar." : L"\nVHDX encontrado em DevelopmentFiles. Coloque a ISO em D:\\DevelopmentFiles\\OnyxOS\\ISO ou selecione manualmente."))
-                                : L"\nColoque o VHDX em D:\\DevelopmentFiles\\OnyxOS\\VHDX ou selecione manualmente.");
-                        status->Text = ref new String(details.c_str());
-                        OnyxLogger::App(L"VM profile stored for QEMU launch: " + name);
+                        selectProfile(profileId, name);
                     });
                 profiles->Children->Append(button);
+            }
+
+            // Restore the previous menu selection after an app restart.
+            // This intentionally does not restore a running VM or launch QEMU.
+            auto localValues = ApplicationData::Current->LocalSettings->Values;
+            if (localValues->HasKey(L"LastSelectedProfile"))
+            {
+                String^ savedProfile = safe_cast<String^>(localValues->Lookup(L"LastSelectedProfile"));
+                for (int i = 0; i < 6; ++i)
+                {
+                    if (savedProfile == ref new String(profileIds[i]))
+                    {
+                        selectProfile(profileIds[i], ref new String(names[i]));
+                        OnyxLogger::App(L"Restored last selected menu profile after relaunch.");
+                        break;
+                    }
+                }
             }
 
             layout->Children->Append(profiles);
@@ -564,6 +591,10 @@ namespace OnyxOS
                         activeKeyboardSink->Focus(Windows::UI::Xaml::FocusState::Programmatic);
                     }
                     auto coreWindow = Window::Current->CoreWindow;
+                    // Hide the Xbox system pointer while the guest's own mouse
+                    // cursor is being controlled through the virtual gamepad mouse.
+                    coreWindow->PointerCursor = nullptr;
+                    OnyxLogger::Qemu(L"Xbox system pointer hidden while guest mouse is active.");
                     coreWindow->KeyDown += ref new Windows::Foundation::TypedEventHandler<
                         Windows::UI::Core::CoreWindow^, Windows::UI::Core::KeyEventArgs^>(
                         [inputBridge](Windows::UI::Core::CoreWindow^, Windows::UI::Core::KeyEventArgs^ args)
