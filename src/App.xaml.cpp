@@ -38,6 +38,7 @@ namespace
         std::shared_ptr<onyx::graphics::QemuD3DRenderer> renderer;
         std::shared_ptr<onyx::vm::QemuInputBridge> input;
         Windows::UI::Core::CoreIndependentInputSource^ pointerInput;
+        Windows::UI::Xaml::DispatcherTimer^ gamepadPollTimer;
         bool profileSelected{ false };
         bool isoSelected{ false };
         bool diskSelected{ false };
@@ -535,6 +536,24 @@ namespace OnyxOS
                     // itself is not a focusable Control; pointer events are measured in panel pixels.
                     session->input = std::make_shared<onyx::vm::QemuInputBridge>(*session->host);
                     auto inputBridge = session->input;
+
+                    // Xbox controllers do not reliably arrive as CoreWindow keyboard
+                    // events. Poll Windows.Gaming.Input on the UI dispatcher and route
+                    // D-pad/A plus the left stick through the same QEMU input bridge.
+                    // The previous code implemented PollGamepad() but never called it,
+                    // leaving the console controller completely disconnected from guests.
+                    session->gamepadPollTimer = ref new DispatcherTimer();
+                    Windows::Foundation::TimeSpan gamepadInterval;
+                    gamepadInterval.Duration = 166667; // ~60 Hz
+                    session->gamepadPollTimer->Interval = gamepadInterval;
+                    session->gamepadPollTimer->Tick += ref new Windows::Foundation::EventHandler<Object^>(
+                        [session](Object^, Object^)
+                        {
+                            if (session->input)
+                                session->input->PollGamepad();
+                        });
+                    session->gamepadPollTimer->Start();
+                    OnyxLogger::Qemu(L"Xbox Gamepad polling enabled at approximately 60 Hz; D-pad/A and left stick routed to QEMU.");
                     // Capture hardware keyboard input at CoreWindow level, as required
                     // by Xbox/UWP. XAML TextBox focus is not reliable over SwapChainPanel.
                     // Keep a real XAML focus target active so the Xbox CoreWindow
