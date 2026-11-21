@@ -108,8 +108,6 @@ namespace onyx { namespace vm
         UpdateGamepadKey(mask(wgi::GamepadButtons::DPadDown),274,bits);
         UpdateGamepadKey(mask(wgi::GamepadButtons::DPadLeft),276,bits);
         UpdateGamepadKey(mask(wgi::GamepadButtons::DPadRight),275,bits);
-        UpdateGamepadKey(mask(wgi::GamepadButtons::A),13,bits);
-        UpdateGamepadKey(mask(wgi::GamepadButtons::B),27,bits);
 
         // A/B are mouse clicks in the guest (not host-window keyboard events).
         const bool left=(bits&mask(wgi::GamepadButtons::A))!=0;
@@ -149,7 +147,6 @@ namespace onyx { namespace vm
         };
         release(wgi::GamepadButtons::DPadUp,273); release(wgi::GamepadButtons::DPadDown,274);
         release(wgi::GamepadButtons::DPadLeft,276); release(wgi::GamepadButtons::DPadRight,275);
-        release(wgi::GamepadButtons::A,13); release(wgi::GamepadButtons::B,27);
         if(m_left)SendPointerButton(0,false);
         if(m_right)SendPointerButton(2,false);
         if(m_middle)SendPointerButton(2,false);
