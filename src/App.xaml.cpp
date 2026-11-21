@@ -603,6 +603,21 @@ namespace OnyxOS
                     if (installerPage) installerPage->EnterFullScreen();
                     if (guestPage) guestPage->EnterFullScreen();
                     activeGuestPanel->Visibility = Visibility::Visible;
+                    // Keep the DXGI surface synchronized with the real fullscreen XAML panel.
+                    // EnterFullScreen changes the layout after renderer initialization.
+                    auto resizeRenderer = session->renderer;
+                    activeGuestPanel->SizeChanged += ref new Windows::UI::Xaml::SizeChangedEventHandler(
+                        [resizeRenderer, activeGuestPanel](Object^, Windows::UI::Xaml::SizeChangedEventArgs^)
+                        {
+                            std::wstring resizeError;
+                            if (!resizeRenderer->Resize(activeGuestPanel, resizeError))
+                                OnyxLogger::Qemu(L"Guest display resize failed: " + ref new String(resizeError.c_str()));
+                        });
+                    {
+                        std::wstring resizeError;
+                        if (!resizeRenderer->Resize(activeGuestPanel, resizeError) && !resizeError.empty())
+                            OnyxLogger::Qemu(L"Initial guest display resize failed: " + ref new String(resizeError.c_str()));
+                    }
                     auto arguments = onyx::vm::BuildQemuArguments(session->config);
                     arguments.insert(arguments.begin(), "qemu-system-x86_64");
                     auto dispatcher = status->Dispatcher;
