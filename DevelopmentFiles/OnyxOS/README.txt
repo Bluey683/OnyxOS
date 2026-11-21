@@ -25,4 +25,4 @@ Important:
 - The ISO must be a readable ISO9660 image.
 - A valid VHDX header does not prove that an operating system is installed inside the disk.
 - The installer progress bar is indeterminate because the current QEMU host interface does not report real guest installation percentage.
-- Xbox Dev Mode must grant the app access to C:\DevelopmentFiles. If the copy or marker write is denied, the app reports the failure instead of claiming the files were moved.
+- Xbox Dev Mode must grant the app access to D:\DevelopmentFiles. If the copy or marker write is denied, the app reports the failure instead of claiming the files were moved.
