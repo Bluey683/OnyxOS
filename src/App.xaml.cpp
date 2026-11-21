@@ -564,16 +564,23 @@ namespace OnyxOS
                     session->input = std::make_shared<onyx::vm::QemuInputBridge>(*session->host);
                     auto inputBridge = session->input;
                     auto shiftActive = std::make_shared<bool>(false);
-                    auto sendOnScreenKey = [inputBridge, shiftActive](String^ keyText)
+                    auto ctrlActive = std::make_shared<bool>(false);
+                    auto altActive = std::make_shared<bool>(false);
+                    auto sendOnScreenKey = [inputBridge, shiftActive, ctrlActive, altActive](String^ keyText)
                     {
                         const int key = _wtoi(keyText->Data());
                         if (key <= 0) return;
                         if (key == 0x10) { *shiftActive = !*shiftActive; return; }
-                        const bool uppercase = key >= 0x41 && key <= 0x5A && *shiftActive;
-                        if (uppercase) inputBridge->SendVirtualKey(0x10, true);
+                        if (key == 0x11) { *ctrlActive = !*ctrlActive; return; }
+                        if (key == 0x12) { *altActive = !*altActive; return; }
+                        if (*shiftActive) inputBridge->SendVirtualKey(0x10, true);
+                        if (*ctrlActive) inputBridge->SendVirtualKey(0x11, true);
+                        if (*altActive) inputBridge->SendVirtualKey(0x12, true);
                         inputBridge->SendVirtualKey(key, true);
                         inputBridge->SendVirtualKey(key, false);
-                        if (uppercase) inputBridge->SendVirtualKey(0x10, false);
+                        if (*altActive) inputBridge->SendVirtualKey(0x12, false);
+                        if (*ctrlActive) inputBridge->SendVirtualKey(0x11, false);
+                        if (*shiftActive) inputBridge->SendVirtualKey(0x10, false);
                     };
                     if (guestPage)
                     {
