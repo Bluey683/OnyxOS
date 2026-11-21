@@ -12,6 +12,7 @@ namespace onyx { namespace vm
         void SendPointerPosition(float x, float y, float width, float height) noexcept;
         void SendPointerButton(int button, bool down) noexcept;
         void PollGamepad() noexcept;
+        void SetVirtualKeyboardMode(bool enabled) noexcept;
         void ReleaseAll() noexcept;
     private:
         static int MapVirtualKey(int key) noexcept;
@@ -22,6 +23,7 @@ namespace onyx { namespace vm
         float m_surfaceWidth{1920}, m_surfaceHeight{1080};
         float m_gamepadX{960}, m_gamepadY{540};
         bool m_havePointer{false};
+        bool m_virtualKeyboardMode{false};
         bool m_left{false}, m_right{false}, m_middle{false};
     };
 }}
