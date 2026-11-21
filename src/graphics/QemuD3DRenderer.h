@@ -13,6 +13,7 @@ class QemuD3DRenderer final
 public:
     bool Initialize(Windows::UI::Xaml::Controls::SwapChainPanel^ panel, std::wstring& error);
     bool Present(const std::vector<std::uint32_t>& bgra, int width, int height, std::wstring& error);
+    bool Resize(Windows::UI::Xaml::Controls::SwapChainPanel^ panel, std::wstring& error);
 private:
     bool CreateGuestTexture(int width, int height, std::wstring& error);
     Microsoft::WRL::ComPtr<ID3D11Device> m_device;
