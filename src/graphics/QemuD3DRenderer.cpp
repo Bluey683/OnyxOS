@@ -2,6 +2,8 @@
 #include <d3dcompiler.h>
 #include <windows.ui.xaml.media.dxinterop.h>
 #include <cstring>
+#include <cmath>
+#include <algorithm>
 #include <sstream>
 
 using Microsoft::WRL::ComPtr;
@@ -40,7 +42,12 @@ bool QemuD3DRenderer::Initialize(Windows::UI::Xaml::Controls::SwapChainPanel^ pa
     if (FAILED(hr = m_device.As(&dxgiDevice)) || FAILED(hr = dxgiDevice->GetAdapter(&adapter)) ||
         FAILED(hr = adapter->GetParent(IID_PPV_ARGS(&factory)))) { error = HrText(L"Obtenção da fábrica DXGI falhou", hr); return false; }
     DXGI_SWAP_CHAIN_DESC1 desc{};
-    desc.Width=1920; desc.Height=1080; desc.Format=DXGI_FORMAT_B8G8R8A8_UNORM;
+    const float scaleX = panel->CompositionScaleX > 0.0f ? panel->CompositionScaleX : 1.0f;
+    const float scaleY = panel->CompositionScaleY > 0.0f ? panel->CompositionScaleY : 1.0f;
+    desc.Width = static_cast<UINT>(std::max(1.0f, std::round(panel->ActualWidth * scaleX)));
+    desc.Height = static_cast<UINT>(std::max(1.0f, std::round(panel->ActualHeight * scaleY)));
+    if (desc.Width < 64 || desc.Height < 64) { desc.Width = 1920; desc.Height = 1080; }
+    desc.Format=DXGI_FORMAT_B8G8R8A8_UNORM;
     desc.SampleDesc.Count=1; desc.BufferUsage=DXGI_USAGE_RENDER_TARGET_OUTPUT; desc.BufferCount=2;
     desc.Scaling=DXGI_SCALING_STRETCH; desc.SwapEffect=DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL; desc.AlphaMode=DXGI_ALPHA_MODE_IGNORE;
     if (FAILED(hr=factory->CreateSwapChainForComposition(m_device.Get(),&desc,nullptr,&m_swapChain))) { error=HrText(L"CreateSwapChainForComposition falhou",hr); return false; }
@@ -62,6 +69,31 @@ bool QemuD3DRenderer::Initialize(Windows::UI::Xaml::Controls::SwapChainPanel^ pa
     if (FAILED(hr=m_device->CreateSamplerState(&sd,&m_sampler))) { error=HrText(L"Criação do sampler falhou",hr); return false; }
     return true;
 }
+
+bool QemuD3DRenderer::Resize(Windows::UI::Xaml::Controls::SwapChainPanel^ panel, std::wstring& error)
+{
+    if (!panel || !m_swapChain) { error = L"SwapChainPanel ou swap chain ausente durante o redimensionamento."; return false; }
+    const float scaleX = panel->CompositionScaleX > 0.0f ? panel->CompositionScaleX : 1.0f;
+    const float scaleY = panel->CompositionScaleY > 0.0f ? panel->CompositionScaleY : 1.0f;
+    const UINT width = static_cast<UINT>(std::max(1.0f, std::round(panel->ActualWidth * scaleX)));
+    const UINT height = static_cast<UINT>(std::max(1.0f, std::round(panel->ActualHeight * scaleY)));
+    if (width < 64 || height < 64) return true; // Wait for the XAML layout pass.
+    DXGI_SWAP_CHAIN_DESC1 current{};
+    HRESULT hr = m_swapChain->GetDesc1(&current);
+    if (FAILED(hr)) { error = HrText(L"Leitura do tamanho da swap chain falhou", hr); return false; }
+    if (current.Width == width && current.Height == height) return true;
+    m_context->OMSetRenderTargets(0, nullptr, nullptr);
+    m_target.Reset();
+    hr = m_swapChain->ResizeBuffers(0, width, height, DXGI_FORMAT_UNKNOWN, 0);
+    if (FAILED(hr)) { error = HrText(L"ResizeBuffers falhou", hr); return false; }
+    ComPtr<ID3D11Texture2D> backBuffer;
+    hr = m_swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer));
+    if (FAILED(hr)) { error = HrText(L"Obtenção do backbuffer após redimensionamento falhou", hr); return false; }
+    hr = m_device->CreateRenderTargetView(backBuffer.Get(), nullptr, &m_target);
+    if (FAILED(hr)) { error = HrText(L"Recriação do render target falhou", hr); return false; }
+    return true;
+}
+
 bool QemuD3DRenderer::CreateGuestTexture(int width,int height,std::wstring& error)
 {
     m_guestView.Reset(); m_guestTexture.Reset(); D3D11_TEXTURE2D_DESC td{};
