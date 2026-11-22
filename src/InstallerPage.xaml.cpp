@@ -72,7 +72,7 @@ namespace OnyxOS
     void InstallerPage::VirtualKeyButton_Click(Object^ sender, RoutedEventArgs^)
     {
         auto button = dynamic_cast<Windows::UI::Xaml::Controls::Button^>(sender);
-        if (button == nullptr || button->Tag == nullptr || !VirtualKeyRequested) return;
+        if (button == nullptr || button->Tag == nullptr) return;
         auto key = dynamic_cast<String^>(button->Tag);
         if (key != nullptr) VirtualKeyRequested(this, key);
     }
