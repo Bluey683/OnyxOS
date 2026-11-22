@@ -22,6 +22,9 @@ namespace vm
         GuestOperatingSystem operatingSystem{ GuestOperatingSystem::Linux };
         std::string isoPath;
         std::string diskPath;
+        std::string diskFormat{ "vhdx" };
+        std::string diskDevice{ "virtio-blk-pci" };
+        std::string usbController{ "qemu-xhci" };
         std::string machineType{ "q35" };
         std::string cpuModel{ "max" };
         std::uint32_t memoryMB{ 3072 };
@@ -30,6 +33,7 @@ namespace vm
         bool enableNetwork{ true };
         bool enableVirtioGraphics{ true };
         bool enableUsbInput{ true };
+        bool enableAudio{ true };
         bool enabled{ true };
         std::uint32_t displayWidth{ 1280 };
         std::uint32_t displayHeight{ 720 };
@@ -43,9 +47,6 @@ namespace vm
     };
 
     // Builds arguments for the QEMU UWP host API. It does not launch a process.
-    // Firmware and host-specific audio/video callbacks must be configured by
-    // the QEMU integration layer after the matching runtime is loaded.
-    // Returns the machine and display defaults selected for an OS profile.
     VmConfiguration CreateProfile(const std::string& profileId);
     ValidationResult Validate(const VmConfiguration& configuration);
     std::vector<std::string> BuildQemuArguments(const VmConfiguration& configuration);
