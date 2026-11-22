@@ -8,6 +8,8 @@
 #include <winrt/Windows.Storage.Pickers.h>
 #include <winrt/Windows.ApplicationModel.h>
 #include <winerror.h>
+#include <cstring>
+#include <exception>
 
 namespace ws = winrt::Windows::Storage;
 namespace appdata = winrt::Windows::ApplicationModel;
