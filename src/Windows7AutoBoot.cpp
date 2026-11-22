@@ -14,7 +14,7 @@
 namespace ws = winrt::Windows::Storage;
 namespace appdata = winrt::Windows::ApplicationModel;
 
-namespace onyx::app {
+namespace onyx { namespace app {
 Windows7AutoBoot::Windows7AutoBoot(FrameCallback callback)
     : m_frameCallback(std::move(callback)) {}
 
@@ -24,7 +24,7 @@ void Windows7AutoBoot::Start() {
     if (m_worker.joinable()) return;
     m_stopRequested = false;
     m_worker = std::thread(&Windows7AutoBoot::Run, this);
-}
+} }
 
 void Windows7AutoBoot::Stop() noexcept {
     m_stopRequested = true;
