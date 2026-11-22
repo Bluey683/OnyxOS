@@ -7,6 +7,7 @@
 
 using namespace Windows::ApplicationModel::Core;
 using namespace Windows::UI::Core;
+using namespace Windows::Foundation;
 using namespace Platform;
 
 namespace OnyxOS
@@ -14,7 +15,7 @@ namespace OnyxOS
     public ref class App sealed : IFrameworkView
     {
     public:
-        virtual void Initialize(CoreApplicationView^)
+        virtual void Initialize(CoreApplicationView^ applicationView)
         {
         }
 
@@ -38,7 +39,7 @@ namespace OnyxOS
             }
         }
 
-        virtual void Load(String^)
+        virtual void Load(String^ entryPoint)
         {
         }
 
