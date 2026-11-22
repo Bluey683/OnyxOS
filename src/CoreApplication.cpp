@@ -1,5 +1,6 @@
 #include "graphics/CoreWindowD3DRenderer.h"
 #include <windows.h>
+#include <windows.applicationmodel.core.h>
 #include <collection.h>
 #include <memory>
 #include <vector>
