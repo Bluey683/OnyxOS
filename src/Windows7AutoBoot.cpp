@@ -12,7 +12,6 @@
 #include <exception>
 
 namespace ws = winrt::Windows::Storage;
-namespace appdata = winrt::Windows::ApplicationModel;
 
 namespace onyx { namespace app {
 Windows7AutoBoot::Windows7AutoBoot(FrameCallback callback)
@@ -24,7 +23,7 @@ void Windows7AutoBoot::Start() {
     if (m_worker.joinable()) return;
     m_stopRequested = false;
     m_worker = std::thread(&Windows7AutoBoot::Run, this);
-} }
+}
 
 void Windows7AutoBoot::Stop() noexcept {
     m_stopRequested = true;
@@ -37,7 +36,7 @@ void Windows7AutoBoot::Run() noexcept {
     try {
         winrt::init_apartment(winrt::apartment_type::multi_threaded);
         OnyxOS::WriteQemuLogNative(L"Windows 7 auto-boot: checking app-private disk.");
-        auto local = appdata::ApplicationData::Current().LocalFolder();
+        auto local = ws::ApplicationData::Current().LocalFolder();
         auto disks = local.CreateFolderAsync(L"Disks", ws::CreationCollisionOption::OpenIfExists).get();
         auto item = disks.TryGetItemAsync(L"windows7.qcow2").get();
         ws::StorageFile disk = item ? item.try_as<ws::StorageFile>() : nullptr;
