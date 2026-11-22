@@ -86,4 +86,4 @@ void Windows7AutoBoot::Run() noexcept {
     }
     try { winrt::uninit_apartment(); } catch (...) {}
 }
-}
+} }
