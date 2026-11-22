@@ -64,7 +64,7 @@ namespace OnyxOS
         const bool show = VirtualKeyboardPanel->Visibility != Windows::UI::Xaml::Visibility::Visible;
         VirtualKeyboardPanel->Visibility = show ? Windows::UI::Xaml::Visibility::Visible : Windows::UI::Xaml::Visibility::Collapsed;
         KeyboardToggleButton->Content = show ? L"Fechar teclado" : L"Teclado";
-        if (VirtualKeyboardModeChanged) VirtualKeyboardModeChanged(this, show ? L"1" : L"0");
+        VirtualKeyboardModeChanged(this, show ? L"1" : L"0");
         if (show) Key1Button->Focus(Windows::UI::Xaml::FocusState::Programmatic);
         else KeyboardSink->Focus(Windows::UI::Xaml::FocusState::Programmatic);
     }
