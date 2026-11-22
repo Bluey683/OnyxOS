@@ -8,39 +8,37 @@
     "runtimeDirectory": "Dependencies/Runtime",
     "firmwareDirectory": "Dependencies/qemu",
     "acceleration": "TCG software emulation",
-    "audio": "XAudio2 host integration pending",
-    "video": "QEMU host video callback pending"
+    "audio": "disabled",
+    "video": "QEMU framebuffer callback -> Direct3D 11 -> HLSL -> CoreWindow swap chain (integration pending)"
   },
   "storage": {
     "isoDirectory": "ISO",
-    "diskDirectory": "VHDX",
+    "diskDirectory": "Disks",
     "configurationDirectory": "Configurations",
     "logDirectory": "Logs",
-    "diskFormat": "vhdx"
+    "diskFormat": "qcow2"
   },
   "defaults": {
-    "machine": "q35",
+    "machine": "pc",
     "cpuModel": "max",
     "cpuCount": 2,
-    "ramMB": 3072,
+    "ramMB": 2560,
     "network": {
       "mode": "user",
       "backend": "QEMU user-mode NAT",
       "adapter": "e1000e",
       "internetCapability": "internetClient"
     },
-    "graphics": "virtio-vga",
+    "graphics": "standard VGA",
     "input": {
-      "usbController": "qemu-xhci",
+      "usbController": "piix3-usb-uhci",
       "keyboard": "usb-kbd",
       "pointer": "usb-tablet",
       "hostBridge": "CoreWindow + Windows.Gaming.Input.Gamepad"
     },
-    "boot": "ISO first",
+    "boot": "existing QCOW2 disk",
     "audio": {
-      "backend": "xaudio2",
-      "controller": "intel-hda",
-      "codec": "hda-duplex"
+      "backend": "disabled"
     },
     "acceleration": {
       "engine": "tcg",
@@ -49,6 +47,39 @@
     }
   },
   "profiles": [
+    {
+      "id": "windows7",
+      "name": "Windows 7 x64",
+      "family": "windows",
+      "version": "7",
+      "enabled": true,
+      "ramMB": 2560,
+      "cpuCount": 2,
+      "machine": "pc",
+      "cpuModel": "max",
+      "architecture": "x86_64",
+      "disk": "Disks/windows7.qcow2",
+      "diskFormat": "qcow2",
+      "diskDevice": "ide-hd",
+      "diskSources": {
+        "download": "https://archive.org/download/windows-image-collection/Windows%207.qcow2",
+        "localFilePicker": true,
+        "persistentLocation": "LocalState/Disks/windows7.qcow2"
+      },
+      "firmware": "SeaBIOS",
+      "useUefi": false,
+      "network": "user-mode NAT via e1000",
+      "graphics": "standard VGA; host framebuffer rendered by Direct3D 11/HLSL",
+      "input": [
+        "Xbox controller mapped to guest keyboard and absolute mouse",
+        "USB keyboard",
+        "USB tablet mouse",
+        "on-screen keyboard"
+      ],
+      "audio": "disabled",
+      "boot": "disk first",
+      "notes": "Use an unmodified Windows 7 x64 QCOW2 guest disk. The app can download the supplied Archive.org image or use a user-selected local QCOW2 file. The image is not bundled in the repository or GitHub Actions artifacts. Confirm the image's provenance and license before use."
+    },
     {
       "id": "windows-10",
       "name": "Windows 10",
@@ -220,5 +251,6 @@
       "isoFallback": "official-download-catalog",
       "diskFallback": "create-vhdx-when-creator-is-available"
     }
-  ]
+  ],
+  "defaultProfile": "windows7"
 }
