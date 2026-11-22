@@ -50,7 +50,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;NOMINMAX;UNICODE;_UNICODE;WINVER=0x0A00;_WIN32_WINNT=0x0A00;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(ProjectDir)src;$(ProjectDir)Generated Files\src;$(ProjectDir)src\vm;$(ProjectDir)src\downloads;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp14</LanguageStandard>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <CompileAsWinRT>true</CompileAsWinRT>
       <ConformanceMode>false</ConformanceMode>
     </ClCompile>
@@ -61,17 +61,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\Windows7AutoBoot.cpp"><CompileAsWinRT>false</CompileAsWinRT><LanguageStandard>stdcpp14</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
-    <ClCompile Include="src\CoreApplication.cpp"><CompileAsWinRT>true</CompileAsWinRT><LanguageStandard>stdcpp14</LanguageStandard><ConformanceMode>false</ConformanceMode><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
+    <ClCompile Include="src\Windows7AutoBoot.cpp"><CompileAsWinRT>false</CompileAsWinRT><LanguageStandard>stdcpp17</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
+    <ClCompile Include="src\CoreApplication.cpp"><CompileAsWinRT>true</CompileAsWinRT><LanguageStandard>stdcpp17</LanguageStandard><ConformanceMode>false</ConformanceMode><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
     <ClCompile Include="src\OnyxLogger.cpp">
       <CompileAsWinRT>true</CompileAsWinRT>
-      <LanguageStandard>stdcpp14</LanguageStandard>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="src\\vm\\VirtualMachine.cpp"><CompileAsWinRT>false</CompileAsWinRT><LanguageStandard>stdcpp20</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
-    <ClCompile Include="src\\graphics\\QemuD3DRenderer.cpp"><CompileAsWinRT>true</CompileAsWinRT><LanguageStandard>stdcpp14</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
-    <ClCompile Include="src\\graphics\\CoreWindowD3DRenderer.cpp"><CompileAsWinRT>true</CompileAsWinRT><LanguageStandard>stdcpp14</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
+    <ClCompile Include="src\\graphics\\QemuD3DRenderer.cpp"><CompileAsWinRT>true</CompileAsWinRT><LanguageStandard>stdcpp17</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
+    <ClCompile Include="src\\graphics\\CoreWindowD3DRenderer.cpp"><CompileAsWinRT>true</CompileAsWinRT><LanguageStandard>stdcpp17</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
     <ClCompile Include="src\\vm\\QemuHostAdapter.cpp"><CompileAsWinRT>false</CompileAsWinRT><LanguageStandard>stdcpp20</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
     <ClCompile Include="src\\vm\\QemuInputBridge.cpp"><CompileAsWinRT>false</CompileAsWinRT><LanguageStandard>stdcpp20</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
     <ClCompile Include="src\\vm\\VhdxProvisioner.cpp"><CompileAsWinRT>false</CompileAsWinRT><LanguageStandard>stdcpp20</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
