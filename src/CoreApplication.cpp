@@ -1,5 +1,4 @@
 #include "graphics/CoreWindowD3DRenderer.h"
-#include "Windows7AutoBoot.h"
 #include <windows.h>
 #include <windows.applicationmodel.core.h>
 #include <collection.h>
@@ -40,18 +39,6 @@ namespace OnyxOS
                 m_renderer.reset();
             }
 
-            // First launch downloads Windows 7 into LocalState/Disks. Later
-            // launches reuse the same QCOW2 and boot it without a menu.
-            m_autoBoot = std::make_unique<onyx::app::Windows7AutoBoot>(
-                [this](const std::vector<std::uint32_t>& frame, int frameWidth, int frameHeight)
-                {
-                    std::lock_guard<std::mutex> guard(m_frameMutex);
-                    m_latestFrame = frame;
-                    m_frameWidth = frameWidth;
-                    m_frameHeight = frameHeight;
-                    m_frameDirty = true;
-                });
-            m_autoBoot->Start();
         }
 
         virtual void Load(String^ entryPoint)
@@ -95,8 +82,6 @@ namespace OnyxOS
         virtual void Uninitialize()
         {
             m_running = false;
-            if (m_autoBoot) m_autoBoot->Stop();
-            m_autoBoot.reset();
             m_renderer.reset();
             m_window = nullptr;
         }
@@ -119,7 +104,6 @@ namespace OnyxOS
 
         CoreWindow^ m_window;
         std::shared_ptr<onyx::graphics::CoreWindowD3DRenderer> m_renderer;
-        std::unique_ptr<onyx::app::Windows7AutoBoot> m_autoBoot;
         std::mutex m_frameMutex;
         std::vector<std::uint32_t> m_latestFrame;
         int m_frameWidth{ 0 };
