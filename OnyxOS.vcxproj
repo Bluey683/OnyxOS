@@ -61,7 +61,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\Windows7AutoBoot.cpp"><CompileAsWinRT>false</CompileAsWinRT><LanguageStandard>stdcpp20</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
     <ClCompile Include="src\CoreApplication.cpp"><CompileAsWinRT>true</CompileAsWinRT><LanguageStandard>stdcpp17</LanguageStandard><ConformanceMode>false</ConformanceMode><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
     <ClCompile Include="src\OnyxLogger.cpp">
       <CompileAsWinRT>true</CompileAsWinRT>
@@ -78,7 +77,6 @@
     <ClCompile Include="src\\downloads\\OsImageDownloader.cpp"><CompileAsWinRT>false</CompileAsWinRT><LanguageStandard>stdcpp20</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\Windows7AutoBoot.h" />
     <ClInclude Include="src\vm\VirtualMachine.h" />
     <ClInclude Include="src\vm\QemuHostAdapter.h" />
     <ClInclude Include="src\vm\QemuInputBridge.h" />
