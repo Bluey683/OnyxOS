@@ -76,6 +76,7 @@
     </ClCompile>
     <ClCompile Include="src\\vm\\VirtualMachine.cpp"><CompileAsWinRT>false</CompileAsWinRT><LanguageStandard>stdcpp20</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
     <ClCompile Include="src\\graphics\\QemuD3DRenderer.cpp"><CompileAsWinRT>true</CompileAsWinRT><LanguageStandard>stdcpp14</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
+    <ClCompile Include="src\\graphics\\CoreWindowD3DRenderer.cpp"><CompileAsWinRT>true</CompileAsWinRT><LanguageStandard>stdcpp14</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
     <ClCompile Include="src\\vm\\QemuHostAdapter.cpp"><CompileAsWinRT>false</CompileAsWinRT><LanguageStandard>stdcpp20</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
     <ClCompile Include="src\\vm\\QemuInputBridge.cpp"><CompileAsWinRT>false</CompileAsWinRT><LanguageStandard>stdcpp20</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
     <ClCompile Include="src\\vm\\VhdxProvisioner.cpp"><CompileAsWinRT>false</CompileAsWinRT><LanguageStandard>stdcpp20</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
@@ -99,6 +100,7 @@
     <ClInclude Include="src\vm\QemuInputBridge.h" />
     <ClInclude Include="src\vm\VhdxProvisioner.h" />
     <ClInclude Include="src\downloads\OsImageDownloader.h" />
+    <ClInclude Include="src\\graphics\\CoreWindowD3DRenderer.h" />
     <ClInclude Include="src\OnyxLogger.h" />
     <ClInclude Include="src\OnyxNativeLog.h" />
     <ClInclude Include="src\App.xaml.h"><DependentUpon>App.xaml</DependentUpon></ClInclude>
