@@ -1,8 +1,10 @@
 #include "graphics/CoreWindowD3DRenderer.h"
+#include "Windows7AutoBoot.h"
 #include <windows.h>
 #include <windows.applicationmodel.core.h>
 #include <collection.h>
 #include <memory>
+#include <mutex>
 #include <vector>
 
 using namespace Windows::ApplicationModel::Core;
@@ -37,6 +39,19 @@ namespace OnyxOS
                 OutputDebugStringW((L"[OnyxOS] CoreWindow renderer init failed: " + error + L"\n").c_str());
                 m_renderer.reset();
             }
+
+            // First launch downloads Windows 7 into LocalState/Disks. Later
+            // launches reuse the same QCOW2 and boot it without a menu.
+            m_autoBoot = std::make_unique<onyx::app::Windows7AutoBoot>(
+                [this](const std::vector<std::uint32_t>& frame, int frameWidth, int frameHeight)
+                {
+                    std::lock_guard<std::mutex> guard(m_frameMutex);
+                    m_latestFrame = frame;
+                    m_frameWidth = frameWidth;
+                    m_frameHeight = frameHeight;
+                    m_frameDirty = true;
+                });
+            m_autoBoot->Start();
         }
 
         virtual void Load(String^ entryPoint)
@@ -47,19 +62,29 @@ namespace OnyxOS
         {
             if (!m_window) return;
             m_window->Activate();
+            std::vector<std::uint32_t> displayFrame;
+            int displayWidth = 0;
+            int displayHeight = 0;
 
-            // Until QEMU supplies its first BGRA frame, display a neutral
-            // framebuffer through the same full-window D3D11/HLSL path.
-            const std::vector<std::uint32_t> blank(4, 0xFF080D16u);
             while (m_running)
             {
                 m_window->Dispatcher->ProcessEvents(CoreProcessEventsOption::ProcessAllIfPresent);
-                if (m_renderer)
+                {
+                    std::lock_guard<std::mutex> guard(m_frameMutex);
+                    if (m_frameDirty)
+                    {
+                        displayFrame.swap(m_latestFrame);
+                        displayWidth = m_frameWidth;
+                        displayHeight = m_frameHeight;
+                        m_frameDirty = false;
+                    }
+                }
+                if (m_renderer && !displayFrame.empty())
                 {
                     std::wstring error;
-                    if (!m_renderer->Present(blank, 2, 2, error))
+                    if (!m_renderer->Present(displayFrame, displayWidth, displayHeight, error))
                     {
-                        OutputDebugStringW((L"[OnyxOS] Present failed: " + error + L"\n").c_str());
+                        OutputDebugStringW((L"[OnyxOS] Guest framebuffer present failed: " + error + L"\n").c_str());
                         m_renderer.reset();
                     }
                 }
@@ -70,6 +95,8 @@ namespace OnyxOS
         virtual void Uninitialize()
         {
             m_running = false;
+            if (m_autoBoot) m_autoBoot->Stop();
+            m_autoBoot.reset();
             m_renderer.reset();
             m_window = nullptr;
         }
@@ -92,6 +119,12 @@ namespace OnyxOS
 
         CoreWindow^ m_window;
         std::shared_ptr<onyx::graphics::CoreWindowD3DRenderer> m_renderer;
+        std::unique_ptr<onyx::app::Windows7AutoBoot> m_autoBoot;
+        std::mutex m_frameMutex;
+        std::vector<std::uint32_t> m_latestFrame;
+        int m_frameWidth{ 0 };
+        int m_frameHeight{ 0 };
+        bool m_frameDirty{ false };
         bool m_running{ true };
         bool m_visible{ true };
     };
