@@ -61,7 +61,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\Windows7AutoBoot.cpp"><CompileAsWinRT>true</CompileAsWinRT><LanguageStandard>stdcpp20</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
+    <ClCompile Include="src\Windows7AutoBoot.cpp"><CompileAsWinRT>false</CompileAsWinRT><LanguageStandard>stdcpp17</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
     <ClCompile Include="src\CoreApplication.cpp"><CompileAsWinRT>true</CompileAsWinRT><LanguageStandard>stdcpp17</LanguageStandard><ConformanceMode>false</ConformanceMode><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
     <ClCompile Include="src\OnyxLogger.cpp">
       <CompileAsWinRT>true</CompileAsWinRT>
