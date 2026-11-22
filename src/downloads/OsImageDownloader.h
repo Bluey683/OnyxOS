@@ -23,5 +23,9 @@ public:
     // The guest disk is downloaded by the app at runtime, not bundled in GitHub Actions.
     static winrt::Windows::Foundation::IAsyncOperation<winrt::Windows::Storage::StorageFile>
     DownloadWindows7Qcow2Async(winrt::Windows::Storage::StorageFolder destination);
+
+    static winrt::Windows::Foundation::IAsyncOperation<winrt::Windows::Storage::StorageFile>
+    ImportWindows7Qcow2Async(winrt::Windows::Storage::StorageFile source,
+                             winrt::Windows::Storage::StorageFolder destination);
 };
 }
