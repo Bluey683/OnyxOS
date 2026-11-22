@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   build-onyxos:
-    name: Build and sign seven OnyxOS entries into one APPX (x64)
+    name: Build and sign OnyxOS Xbox APPX (x64)
     runs-on: windows-2022
     timeout-minutes: 60
     steps:
@@ -24,6 +24,10 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x64
+      - name: Validate Windows 7 guest profile and CoreWindow assets
+        shell: pwsh
+        run: ./Tests/Validate-Windows7Profile.ps1
+
       - name: Build and package OnyxOS with Visual Studio MSBuild
         shell: pwsh
         run: ./Build.ps1 -Mode GitHubActions -Configuration Release -Architecture x64
