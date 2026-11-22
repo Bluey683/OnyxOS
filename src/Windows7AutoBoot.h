@@ -6,7 +6,7 @@
 #include <thread>
 #include <vector>
 
-namespace onyx::app {
+namespace onyx { namespace app {
 class Windows7AutoBoot final {
 public:
     using FrameCallback = onyx::vm::QemuHostAdapter::VideoFrameCallback;
@@ -23,4 +23,4 @@ private:
     std::thread m_worker;
     std::atomic<bool> m_stopRequested{false};
 };
-}
+} }
