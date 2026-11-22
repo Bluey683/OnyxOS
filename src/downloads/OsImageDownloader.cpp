@@ -7,6 +7,7 @@
 #include <winrt/Windows.Storage.Streams.h>
 #include <winerror.h>
 #include <array>
+#include <cstdint>
 
 namespace wf = winrt::Windows::Foundation;
 namespace wnbt = winrt::Windows::Networking::BackgroundTransfer;
@@ -26,6 +27,23 @@ const std::array<OsImageSource, 5> Sources{{
 constexpr wchar_t Windows7Qcow2Url[] =
     L"https://archive.org/download/windows-image-collection/Windows%207.qcow2";
 constexpr wchar_t Windows7Qcow2Name[] = L"windows7.qcow2";
+
+wf::IAsyncOperation<bool> HasQcow2MagicAsync(ws::StorageFile file) {
+    auto stream = co_await file.OpenAsync(ws::FileAccessMode::Read);
+    wss::DataReader reader(stream);
+    const auto loaded = co_await reader.LoadAsync(4);
+    if (loaded != 4) {
+        reader.Close();
+        stream.Close();
+        co_return false;
+    }
+    std::array<std::uint8_t, 4> magic{};
+    reader.ReadBytes(magic);
+    reader.Close();
+    stream.Close();
+    co_return magic[0] == 'Q' && magic[1] == 'F' &&
+              magic[2] == 'I' && magic[3] == 0xfb;
+}
 }
 
 const OsImageSource* FindImageSource(const std::string& id) noexcept {
@@ -77,25 +95,26 @@ wf::IAsyncOperation<ws::StorageFile> OsImageDownloader::DownloadWindows7Qcow2Asy
             L"Downloaded Windows 7 image is unexpectedly small; the download may be an error page.");
     }
 
-    // Verify the QCOW2 magic bytes before making the disk available to QEMU.
-    auto stream = co_await file.OpenAsync(ws::FileAccessMode::Read);
-    wss::DataReader reader(stream);
-    const auto loaded = co_await reader.LoadAsync(4);
-    if (loaded != 4) {
-        co_await file.DeleteAsync();
-        throw winrt::hresult_error(E_FAIL, L"Windows 7 image is truncated.");
-    }
-    std::array<std::uint8_t, 4> magic{};
-    reader.ReadBytes(magic);
-    reader.Close();
-    stream.Close();
-
-    if (magic[0] != 'Q' || magic[1] != 'F' || magic[2] != 'I' || magic[3] != 0xfb) {
+    if (!(co_await HasQcow2MagicAsync(file))) {
         co_await file.DeleteAsync();
         throw winrt::hresult_error(E_FAIL,
             L"The downloaded file is not a valid QCOW2 image (missing QFI magic).");
     }
-
     co_return file;
+}
+
+wf::IAsyncOperation<ws::StorageFile> OsImageDownloader::ImportWindows7Qcow2Async(
+    ws::StorageFile source, ws::StorageFolder destination) {
+    if (!source || !destination)
+        throw winrt::hresult_invalid_argument(L"Source file and destination folder are required.");
+
+    auto imported = co_await source.CopyAsync(
+        destination, Windows7Qcow2Name, ws::NameCollisionOption::ReplaceExisting);
+    if (!(co_await HasQcow2MagicAsync(imported))) {
+        co_await imported.DeleteAsync();
+        throw winrt::hresult_error(E_FAIL,
+            L"The selected file is not a valid QCOW2 disk image (missing QFI magic).");
+    }
+    co_return imported;
 }
 }
