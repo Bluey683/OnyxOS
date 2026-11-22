@@ -3,6 +3,7 @@
 #include "downloads/OsImageDownloader.h"
 #include "OnyxNativeLog.h"
 #include <winrt/base.h>
+#include <roapi.h>
 #include <winrt/Windows.Foundation.h>
 #include <winrt/Windows.Storage.h>
 #include <winrt/Windows.Storage.Pickers.h>
@@ -34,7 +35,9 @@ void Windows7AutoBoot::Stop() noexcept {
 
 void Windows7AutoBoot::Run() noexcept {
     try {
-        winrt::init_apartment(winrt::apartment_type::multi_threaded);
+        const HRESULT apartmentResult = RoInitialize(RO_INIT_MULTITHREADED);
+        if (FAILED(apartmentResult) && apartmentResult != RPC_E_CHANGED_MODE)
+            throw winrt::hresult_error(apartmentResult);
         OnyxOS::WriteQemuLogNative(L"Windows 7 auto-boot: checking app-private disk.");
         auto local = ws::ApplicationData::Current().LocalFolder();
         auto disks = local.CreateFolderAsync(L"Disks", ws::CreationCollisionOption::OpenIfExists).get();
@@ -84,6 +87,6 @@ void Windows7AutoBoot::Run() noexcept {
     } catch (...) {
         OnyxOS::WriteQemuLogNative(L"Windows 7 auto-boot failed with an unknown exception.");
     }
-    try { winrt::uninit_apartment(); } catch (...) {}
+    if (SUCCEEDED(apartmentResult)) RoUninitialize();
 }
 } }
