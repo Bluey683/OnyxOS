@@ -17,7 +17,7 @@ foreach ($required in @('windows7', 'qcow2', '2560', 'enableAudio', 'piix3-usb-u
 $renderer = Join-Path $root 'src/graphics/CoreWindowD3DRenderer.cpp'
 if (-not (Test-Path -LiteralPath $renderer)) { throw 'CoreWindow Direct3D renderer is missing.' }
 $downloader = Get-Content -LiteralPath (Join-Path $root 'src/downloads/OsImageDownloader.cpp') -Raw
-if (-not $downloader.Contains('Windows 7.qcow2') -or -not $downloader.Contains('QFI')) {
+if (-not $downloader.Contains('Windows%207.qcow2') -or -not $downloader.Contains("magic[0] == 'Q'")) {
     throw 'Windows 7 QCOW2 download/validation code is missing.'
 }
 Write-Host 'OnyxOS Windows 7 profile validation passed.' -ForegroundColor Green
