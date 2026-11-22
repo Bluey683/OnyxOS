@@ -1,21 +1,9 @@
-// OnyxOS HLSL framebuffer shader
-// Compile as separate stages with entry points VSMain and PSMain.
-// The host renderer supplies the texture and sampler bound to t0/s0.
-
-cbuffer FrameConstants : register(b0)
-{
-    float4x4 Projection;
-    float4 Tint;
-};
+// OnyxOS HLSL guest framebuffer shader.
+// Vertex shader uses SV_VertexID to draw one full-screen triangle. No vertex
+// buffer or XAML/SwapChainPanel dependency is required by the shader.
 
 Texture2D GuestFramebuffer : register(t0);
 SamplerState GuestSampler : register(s0);
-
-struct VSInput
-{
-    float3 Position : POSITION;
-    float2 TexCoord : TEXCOORD0;
-};
 
 struct VSOutput
 {
@@ -23,16 +11,16 @@ struct VSOutput
     float2 TexCoord : TEXCOORD0;
 };
 
-VSOutput VSMain(VSInput input)
+VSOutput VSMain(uint vertexId : SV_VertexID)
 {
     VSOutput output;
-    output.Position = mul(float4(input.Position, 1.0f), Projection);
-    output.TexCoord = input.TexCoord;
+    float2 uv = float2((vertexId << 1) & 2, vertexId & 2);
+    output.Position = float4(uv.x * 2.0f - 1.0f, 1.0f - uv.y * 2.0f, 0.0f, 1.0f);
+    output.TexCoord = uv;
     return output;
 }
 
 float4 PSMain(VSOutput input) : SV_TARGET
 {
-    float4 color = GuestFramebuffer.Sample(GuestSampler, input.TexCoord);
-    return color * Tint;
+    return GuestFramebuffer.Sample(GuestSampler, input.TexCoord);
 }
