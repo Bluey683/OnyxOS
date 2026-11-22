@@ -16,9 +16,12 @@ SamplerState GuestSampler : register(s0);
 struct VOut { float4 position : SV_POSITION; float2 uv : TEXCOORD0; };
 VOut VSMain(uint id : SV_VertexID) {
     VOut o;
-    float2 p = float2((id == 2) ? 3.0 : -1.0, (id == 1) ? 3.0 : -1.0);
-    o.position = float4(p, 0.0, 1.0);
-    o.uv = float2((p.x + 1.0) * 0.5, (1.0 - p.y) * 0.5);
+    // Canonical full-screen triangle: UVs cover [0,1] over the visible viewport.
+    // This avoids the negative/out-of-range UV mapping that can make the guest
+    // appear cropped or occupy only part of the Xbox surface.
+    float2 uv = float2((id << 1) & 2, id & 2);
+    o.position = float4(uv.x * 2.0 - 1.0, 1.0 - uv.y * 2.0, 0.0, 1.0);
+    o.uv = uv;
     return o;
 }
 float4 PSMain(VOut input) : SV_TARGET { return GuestFramebuffer.Sample(GuestSampler, input.uv); }
