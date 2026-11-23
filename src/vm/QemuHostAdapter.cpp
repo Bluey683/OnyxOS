@@ -163,9 +163,12 @@ namespace onyx::vm
         if (!m_startCondition.wait_for(lock, std::chrono::seconds(20),
             [this] { return m_startComplete; }))
         {
-            m_error = L"Tempo esgotado aguardando qemu_host_init (20 segundos).";
+            m_error = L"Tempo esgotado aguardando qemu_host_init (20 segundos). A chamada nativa continua em execução.";
+            // qemu_host_init is synchronous. Joining this worker here can freeze
+            // the UI indefinitely if the DLL is stuck during initialization.
+            m_stopRequested = true;
+            OnyxOS::WriteQemuLogNative(m_error.c_str());
             lock.unlock();
-            Stop();
             return false;
         }
         const bool initialized = m_startSucceeded;
@@ -237,6 +240,8 @@ namespace onyx::vm
                 m_startSucceeded = false;
             }
             m_startCondition.notify_all();
+            m_running = false;
+            m_starting = false;
             RoUninitialize();
             OnyxOS::WriteQemuLogNative(L"WinRT MTA apartment released after QEMU init failure.");
             return;
@@ -247,6 +252,18 @@ namespace onyx::vm
             m_startSucceeded = true;
         }
         m_startCondition.notify_all();
+        if (m_stopRequested)
+        {
+            OnyxOS::WriteQemuLogNative(L"qemu_host_init returned after startup timeout; skipping guest run and cleaning up.");
+            if (m_shutdown) m_shutdown();
+            if (m_wake) m_wake();
+            if (m_join) { int finalStatus = 0; m_join(&finalStatus); }
+            m_running = false;
+            m_starting = false;
+            RoUninitialize();
+            OnyxOS::WriteQemuLogNative(L"Late QEMU initialization cleaned up; WinRT MTA apartment released.");
+            return;
+        }
         OnyxOS::WriteQemuLogNative(L"QEMU initialized; entering main loop.");
         int status = 0;
         while (!m_stopRequested)
@@ -262,6 +279,7 @@ namespace onyx::vm
         }
         if (m_join) { int finalStatus = 0; m_join(&finalStatus); }
         m_running = false;
+        m_starting = false;
         m_startCondition.notify_all();
         OnyxOS::WriteQemuLogNative(L"QEMU main loop stopped.");
         RoUninitialize();
