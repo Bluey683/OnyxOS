@@ -80,27 +80,42 @@ wf::IAsyncOperation<ws::StorageFile> OsImageDownloader::DownloadWindows7Qcow2Asy
     if (!destination)
         throw winrt::hresult_invalid_argument(L"Destination folder is required.");
 
-    auto file = co_await destination.CreateFileAsync(
-        Windows7Qcow2Name, ws::CreationCollisionOption::ReplaceExisting);
-
-    wnbt::BackgroundDownloader downloader;
-    auto operation = downloader.CreateDownload(
-        wf::Uri(Windows7Qcow2Url), file);
-    co_await operation.StartAsync();
-
-    const auto properties = co_await file.GetBasicPropertiesAsync();
-    if (properties.Size() < 1024 * 1024) {
-        co_await file.DeleteAsync();
-        throw winrt::hresult_error(E_FAIL,
-            L"Downloaded Windows 7 image is unexpectedly small; the download may be an error page.");
+    // A previous failed transfer may have left an empty file behind. Always
+    // remove it before starting a new transfer, and never preserve a partial
+    // QCOW2 as if it were a valid guest disk.
+    ws::StorageFile file{ nullptr };
+    try {
+        file = co_await destination.CreateFileAsync(
+            Windows7Qcow2Name, ws::CreationCollisionOption::ReplaceExisting);
+    } catch (...) {
+        throw;
     }
 
-    if (!(co_await HasQcow2MagicAsync(file))) {
-        co_await file.DeleteAsync();
-        throw winrt::hresult_error(E_FAIL,
-            L"The downloaded file is not a valid QCOW2 image (missing QFI magic).");
+    try {
+        wnbt::BackgroundDownloader downloader;
+        auto request = wf::Uri(L"https://archive.org/download/windows-image-collection/Windows%207.qcow2?download=1");
+        auto operation = downloader.CreateDownload(request, file);
+        co_await operation.StartAsync();
+
+        const auto properties = co_await file.GetBasicPropertiesAsync();
+        if (properties.Size() < 1024 * 1024) {
+            throw winrt::hresult_error(E_FAIL,
+                L"Archive.org terminou a transferência sem entregar o disco (arquivo menor que 1 MiB).");
+        }
+
+        if (!(co_await HasQcow2MagicAsync(file))) {
+            throw winrt::hresult_error(E_FAIL,
+                L"O download não é um disco QCOW2 válido (cabeçalho QFI ausente).");
+        }
+        co_return file;
+    } catch (...) {
+        try {
+            if (file) co_await file.DeleteAsync();
+        } catch (...) {
+            // Preserve the original network/validation error.
+        }
+        throw;
     }
-    co_return file;
 }
 
 wf::IAsyncOperation<ws::StorageFile> OsImageDownloader::ImportWindows7Qcow2Async(
