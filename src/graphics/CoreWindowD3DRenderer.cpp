@@ -120,7 +120,20 @@ bool CoreWindowD3DRenderer::Initialize(
         error = HrText(L"Criação do sampler falhou", hr);
         return false;
     }
-    return CreateBackBuffer(error);
+    if (!CreateBackBuffer(error)) return false;
+
+    // Present an intentional startup background immediately. Previously the
+    // swap chain was created but never presented until the first guest frame,
+    // which made a healthy app look like a frozen black screen during boot.
+    const float startupBackground[4] = { 0.035f, 0.055f, 0.085f, 1.0f };
+    m_context->OMSetRenderTargets(1, m_target.GetAddressOf(), nullptr);
+    m_context->ClearRenderTargetView(m_target.Get(), startupBackground);
+    hr = m_swapChain->Present(1, 0);
+    if (FAILED(hr)) {
+        error = HrText(L"Apresentação da tela inicial falhou", hr);
+        return false;
+    }
+    return true;
 }
 
 bool CoreWindowD3DRenderer::CreateBackBuffer(std::wstring& error) {
