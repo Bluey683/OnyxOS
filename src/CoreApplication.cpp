@@ -70,7 +70,16 @@ namespace OnyxOS
                 }
 
                 onyx::vm::VmConfiguration config = onyx::vm::CreateProfile("windows7");
-                config.diskPath.assign(diskPath.begin(), diskPath.end());
+                const int diskUtf8Length = WideCharToMultiByte(CP_UTF8, 0, diskPath.c_str(), -1, nullptr, 0, nullptr, nullptr);
+                if (diskUtf8Length <= 1)
+                {
+                    WriteQemuLogNative(L"[OnyxOS] Could not encode the Windows 7 disk path as UTF-8.");
+                    return;
+                }
+                std::string diskUtf8(static_cast<std::size_t>(diskUtf8Length), '\0');
+                WideCharToMultiByte(CP_UTF8, 0, diskPath.c_str(), -1, diskUtf8.data(), diskUtf8Length, nullptr, nullptr);
+                diskUtf8.resize(static_cast<std::size_t>(diskUtf8Length - 1));
+                config.diskPath = std::move(diskUtf8);
                 const auto validation = onyx::vm::Validate(config);
                 if (!validation.valid)
                 {
