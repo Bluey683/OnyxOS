@@ -187,6 +187,7 @@ namespace vm
             args.emplace_back(configuration.usbController);
             args.emplace_back("-device");
             args.emplace_back("usb-kbd");
+            args.emplace_back("-device");
             args.emplace_back("usb-tablet");
         }
 
