@@ -81,6 +81,8 @@ namespace vm
         SetVideoFn m_videoSet{ nullptr };
         std::thread m_worker;
         std::atomic<bool> m_running{ false };
+        // Reserves the adapter before the worker starts; prevents concurrent qemu_host_init calls.
+        std::atomic<bool> m_starting{ false };
         std::atomic<bool> m_stopRequested{ false };
         std::mutex m_startMutex;
         std::condition_variable m_startCondition;
