@@ -20,9 +20,9 @@
   },
   "defaults": {
     "machine": "pc",
-    "cpuModel": "max",
-    "cpuCount": 2,
-    "ramMB": 2560,
+    "cpuModel": "qemu64",
+    "cpuCount": 1,
+    "ramMB": 1536,
     "network": {
       "mode": "user",
       "backend": "QEMU user-mode NAT",
@@ -42,7 +42,8 @@
     },
     "acceleration": {
       "engine": "tcg",
-      "thread": "multi",
+      "thread": "single",
+      "translationCacheMB": 32,
       "description": "QEMU software emulation"
     }
   },
@@ -53,10 +54,10 @@
       "family": "windows",
       "version": "7",
       "enabled": true,
-      "ramMB": 2560,
-      "cpuCount": 2,
+      "ramMB": 1536,
+      "cpuCount": 1,
       "machine": "pc",
-      "cpuModel": "max",
+      "cpuModel": "qemu64",
       "architecture": "x86_64",
       "disk": "Disks/windows7.qcow2",
       "diskFormat": "qcow2",
@@ -78,7 +79,7 @@
       ],
       "audio": "disabled",
       "boot": "disk first",
-      "notes": "Use an unmodified Windows 7 x64 QCOW2 guest disk. The app can download the supplied Archive.org image or use a user-selected local QCOW2 file. The image is not bundled in the repository or GitHub Actions artifacts. Confirm the image's provenance and license before use."
+      "notes": "Conservative Xbox UWP first-boot profile: 1536 MB RAM, one emulated CPU core, qemu64 CPU and single-threaded TCG. Use an unmodified Windows 7 x64 QCOW2 guest disk. The app can download the supplied Archive.org image or use a user-selected local QCOW2 file. The image is not bundled in the repository or GitHub Actions artifacts. Confirm the image's provenance and license before use."
     },
     {
       "id": "windows-10",
@@ -96,11 +97,7 @@
       "firmware": "UEFI",
       "network": "user-mode NAT via e1000e",
       "graphics": "virtio-vga",
-      "input": [
-        "USB keyboard",
-        "USB tablet mouse",
-        "Xbox controller mapped to guest keys and pointer"
-      ],
+      "input": ["USB keyboard", "USB tablet mouse", "Xbox controller mapped to guest keys and pointer"],
       "notes": "Requires bootable Windows 10 x64 ISO. 3 GB is a constrained starting profile.",
       "audio": "XAudio2 / Intel HDA",
       "diskFormat": "vhdx",
@@ -124,11 +121,7 @@
       "firmware": "UEFI",
       "network": "user-mode NAT via e1000e",
       "graphics": "virtio-vga",
-      "input": [
-        "USB keyboard",
-        "USB tablet mouse",
-        "Xbox controller mapped to guest keys and pointer"
-      ],
+      "input": ["USB keyboard", "USB tablet mouse", "Xbox controller mapped to guest keys and pointer"],
       "tpm": "Not configured",
       "secureBoot": "Not configured",
       "notes": "TPM 2.0 and Secure Boot emulation are not configured; standard Windows 11 installer may refuse to install.",
@@ -154,11 +147,7 @@
       "firmware": "UEFI",
       "network": "user-mode NAT via e1000e",
       "graphics": "virtio-vga",
-      "input": [
-        "USB keyboard",
-        "USB tablet mouse",
-        "Xbox controller mapped to guest keys and pointer"
-      ],
+      "input": ["USB keyboard", "USB tablet mouse", "Xbox controller mapped to guest keys and pointer"],
       "notes": "Use official Debian amd64 ISO.",
       "audio": "XAudio2 / Intel HDA",
       "diskFormat": "vhdx",
@@ -182,11 +171,7 @@
       "firmware": "UEFI",
       "network": "user-mode NAT via e1000e",
       "graphics": "virtio-vga",
-      "input": [
-        "USB keyboard",
-        "USB tablet mouse",
-        "Xbox controller mapped to guest keys and pointer"
-      ],
+      "input": ["USB keyboard", "USB tablet mouse", "Xbox controller mapped to guest keys and pointer"],
       "notes": "Use official Ubuntu amd64 ISO.",
       "audio": "XAudio2 / Intel HDA",
       "diskFormat": "vhdx",
@@ -210,11 +195,7 @@
       "firmware": "UEFI",
       "network": "user-mode NAT via e1000e",
       "graphics": "virtio-vga",
-      "input": [
-        "USB keyboard",
-        "USB tablet mouse",
-        "Xbox controller mapped to guest keys and pointer"
-      ],
+      "input": ["USB keyboard", "USB tablet mouse", "Xbox controller mapped to guest keys and pointer"],
       "notes": "Use official Arch Linux x86_64 ISO.",
       "audio": "XAudio2 / Intel HDA",
       "diskFormat": "vhdx",
@@ -239,11 +220,7 @@
       "firmware": "UEFI",
       "network": false,
       "graphics": "not configured",
-      "input": [
-        "USB keyboard",
-        "USB tablet mouse",
-        "Xbox controller mapped to guest keys and pointer"
-      ],
+      "input": ["USB keyboard", "USB tablet mouse", "Xbox controller mapped to guest keys and pointer"],
       "notes": "Disabled placeholder. Apple firmware, hardware compatibility and licensing are unresolved; no image or firmware is included.",
       "audio": "XAudio2 / Intel HDA",
       "diskFormat": "vhdx",
