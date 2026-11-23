@@ -120,9 +120,20 @@ namespace onyx::vm
 
     bool QemuHostAdapter::Start(const std::vector<std::string>& arguments, VideoFrameCallback onVideoFrame)
     {
+        // m_running becomes true inside Run(). Reserve the session first so a
+        // second UI/lifecycle callback cannot enter qemu_host_init in that gap.
+        bool expected = false;
+        if (!m_starting.compare_exchange_strong(expected, true))
+        {
+            m_error = L"QEMU já está iniciando ou possui uma sessão reservada; chamada duplicada bloqueada.";
+            OnyxOS::WriteQemuLogNative(m_error.c_str());
+            return false;
+        }
         if (!m_compatible || m_running || m_worker.joinable() || arguments.empty())
         {
             m_error = L"QEMU não pode iniciar: DLL não carregada, execução ativa ou argumentos vazios.";
+            m_starting = false;
+            OnyxOS::WriteQemuLogNative(m_error.c_str());
             return false;
         }
         m_videoCallback = std::move(onVideoFrame);
@@ -147,7 +158,7 @@ namespace onyx::vm
             m_videoSet(&QemuHostAdapter::LegacyVideoThunk, this);
         m_stopRequested = false;
         try { m_worker = std::thread(&QemuHostAdapter::Run, this, arguments); }
-        catch (...) { m_error = L"Não foi possível criar a thread do QEMU."; return false; }
+        catch (...) { m_error = L"Não foi possível criar a thread do QEMU."; m_starting = false; OnyxOS::WriteQemuLogNative(m_error.c_str()); return false; }
         std::unique_lock<std::mutex> lock(m_startMutex);
         if (!m_startCondition.wait_for(lock, std::chrono::seconds(20),
             [this] { return m_startComplete; }))
@@ -162,6 +173,7 @@ namespace onyx::vm
         {
             lock.unlock();
             if (m_worker.joinable()) m_worker.join();
+            m_starting = false;
             return false;
         }
         // Wait for a real guest frame before reporting the VM as started.
@@ -266,6 +278,7 @@ namespace onyx::vm
             m_worker.join();
         }
         m_running = false;
+        m_starting = false;
     }
 
     void QemuHostAdapter::LogThunkV2(void*, int level, const char* message)
