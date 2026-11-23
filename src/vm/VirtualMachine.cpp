@@ -67,6 +67,12 @@ namespace vm
             c.diskFormat = "qcow2";
             c.diskDevice = "ide-hd";
             c.usbController = "piix3-usb-uhci";
+            // Keep the first Xbox boot offline. QEMU's SLIRP user-network
+            // backend opens host sockets during qemu_host_init; that backend
+            // is not required to boot Windows and can fail under UWP app
+            // container networking restrictions. Enable networking only
+            // after the guest has reached its first desktop.
+            c.enableNetwork = false;
             c.enableVirtioGraphics = false;
             c.enableAudio = false;
             c.displayWidth = 1920;
