@@ -11,6 +11,34 @@ namespace onyx::vm
 {
     namespace
     {
+        // Keep a fault in the packaged native DLL from taking down the
+        // entire UWP process. This helper deliberately contains no C++ objects
+        // with destructors because MSVC forbids SEH in functions requiring
+        // C++ unwinding (C2712).
+        using QemuInitFunction = int(*)(int, const char* const*);
+        struct QemuInitCallResult
+        {
+            int result;
+            DWORD exceptionCode;
+            bool returned;
+        };
+        void InvokeQemuInitGuarded(QemuInitFunction init, int argc,
+            const char* const* argv, QemuInitCallResult* outcome) noexcept
+        {
+            outcome->result = -1;
+            outcome->exceptionCode = ERROR_SUCCESS;
+            outcome->returned = false;
+            __try
+            {
+                outcome->result = init(argc, argv);
+                outcome->returned = true;
+            }
+            __except (EXCEPTION_EXECUTE_HANDLER)
+            {
+                outcome->exceptionCode = GetExceptionCode();
+            }
+        }
+
         std::uint32_t ExpandColorBits(std::uint32_t value, int bits)
         {
             if (bits <= 0) return 0;
@@ -227,8 +255,30 @@ namespace onyx::vm
             const int count = MultiByteToWideChar(CP_UTF8, 0, arg.c_str(), -1, nullptr, 0);
             if (count > 1) { std::wstring wide(static_cast<std::size_t>(count), L"\\0"[0]); MultiByteToWideChar(CP_UTF8, 0, arg.c_str(), -1, wide.data(), count); wide.resize(static_cast<std::size_t>(count - 1)); OnyxOS::WriteQemuLogNative(wide.c_str()); }
         }
-        OnyxOS::WriteQemuLogNative(L"Calling qemu_host_init.");
-        const int initResult = m_init(static_cast<int>(argv.size()), argv.data());
+        OnyxOS::WriteQemuLogNative((L"Calling qemu_host_init on native worker thread " +
+            std::to_wstring(GetCurrentThreadId()) + L".").c_str());
+        QemuInitCallResult initCall{};
+        InvokeQemuInitGuarded(m_init, static_cast<int>(argv.size()), argv.data(), &initCall);
+        if (!initCall.returned)
+        {
+            m_error = L"Exceção nativa dentro de qemu_host_init. Código SEH: " +
+                std::to_wstring(initCall.exceptionCode) +
+                L". A VM foi interrompida para proteger o aplicativo.";
+            OnyxOS::WriteQemuLogNative(m_error.c_str());
+            m_running = false;
+            m_starting = false;
+            {
+                std::lock_guard<std::mutex> lock(m_startMutex);
+                m_startComplete = true;
+                m_startSucceeded = false;
+            }
+            m_startCondition.notify_all();
+            RoUninitialize();
+            OnyxOS::WriteQemuLogNative(L"WinRT MTA apartment released after native QEMU exception.");
+            return;
+        }
+        const int initResult = initCall.result;
+        OnyxOS::WriteQemuLogNative((L"qemu_host_init returned " + std::to_wstring(initResult) + L".").c_str());
         if (initResult != 0)
         {
             m_error = L"qemu_host_init falhou: " + std::to_wstring(initResult);
