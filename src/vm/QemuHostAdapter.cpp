@@ -188,13 +188,13 @@ namespace onyx::vm
         try { m_worker = std::thread(&QemuHostAdapter::Run, this, arguments); }
         catch (...) { m_error = L"Não foi possível criar a thread do QEMU."; m_starting = false; OnyxOS::WriteQemuLogNative(m_error.c_str()); return false; }
         std::unique_lock<std::mutex> lock(m_startMutex);
-        if (!m_startCondition.wait_for(lock, std::chrono::seconds(20),
+        if (!m_startCondition.wait_for(lock, std::chrono::seconds(180),
             [this] { return m_startComplete; }))
         {
-            m_error = L"Tempo esgotado aguardando qemu_host_init (20 segundos). A chamada nativa continua em execução.";
-            // qemu_host_init is synchronous. Joining this worker here can freeze
-            // the UI indefinitely if the DLL is stuck during initialization.
-            m_stopRequested = true;
+            m_error = L"qemu_host_init ainda não retornou após 180 segundos. A inicialização permanece ativa; o host não cancelará a VM automaticamente.";
+            // Initialization on Xbox can take considerably longer under TCG.
+            // A timeout is diagnostic only: setting m_stopRequested here would
+            // discard a guest that eventually finishes initialization.
             OnyxOS::WriteQemuLogNative(m_error.c_str());
             lock.unlock();
             return false;
