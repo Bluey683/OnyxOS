@@ -47,7 +47,32 @@ namespace onyx::vm {
                 }
 
                 if (!validExistingDisk) {
-                    disk = onyx::downloads::OsImageDownloader::DownloadWindows7Qcow2Async(disks).get();
+                    std::wstring lastDownloadError;
+                    bool downloaded = false;
+                    for (unsigned attempt = 1; attempt <= 5; ++attempt) {
+                        try {
+                            disk = onyx::downloads::OsImageDownloader::DownloadWindows7Qcow2Async(disks).get();
+                            downloaded = true;
+                            break;
+                        } catch (const winrt::hresult_error& ex) {
+                            lastDownloadError = ex.message().c_str();
+                        } catch (const std::exception& ex) {
+                            const auto length = MultiByteToWideChar(CP_UTF8, 0, ex.what(), -1, nullptr, 0);
+                            if (length > 1) {
+                                lastDownloadError.resize(static_cast<std::size_t>(length));
+                                MultiByteToWideChar(CP_UTF8, 0, ex.what(), -1, lastDownloadError.data(), length);
+                                lastDownloadError.resize(static_cast<std::size_t>(length - 1));
+                            } else {
+                                lastDownloadError = L"Erro desconhecido no download.";
+                            }
+                        }
+                        if (attempt < 5) Sleep(1000 * attempt);
+                    }
+                    if (!downloaded) {
+                        error = L"Não foi possível baixar o Windows 7 após 5 tentativas. Último erro: " + lastDownloadError;
+                        winrt::uninit_apartment();
+                        return false;
+                    }
                 }
 
                 diskPath = disk.Path().c_str();
