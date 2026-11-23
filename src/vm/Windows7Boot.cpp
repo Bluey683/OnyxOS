@@ -24,24 +24,29 @@ namespace onyx::vm {
                     L"Disks", ws::CreationCollisionOption::OpenIfExists).get();
 
                 ws::StorageFile disk{ nullptr };
+                bool validExistingDisk = false;
                 try {
                     disk = disks.GetFileAsync(L"windows7.qcow2").get();
+                    const auto properties = disk.GetBasicPropertiesAsync().get();
+                    if (properties.Size() >= 1024 * 1024) {
+                        auto stream = disk.OpenAsync(ws::FileAccessMode::Read).get();
+                        wss::DataReader reader(stream);
+                        const auto count = reader.LoadAsync(4).get();
+                        std::array<std::uint8_t, 4> magic{};
+                        if (count == 4) reader.ReadBytes(magic);
+                        reader.Close();
+                        stream.Close();
+                        validExistingDisk = count == 4 && magic[0] == 'Q' &&
+                            magic[1] == 'F' && magic[2] == 'I' && magic[3] == 0xfb;
+                    }
+                    if (!validExistingDisk)
+                        disk.DeleteAsync().get();
                 } catch (const winrt::hresult_error&) {
-                    disk = onyx::downloads::OsImageDownloader::DownloadWindows7Qcow2Async(disks).get();
+                    // Missing or unreadable file: fall through to a fresh download.
                 }
 
-                auto stream = disk.OpenAsync(ws::FileAccessMode::Read).get();
-                wss::DataReader reader(stream);
-                const auto count = reader.LoadAsync(4).get();
-                std::array<std::uint8_t, 4> magic{};
-                if (count == 4) reader.ReadBytes(magic);
-                reader.Close();
-                stream.Close();
-                if (count != 4 || magic[0] != 'Q' || magic[1] != 'F' ||
-                    magic[2] != 'I' || magic[3] != 0xfb) {
-                    disk.DeleteAsync().get();
-                    throw winrt::hresult_error(E_FAIL,
-                        L"windows7.qcow2 existe, mas não é um disco QCOW2 válido.");
+                if (!validExistingDisk) {
+                    disk = onyx::downloads::OsImageDownloader::DownloadWindows7Qcow2Async(disks).get();
                 }
 
                 diskPath = disk.Path().c_str();
