@@ -2,6 +2,7 @@
 #include "../downloads/OsImageDownloader.h"
 #include <winrt/Windows.Foundation.h>
 #include <winrt/Windows.Storage.h>
+#include <winrt/Windows.Storage.FileProperties.h>
 #include <winrt/Windows.Storage.Streams.h>
 #include <winrt/base.h>
 #include <array>
