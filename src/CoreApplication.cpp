@@ -1,14 +1,21 @@
 #include "graphics/CoreWindowD3DRenderer.h"
+#include "vm/QemuHostAdapter.h"
+#include "vm/VirtualMachine.h"
+#include "vm/Windows7Boot.h"
+#include "OnyxNativeLog.h"
 #include <windows.h>
 #include <windows.applicationmodel.core.h>
+#include <windows.storage.h>
 #include <collection.h>
 #include <memory>
 #include <mutex>
+#include <thread>
 #include <vector>
 
 using namespace Windows::ApplicationModel::Core;
 using namespace Windows::UI::Core;
 using namespace Windows::Foundation;
+using namespace Windows::Storage;
 using namespace Platform;
 
 namespace OnyxOS
@@ -35,10 +42,66 @@ namespace OnyxOS
             m_renderer = std::make_shared<onyx::graphics::CoreWindowD3DRenderer>();
             if (!m_renderer->Initialize(m_window, width, height, error))
             {
-                OutputDebugStringW((L"[OnyxOS] CoreWindow renderer init failed: " + error + L"\n").c_str());
+                WriteQemuLogNative((L"[OnyxOS] CoreWindow renderer init failed: " + error).c_str());
                 m_renderer.reset();
+                return;
             }
 
+            // Start guest preparation on a worker so the CoreWindow keeps
+            // processing events while the multi-gigabyte QCOW2 is downloaded.
+            m_qemu = std::make_unique<onyx::vm::QemuHostAdapter>();
+            const std::wstring localStatePath(
+                ApplicationData::Current->LocalFolder->Path->Data());
+
+            m_vmStartupThread = std::thread([this, localStatePath]()
+            {
+                std::wstring diskPath;
+                std::wstring bootError;
+                if (!onyx::vm::PrepareWindows7Disk(localStatePath, diskPath, bootError))
+                {
+                    WriteQemuLogNative((L"[OnyxOS] Windows 7 disk setup failed: " + bootError).c_str());
+                    return;
+                }
+
+                if (!m_qemu->Load())
+                {
+                    WriteQemuLogNative((L"[OnyxOS] QEMU host DLL load failed: " + m_qemu->Error()).c_str());
+                    return;
+                }
+
+                onyx::vm::VmConfiguration config = onyx::vm::CreateProfile("windows7");
+                config.diskPath.assign(diskPath.begin(), diskPath.end());
+                const auto validation = onyx::vm::Validate(config);
+                if (!validation.valid)
+                {
+                    WriteQemuLogNative((L"[OnyxOS] Windows 7 VM profile invalid: " +
+                        std::wstring(validation.message.begin(), validation.message.end())).c_str());
+                    return;
+                }
+
+                const auto arguments = onyx::vm::BuildQemuArguments(config);
+                if (arguments.empty())
+                {
+                    WriteQemuLogNative(L"[OnyxOS] QEMU argument builder returned no arguments.");
+                    return;
+                }
+
+                WriteQemuLogNative(L"[OnyxOS] Starting Windows 7 x64 guest through QEMU UWP host.");
+                const bool started = m_qemu->Start(arguments,
+                    [this](const std::vector<std::uint32_t>& frame, int frameWidth, int frameHeight)
+                    {
+                        std::lock_guard<std::mutex> guard(m_frameMutex);
+                        m_latestFrame = frame;
+                        m_frameWidth = frameWidth;
+                        m_frameHeight = frameHeight;
+                        m_frameDirty = true;
+                    });
+
+                if (!started)
+                    WriteQemuLogNative((L"[OnyxOS] Windows 7 QEMU start failed: " + m_qemu->Error()).c_str());
+                else
+                    WriteQemuLogNative(L"[OnyxOS] First Windows 7 framebuffer received; guest display is active.");
+            });
         }
 
         virtual void Load(String^ entryPoint)
@@ -71,9 +134,10 @@ namespace OnyxOS
                     std::wstring error;
                     if (!m_renderer->Present(displayFrame, displayWidth, displayHeight, error))
                     {
-                        OutputDebugStringW((L"[OnyxOS] Guest framebuffer present failed: " + error + L"\n").c_str());
+                        WriteQemuLogNative((L"[OnyxOS] Guest framebuffer present failed: " + error).c_str());
                         m_renderer.reset();
                     }
+                    displayFrame.clear();
                 }
                 Sleep(1);
             }
@@ -82,6 +146,13 @@ namespace OnyxOS
         virtual void Uninitialize()
         {
             m_running = false;
+            // The startup worker may be downloading the guest disk or waiting
+            // for QEMU's first frame. Join it before destroying the host adapter.
+            if (m_vmStartupThread.joinable())
+                m_vmStartupThread.join();
+            if (m_qemu)
+                m_qemu->Stop();
+            m_qemu.reset();
             m_renderer.reset();
             m_window = nullptr;
         }
@@ -99,11 +170,13 @@ namespace OnyxOS
             const auto height = static_cast<unsigned>(args->Size.Height);
             std::wstring error;
             if (width >= 64 && height >= 64 && !m_renderer->Resize(width, height, error))
-                OutputDebugStringW((L"[OnyxOS] Resize failed: " + error + L"\n").c_str());
+                WriteQemuLogNative((L"[OnyxOS] Resize failed: " + error).c_str());
         }
 
         CoreWindow^ m_window;
         std::shared_ptr<onyx::graphics::CoreWindowD3DRenderer> m_renderer;
+        std::unique_ptr<onyx::vm::QemuHostAdapter> m_qemu;
+        std::thread m_vmStartupThread;
         std::mutex m_frameMutex;
         std::vector<std::uint32_t> m_latestFrame;
         int m_frameWidth{ 0 };
