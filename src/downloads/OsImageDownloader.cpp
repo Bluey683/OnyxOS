@@ -110,7 +110,7 @@ wf::IAsyncOperation<ws::StorageFile> OsImageDownloader::DownloadWindows7Qcow2Asy
         co_return file;
     } catch (...) {
         try {
-            if (file) co_await file.DeleteAsync();
+            if (file) file.DeleteAsync().get();
         } catch (...) {
             // Preserve the original network/validation error.
         }
