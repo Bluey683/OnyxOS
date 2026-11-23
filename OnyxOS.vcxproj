@@ -72,6 +72,7 @@
     <ClCompile Include="src\\graphics\\QemuD3DRenderer.cpp"><CompileAsWinRT>true</CompileAsWinRT><LanguageStandard>stdcpp17</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
     <ClCompile Include="src\\graphics\\CoreWindowD3DRenderer.cpp"><CompileAsWinRT>true</CompileAsWinRT><LanguageStandard>stdcpp17</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
     <ClCompile Include="src\\vm\\QemuHostAdapter.cpp"><CompileAsWinRT>false</CompileAsWinRT><LanguageStandard>stdcpp20</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
+    <ClCompile Include="src\\vm\\Windows7Boot.cpp"><CompileAsWinRT>false</CompileAsWinRT><LanguageStandard>stdcpp20</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
     <ClCompile Include="src\\vm\\QemuInputBridge.cpp"><CompileAsWinRT>false</CompileAsWinRT><LanguageStandard>stdcpp20</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
     <ClCompile Include="src\\vm\\VhdxProvisioner.cpp"><CompileAsWinRT>false</CompileAsWinRT><LanguageStandard>stdcpp20</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
     <ClCompile Include="src\\downloads\\OsImageDownloader.cpp"><CompileAsWinRT>false</CompileAsWinRT><LanguageStandard>stdcpp20</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
@@ -79,6 +80,7 @@
   <ItemGroup>
     <ClInclude Include="src\vm\VirtualMachine.h" />
     <ClInclude Include="src\vm\QemuHostAdapter.h" />
+    <ClInclude Include="src\\vm\\Windows7Boot.h" />
     <ClInclude Include="src\vm\QemuInputBridge.h" />
     <ClInclude Include="src\vm\VhdxProvisioner.h" />
     <ClInclude Include="src\downloads\OsImageDownloader.h" />
