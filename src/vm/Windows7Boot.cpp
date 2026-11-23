@@ -19,7 +19,7 @@ namespace onyx::vm {
         try {
             winrt::init_apartment(winrt::apartment_type::multi_threaded);
             try {
-                auto local = ws::StorageFolder::GetFolderFromPathAsync(localStatePath).get();
+                auto local = ws::StorageFolder::GetFolderFromPathAsync(winrt::hstring(localStatePath)).get();
                 auto disks = local.CreateFolderAsync(
                     L"Disks", ws::CreationCollisionOption::OpenIfExists).get();
 
