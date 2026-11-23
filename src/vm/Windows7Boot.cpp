@@ -5,6 +5,9 @@
 #include <winrt/Windows.Storage.Streams.h>
 #include <winrt/base.h>
 #include <array>
+#include <windows.h>
+#include <cstdint>
+#include <exception>
 
 namespace ws = winrt::Windows::Storage;
 namespace wss = winrt::Windows::Storage::Streams;
@@ -53,8 +56,9 @@ namespace onyx::vm {
         } catch (const std::exception& ex) {
             const auto length = MultiByteToWideChar(CP_UTF8, 0, ex.what(), -1, nullptr, 0);
             if (length > 1) {
-                error.resize(static_cast<std::size_t>(length - 1));
+                error.resize(static_cast<std::size_t>(length));
                 MultiByteToWideChar(CP_UTF8, 0, ex.what(), -1, error.data(), length);
+                error.resize(static_cast<std::size_t>(length - 1));
             } else error = L"Falha preparando o disco do Windows 7.";
         } catch (...) {
             error = L"Falha desconhecida preparando o disco do Windows 7.";
