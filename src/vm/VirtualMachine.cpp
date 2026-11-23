@@ -58,9 +58,11 @@ namespace vm
             c.name = "Windows 7 x64";
             c.operatingSystem = GuestOperatingSystem::Windows;
             c.machineType = "pc";
-            c.cpuModel = "max";
-            c.memoryMB = 2560;
-            c.cpuCount = 2;
+            c.cpuModel = "qemu64";
+            // Conservative first-boot profile for Xbox UWP memory limits.
+            // Increase only after the guest has completed its first successful boot.
+            c.memoryMB = 1536;
+            c.cpuCount = 1;
             c.useUefi = false;
             c.diskFormat = "qcow2";
             c.diskDevice = "ide-hd";
@@ -141,7 +143,9 @@ namespace vm
 
         add("-name", configuration.name);
         add("-machine", configuration.machineType);
-        add("-accel", "tcg,thread=multi,tb-size=128");
+        // Single-threaded TCG and a smaller translation cache reduce the
+        // peak memory/thread pressure during QEMU initialization on Xbox UWP.
+        add("-accel", "tcg,thread=single,tb-size=32");
         add("-cpu", configuration.cpuModel);
         add("-m", std::to_string(configuration.memoryMB));
         add("-smp", std::to_string(configuration.cpuCount));
@@ -183,7 +187,6 @@ namespace vm
             args.emplace_back(configuration.usbController);
             args.emplace_back("-device");
             args.emplace_back("usb-kbd");
-            args.emplace_back("-device");
             args.emplace_back("usb-tablet");
         }
 
