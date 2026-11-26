@@ -62,6 +62,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\graphics\NativeRenderer.cpp">
+      <CompileAsWinRT>false</CompileAsWinRT>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="src\vmware\Win32Window.cpp">
       <CompileAsWinRT>false</CompileAsWinRT>
       <LanguageStandard>stdcpp14</LanguageStandard>
@@ -87,6 +92,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\App.h" />
+    <ClInclude Include="src\graphics\NativeRenderer.h" />
     <ClInclude Include="src\vmware\Win32Window.h" />
     <ClInclude Include="src\vm\VirtualMachine.h" />
     <ClInclude Include="src\vm\QemuHostAdapter.h" />
