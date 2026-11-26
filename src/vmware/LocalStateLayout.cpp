@@ -8,12 +8,6 @@ using namespace Windows::Storage;
 
 namespace VMwareXbox::Storage
 {
-    StorageFolder GetVmwareRoot()
-    {
-        return ApplicationData::Current().LocalFolder()
-            .CreateFolderAsync(L"VMware", CreationCollisionOption::OpenIfExists).get();
-    }
-
     IAsyncAction InitializeLocalStateAsync()
     {
         auto local = ApplicationData::Current().LocalFolder();
@@ -33,7 +27,8 @@ namespace VMwareXbox::Storage
         for (auto const& name : folders)
         {
             co_await root.CreateFolderAsync(
-                hstring(name), CreationCollisionOption::OpenIfExists);
+                hstring(name.data(), name.size()),
+                CreationCollisionOption::OpenIfExists);
         }
     }
 }
