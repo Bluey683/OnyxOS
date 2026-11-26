@@ -5,7 +5,7 @@
 
 namespace winrt::OnyxOS::implementation
 {
-    struct App final : winrt::implements<
+    struct App : winrt::implements<
         App,
         winrt::Windows::ApplicationModel::Core::IFrameworkViewSource>
     {
