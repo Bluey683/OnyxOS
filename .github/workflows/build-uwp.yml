@@ -93,9 +93,14 @@ jobs:
           $excludedFiles = @('*.sys', '*.inf', '*.cat', '*service*.exe', 'vmware-usbarbitrator*.exe')
 
           Get-ChildItem -LiteralPath $source -Force | ForEach-Object {
-            if ($_.PSIsContainer -and $excludedDirs -contains $_.Name) { return }
-            if (-not $_.PSIsContainer -and ($excludedFiles | Where-Object { $_ -and $_ -like $_.Name })) { return }
-            Copy-Item -LiteralPath $_.FullName -Destination $dest -Recurse -Force
+            $item = $_
+            if ($item.PSIsContainer -and $excludedDirs -contains $item.Name) { return }
+            if (-not $item.PSIsContainer) {
+              $fileName = $item.Name
+              $isExcluded = [bool]($excludedFiles | Where-Object { $fileName -like $_ })
+              if ($isExcluded) { return }
+            }
+            Copy-Item -LiteralPath $item.FullName -Destination $dest -Recurse -Force
           }
 
           $staged = @(Get-ChildItem -LiteralPath $dest -Recurse -File)
