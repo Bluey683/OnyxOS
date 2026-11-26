@@ -52,17 +52,18 @@ Use the package's app-local storage API/path to resolve LocalState at runtime; n
 - [x] Rename product-facing documentation to VMware-UWP-Xbox while preserving package identity.
 - [x] Define Windows x86 as the sole initial guest profile.
 - [x] Add app-private LocalState directory initialization.
+- [x] Add a guarded Win32 window-host class and register its source/header in the Visual Studio project (desktop partition only).
 - [ ] Replace the OnyxOS launcher concept with the VMware-style main window.
 - [ ] Add Library, toolbar, menus, VM summary and settings screens.
 - [ ] Add console view/window with Direct3D 11 rendering surface.
 - [ ] Add physical keyboard routing and controller-driven virtual mouse.
-- [ ] Validate whether a second top-level Win32 window is supported by Xbox UWP; fall back to an in-process console surface if not.
+- [ ] Validate whether a second top-level Win32 window is supported by Xbox UWP; current app-partition implementation returns `ERROR_NOT_SUPPORTED` and requires an in-process console surface fallback.
 - [ ] Audit and remove legacy QEMU targets/dependencies from the VMware build.
 - [ ] Select and integrate a compatible guest execution engine, if actual guest execution is required.
 - [ ] Build, package, deploy and test on Xbox Dev Mode.
 
 ## Build status and constraints
 
-This is a design and partial implementation, not evidence of a successful build or working VM. Xbox UWP is sandboxed. It does not grant unrestricted desktop Win32, arbitrary child processes, kernel drivers, VT-x access, or guaranteed multiple top-level windows. Verify each API against the Xbox target and installed SDK before relying on it.
+This is a design and partial implementation, not evidence of a successful build or working VM. The Win32 host source is now part of the Visual Studio project, but actual `CreateWindowExW` calls are guarded to desktop builds; the Xbox UWP partition deliberately reports that desktop top-level window creation is unsupported. Xbox UWP is sandboxed. It does not grant unrestricted desktop Win32, arbitrary child processes, kernel drivers, VT-x access, or guaranteed multiple top-level windows. Verify each API against the Xbox target and installed SDK before relying on it.
 
 The original OnyxOS `main` branch is preserved. Legacy QEMU source remains in this branch until the build files and runtime dependencies can be safely audited and removed.
