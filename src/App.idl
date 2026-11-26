@@ -1,3 +1,5 @@
+import "Windows.ApplicationModel.Core.idl";
+
 namespace OnyxOS
 {
     [default_interface]
