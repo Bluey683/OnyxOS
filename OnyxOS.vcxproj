@@ -62,7 +62,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\\graphics\\Win32D3D11Renderer.cpp">
+    <ClCompile Include="src\graphics\Win32D3D11Renderer.cpp">
       <CompileAsWinRT>false</CompileAsWinRT>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
@@ -102,7 +102,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\App.h" />
-    <ClInclude Include="srcmwareVmwareDisplayHost.h" />
+        <ClInclude Include="src\vmware\VmwareDisplayHost.h" />
     <ClInclude Include="src\graphics\NativeRenderer.h" />
     <ClInclude Include="src\graphics\Win32D3D11Renderer.h" />
     <ClInclude Include="src\vmware\Win32Window.h" />
