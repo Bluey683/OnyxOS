@@ -2,10 +2,10 @@
 #include "OnyxNativeLog.h"
 
 #include <windows.h>
-#include <string>
+#include <winrt/Windows.Storage.h>
 
-using namespace Platform;
-using namespace Windows::Storage;
+#include <cwchar>
+#include <string>
 
 namespace OnyxOS
 {
@@ -26,9 +26,14 @@ namespace OnyxOS
             }
             return true;
         }
+
+        const wchar_t* Safe(const wchar_t* value)
+        {
+            return value ? value : L"(empty message)";
+        }
     }
 
-    void OnyxLogger::Write(String^ fileName, String^ source, String^ message)
+    void OnyxLogger::Write(const wchar_t* fileName, const wchar_t* source, const wchar_t* message)
     {
         SYSTEMTIME now{};
         GetLocalTime(&now);
@@ -37,18 +42,24 @@ namespace OnyxOS
         swprintf_s(timestamp, L"%04u-%02u-%02u %02u:%02u:%02u.%03u",
             now.wYear, now.wMonth, now.wDay, now.wHour, now.wMinute, now.wSecond, now.wMilliseconds);
 
-        String^ line = ref new String(timestamp) + L" [" + source + L"] " +
-            (message == nullptr ? L"(empty message)" : message) + L"\r\n";
-        OutputDebugStringW(line->Data());
+        std::wstring line = timestamp;
+        line += L" [";
+        line += Safe(source);
+        line += L"] ";
+        line += Safe(message);
+        line += L"\r\n";
+        OutputDebugStringW(line.c_str());
 
         AcquireSRWLockExclusive(&g_logLock);
         HANDLE file = INVALID_HANDLE_VALUE;
         try
         {
-            String^ fullPath = ApplicationData::Current->LocalFolder->Path + L"\\" + fileName;
+            const auto folder = winrt::Windows::Storage::ApplicationData::Current().LocalFolder();
+            const std::wstring fullPath = std::wstring(folder.Path().c_str()) + L"\\" + Safe(fileName);
+
             CREATEFILE2_EXTENDED_PARAMETERS createParams{};
             createParams.dwSize = sizeof(createParams);
-            file = CreateFile2FromAppW(fullPath->Data(), FILE_APPEND_DATA,
+            file = CreateFile2FromAppW(fullPath.c_str(), FILE_APPEND_DATA,
                 FILE_SHARE_READ | FILE_SHARE_WRITE, OPEN_ALWAYS, &createParams);
 
             if (file == INVALID_HANDLE_VALUE)
@@ -66,7 +77,8 @@ namespace OnyxOS
                     WriteAll(file, &bom, sizeof(bom));
                 }
 
-                if (!WriteAll(file, line->Data(), line->Length() * sizeof(wchar_t)))
+                const DWORD byteCount = static_cast<DWORD>(line.size() * sizeof(wchar_t));
+                if (!WriteAll(file, line.data(), byteCount))
                 {
                     wchar_t error[128]{};
                     swprintf_s(error, L"[OnyxOS] Cannot write log file (error %lu).\n", GetLastError());
@@ -75,9 +87,9 @@ namespace OnyxOS
                 FlushFileBuffers(file);
             }
         }
-        catch (Exception^ ex)
+        catch (const winrt::hresult_error& ex)
         {
-            OutputDebugStringW((L"[OnyxOS] Log storage exception: " + ex->Message + L"\n")->Data());
+            OutputDebugStringW((L"[OnyxOS] Log storage exception: " + std::wstring(ex.message().c_str()) + L"\n").c_str());
         }
 
         if (file != INVALID_HANDLE_VALUE)
@@ -85,18 +97,19 @@ namespace OnyxOS
         ReleaseSRWLockExclusive(&g_logLock);
     }
 
-    void OnyxLogger::App(String^ message) { Write(L"App.txt", L"APP", message); }
-    void OnyxLogger::Qemu(String^ message)
+    void OnyxLogger::App(const wchar_t* message)
     {
-        // Keep a dedicated QEMU log and mirror the same diagnostic into App.txt.
-        // This makes launch/validation failures visible even in file viewers that
-        // only expose the primary application log.
+        Write(L"App.txt", L"APP", message);
+    }
+
+    void OnyxLogger::Qemu(const wchar_t* message)
+    {
         Write(L"QEMU.txt", L"QEMU", message);
         Write(L"App.txt", L"QEMU", message);
     }
 
     void WriteQemuLogNative(const wchar_t* message)
     {
-        OnyxLogger::Qemu(ref new String(message ? message : L"(empty QEMU message)"));
+        OnyxLogger::Qemu(message);
     }
 }
