@@ -1,48 +1,33 @@
-# OnyxOS integrated operating-system profiles
+# VMware-UWP-Xbox: guest profile
 
-OnyxOS is one Xbox UWP application and one package. The Launcher will present six VM profiles; the operating systems are not separate UWP applications.
+The initial VMware-UWP-Xbox release exposes exactly one guest profile:
 
-## Profiles
+| Display name | Guest architecture | State |
+|---|---|---|
+| Windows 32-bit | x86 (32-bit) | Initial profile |
 
-| Launcher entry | Profile ID | Initial RAM | State |
-|---|---|---:|---|
-| Windows 10 | windows-10 | 3072 MB | Profile scaffold |
-| Windows 11 | windows-11 | 3072 MB | Profile scaffold |
-| Debian | debian | 3584 MB | Profile scaffold |
-| Ubuntu | ubuntu | 3584 MB | Profile scaffold |
-| Arch Linux | arch-linux | 3584 MB | Profile scaffold |
-| macOS | macos | 3584 MB | Experimental placeholder; disabled by default |
+There are no Linux, macOS, Windows x64, or additional guest profiles in this initial scope.
 
-The values are initial configuration targets, not guarantees that every guest will boot or perform acceptably on Xbox. QEMU TCG software emulation is expected unless a supported acceleration path is proven.
+## Installation media
 
-## Per-app LocalState layout
+The project does not bundle Windows installation media and does not generate an installer. If a fresh guest installation is required, the user supplies their own compatible Windows x86 installation media and confirms they have the appropriate license. The app stores user-selected media only in its app-private storage after the user chooses it.
 
-The app will create and use this layout in its own UWP LocalState directory:
+## App-private storage
 
 ```text
 LocalState/
-  ISO/
-    windows-10.iso
-    windows-11.iso
-    debian.iso
-    ubuntu.iso
-    archlinux.iso
-    macos.iso
-  VHDX/
-    windows-10.vhdx
-    windows-11.vhdx
-    debian.vhdx
-    ubuntu.vhdx
-    archlinux.vhdx
-    macos.vhdx
-  Configurations/
-  Logs/
+└── VMware/
+    ├── Config/
+    ├── Virtual Machines/
+    ├── ISO/
+    ├── Disks/
+    ├── Snapshots/
+    ├── Logs/
+    └── Cache/
 ```
 
-The ISO files are supplied by the user. The profile JSON is packaged at `config/os-profiles.json`; user-created disks and VM state belong in LocalState, not in the read-only package.
+These folders are created inside the package's LocalState. The application must not create or modify the user's Windows Documents, Desktop, Downloads, or other personal folders.
 
-## Current implementation boundary
+## Important execution boundary
 
-This commit adds profile metadata only. The Launcher UI, file picker, VHDX creation/attachment, QEMU argument builder, QEMU DLL adapter, guest boot flow, and save/resume behavior still need implementation and testing.
-
-Windows 11 may require additional virtual TPM/Secure Boot support. macOS remains disabled until compatibility, firmware and licensing requirements are resolved. No operating-system ISO is bundled.
+This profile is metadata for the VMware-style Xbox application. It does not make VMware Workstation 12's desktop hypervisor or drivers compatible with Xbox UWP. A 32-bit guest does not automatically remove the need for a supported virtualization or software-emulation engine. Guest boot must remain disabled until a compatible engine is integrated and tested on Xbox Dev Mode.
