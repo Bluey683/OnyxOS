@@ -1,53 +1,54 @@
-#include <windows.h>
-#include <windows.applicationmodel.activation.h>
-#include "LauncherPage.xaml.h"
+#include "App.h"
 
-using namespace Platform;
-using namespace Windows::UI::Xaml;
-using namespace Windows::UI::Xaml::Controls;
-using namespace Windows::UI;
+#include <winrt/Windows.ApplicationModel.Core.h>
+#include <winrt/Windows.UI.Core.h>
 
-ref class App sealed : public Application
+namespace
 {
-protected:
-    virtual void OnLaunched(
-        Windows::ApplicationModel::Activation::LaunchActivatedEventArgs^ args) override
+    struct NativeAppView final :
+        winrt::implements<NativeAppView, winrt::Windows::ApplicationModel::Core::IFrameworkView>
     {
-        auto window = Window::Current;
+        void Initialize(winrt::Windows::ApplicationModel::Core::CoreApplicationView const&) {}
 
-        try
+        void SetWindow(winrt::Windows::UI::Core::CoreWindow const& window)
         {
-            window->Content = ref new OnyxOS::LauncherPage();
-        }
-        catch (Platform::Exception^ error)
-        {
-            auto panel = ref new Grid();
-            panel->Background = ref new Media::SolidColorBrush(ColorHelper::FromArgb(255, 11, 16, 24));
-
-            auto message = ref new TextBlock();
-            message->Text = L"ONYXOS NÃO CONSEGUIU CARREGAR A INTERFACE\n\n" + error->Message;
-            message->Foreground = ref new Media::SolidColorBrush(Colors::White);
-            message->FontSize = 22;
-            message->TextWrapping = TextWrapping::Wrap;
-            message->Margin = Thickness(36);
-            message->VerticalAlignment = VerticalAlignment::Center;
-            message->HorizontalAlignment = HorizontalAlignment::Center;
-
-            panel->Children->Append(message);
-            window->Content = panel;
+            m_window = window;
+            m_window.Closed([this](
+                winrt::Windows::UI::Core::CoreWindow const&,
+                winrt::Windows::UI::Core::CoreWindowEventArgs const&)
+            {
+                m_running = false;
+            });
         }
 
-        window->Activate();
-    }
-};
+        void Load(winrt::hstring const&) {}
 
-[MTAThread]
-int main(Array<String^>^)
+        void Run()
+        {
+            m_window.Activate();
+            while (m_running)
+            {
+                m_window.Dispatcher().ProcessEvents(
+                    winrt::Windows::UI::Core::CoreProcessEventsOption::ProcessAllIfPresent);
+            }
+        }
+
+        void Uninitialize()
+        {
+            m_running = false;
+            m_window = nullptr;
+        }
+
+    private:
+        winrt::Windows::UI::Core::CoreWindow m_window{ nullptr };
+        bool m_running{ true };
+    };
+}
+
+namespace winrt::OnyxOS::implementation
 {
-    Application::Start(ref new ApplicationInitializationCallback(
-        [](ApplicationInitializationCallbackParams^)
-        {
-            auto app = ref new App();
-        }));
-    return 0;
+    Windows::ApplicationModel::Core::IFrameworkView App::CreateView()
+    {
+        return winrt::make<NativeAppView>();
+    }
 }
