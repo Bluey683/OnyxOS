@@ -1,106 +1,116 @@
-name: OnyxOS Xbox UWP Build
+name: VMware-UWP-Xbox - Portable Runtime
+
 on:
   push:
-    branches: [main]
+    branches: [VMware-UWP-Xbox]
+    paths:
+      - ".github/workflows/build-uwp.yml"
+      - "Package/**"
+      - "src/**"
+      - "OnyxOS.vcxproj"
   pull_request:
-    branches: [main]
+    branches: [VMware-UWP-Xbox]
   workflow_dispatch:
+    inputs:
+      portable_zip_url:
+        description: "URL HTTPS direta do ZIP portátil autorizado do VMware"
+        required: false
+        type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: onyxos-xbox-${{ github.ref }}
+  group: vmware-uwp-xbox-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  build-onyxos:
-    name: Build and sign seven OnyxOS entries into one APPX (x64)
+  stage-portable-runtime:
+    name: Baixar, extrair e preparar runtime portátil
     runs-on: windows-2022
-    timeout-minutes: 60
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up MSVC x64
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: x64
-      - name: Build and package OnyxOS with Visual Studio MSBuild
-        shell: pwsh
-        run: ./Build.ps1 -Mode GitHubActions -Configuration Release -Architecture x64
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Diagnose generated XAML code on build failure
-        if: failure()
+      - name: Preparar diretórios temporários
         shell: pwsh
-        run: |
-          $generated = Join-Path $PWD 'Generated Files'
-          if (Test-Path $generated) {
-            Get-ChildItem $generated -Recurse -File |
-              Where-Object { $_.Name -match 'LauncherPage|GuestPage|XamlTypeInfo' } |
-              Select-Object FullName, Length
-          } else {
-            Write-Host 'Generated Files directory was not created.'
-          }
-
-      - name: Sign APPX
-        if: github.event_name != 'pull_request'
-        timeout-minutes: 5
-        shell: pwsh
-        env:
-          ONYXOS_SIGNING_PFX_BASE64: ${{ secrets.ONYXOS_SIGNING_PFX_BASE64 }}
-          ONYXOS_SIGNING_PFX_PASSWORD: ${{ secrets.ONYXOS_SIGNING_PFX_PASSWORD }}
         run: |
           $ErrorActionPreference = 'Stop'
-          $appx = Join-Path $PWD 'artifacts/OnyxOS-x64.appx'
-          if (-not (Test-Path $appx)) { throw "APPX package not found: $appx" }
-          $pfxPath = Join-Path $env:RUNNER_TEMP 'OnyxOS-signing.pfx'
-          $cerPath = Join-Path $PWD 'artifacts/OnyxOS-signing.cer'
-          $persistentCertificate = -not [string]::IsNullOrWhiteSpace($env:ONYXOS_SIGNING_PFX_BASE64) -and -not [string]::IsNullOrWhiteSpace($env:ONYXOS_SIGNING_PFX_PASSWORD)
-          Write-Host 'SIGN 1/4: preparing certificate'
-          if ($persistentCertificate) {
-            [IO.File]::WriteAllBytes($pfxPath,[Convert]::FromBase64String($env:ONYXOS_SIGNING_PFX_BASE64))
-            $passwordText=$env:ONYXOS_SIGNING_PFX_PASSWORD
-            $cert=[System.Security.Cryptography.X509Certificates.X509Certificate2]::new($pfxPath,$passwordText,[System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable)
-            if (-not $cert.HasPrivateKey) { throw 'Configured PFX has no private key.' }
-            if ($cert.Subject -ne 'CN=Bluey683') { throw "Unexpected certificate subject: $($cert.Subject)" }
+          $tempRoot = Join-Path $env:RUNNER_TEMP 'VMware-UWP-Xbox'
+          $zipDir = Join-Path $tempRoot 'download'
+          $extractDir = Join-Path $tempRoot 'extracted'
+          $stageDir = Join-Path $env:GITHUB_WORKSPACE 'Package/Runtime/VMware'
+          New-Item -ItemType Directory -Force -Path $zipDir, $extractDir, $stageDir | Out-Null
+          "VMWARE_TEMP_ROOT=$tempRoot" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "VMWARE_ZIP_DIR=$zipDir" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "VMWARE_EXTRACT_DIR=$extractDir" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "VMWARE_STAGE_DIR=$stageDir" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Baixar ZIP portátil
+        shell: pwsh
+        env:
+          INPUT_ZIP_URL: ${{ inputs.portable_zip_url }}
+          REPO_ZIP_URL: ${{ vars.VMWARE_PORTABLE_ZIP_URL }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $url = $env:INPUT_ZIP_URL
+          if ([string]::IsNullOrWhiteSpace($url)) { $url = $env:REPO_ZIP_URL }
+
+          $zipPath = Join-Path $env:VMWARE_ZIP_DIR 'VMware-Portable.zip'
+          $repoZip = Join-Path $env:GITHUB_WORKSPACE 'VMware-Portable.zip'
+
+          if (-not [string]::IsNullOrWhiteSpace($url)) {
+            $uri = [Uri]$url
+            if ($uri.Scheme -ne 'https') { throw 'A URL do ZIP precisa usar HTTPS.' }
+            Invoke-WebRequest -Uri $uri -OutFile $zipPath
+          } elseif (Test-Path $repoZip) {
+            Copy-Item $repoZip $zipPath -Force
           } else {
-            Write-Host 'No persistent PFX configured; creating a temporary development certificate.'
-            $passwordText=[Guid]::NewGuid().ToString('N')
-            $rsa=[System.Security.Cryptography.RSA]::Create(2048)
-            $request=[System.Security.Cryptography.X509Certificates.CertificateRequest]::new('CN=Bluey683',$rsa,[System.Security.Cryptography.HashAlgorithmName]::SHA256,[System.Security.Cryptography.RSASignaturePadding]::Pkcs1)
-            $request.CertificateExtensions.Add([System.Security.Cryptography.X509Certificates.X509KeyUsageExtension]::new([System.Security.Cryptography.X509Certificates.X509KeyUsageFlags]::DigitalSignature,$false))
-            $ekuOids=[System.Security.Cryptography.OidCollection]::new()
-            [void]$ekuOids.Add([System.Security.Cryptography.Oid]::new('1.3.6.1.5.5.7.3.3'))
-            $request.CertificateExtensions.Add([System.Security.Cryptography.X509Certificates.X509EnhancedKeyUsageExtension]::new($ekuOids,$false))
-            $generatedCert=$request.CreateSelfSigned([DateTimeOffset]::UtcNow.AddMinutes(-5),[DateTimeOffset]::UtcNow.AddYears(2))
-            [IO.File]::WriteAllBytes($pfxPath,$generatedCert.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Pfx,$passwordText))
-            $cert=[System.Security.Cryptography.X509Certificates.X509Certificate2]::new($pfxPath,$passwordText,[System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable)
-            $generatedCert.Dispose(); $rsa.Dispose()
-            if (-not $cert.HasPrivateKey) { throw 'Generated certificate has no private key.' }
+            throw 'ZIP não fornecido. Informe portable_zip_url ao executar manualmente ou configure a variável de repositório VMWARE_PORTABLE_ZIP_URL.'
           }
-          Write-Host 'SIGN 2/4: exporting public certificate'
-          [IO.File]::WriteAllBytes($cerPath,$cert.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Cert))
-          Write-Host 'SIGN 3/4: locating Windows SDK SignTool'
-          $sdkBin=Join-Path ${env:ProgramFiles(x86)} 'Windows Kits/10/bin'
-          $signToolPath=Get-ChildItem -Path $sdkBin -Directory -ErrorAction Stop | Sort-Object Name -Descending | ForEach-Object { Join-Path $_.FullName 'x64/signtool.exe' } | Where-Object { Test-Path $_ } | Select-Object -First 1
-          if (-not $signToolPath) { throw "SignTool.exe was not found under $sdkBin." }
-          Write-Host 'SIGN 4/4: signing APPX'
-          & $signToolPath sign /fd SHA256 /f $pfxPath /p $passwordText /v $appx
-          if ($LASTEXITCODE -ne 0) { throw "SignTool signing failed: exit code $LASTEXITCODE" }
-          if ($persistentCertificate) {
-            & $signToolPath verify /pa /v $appx
-            if ($LASTEXITCODE -ne 0) { throw "SignTool verification failed: exit code $LASTEXITCODE" }
-          } else { Write-Warning 'Temporary self-signed certificate: install artifacts/OnyxOS-signing.cer on the target Xbox before installing the APPX.' }
-          Remove-Item $pfxPath -Force
-          $cert.Dispose()
-          Write-Host 'APPX signing step completed.'
-      - name: Upload signed OnyxOS package and public certificate
-        if: github.event_name != 'pull_request'
+
+          if (-not (Test-Path $zipPath) -or (Get-Item $zipPath).Length -lt 1024) {
+            throw 'VMware-Portable.zip está ausente ou parece inválido.'
+          }
+          "VMWARE_ZIP_PATH=$zipPath" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Extrair ZIP para pasta temporária
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Expand-Archive -LiteralPath $env:VMWARE_ZIP_PATH -DestinationPath $env:VMWARE_EXTRACT_DIR -Force
+          $files = @(Get-ChildItem -LiteralPath $env:VMWARE_EXTRACT_DIR -Recurse -File)
+          if ($files.Count -eq 0) { throw 'O ZIP não contém arquivos.' }
+          Write-Host "Arquivos extraídos: $($files.Count)"
+
+      - name: Copiar runtime para a estrutura do pacote UWP
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $items = @(Get-ChildItem -LiteralPath $env:VMWARE_EXTRACT_DIR -Force)
+          if ($items.Count -eq 0) { throw 'A pasta temporária está vazia.' }
+          Copy-Item -Path (Join-Path $env:VMWARE_EXTRACT_DIR '*') -Destination $env:VMWARE_STAGE_DIR -Recurse -Force
+
+          $staged = @(Get-ChildItem -LiteralPath $env:VMWARE_STAGE_DIR -Recurse -File)
+          if ($staged.Count -eq 0) { throw 'A cópia para Package/Runtime/VMware falhou.' }
+          Write-Host "Runtime preparado: $($staged.Count) arquivos"
+          Get-ChildItem -LiteralPath $env:VMWARE_STAGE_DIR -Force
+
+      - name: Criar artefato do runtime preparado
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Force -Path artifacts | Out-Null
+          $output = Join-Path $PWD 'artifacts/VMware-Portable-Staged.zip'
+          if (Test-Path $output) { Remove-Item $output -Force }
+          Compress-Archive -Path (Join-Path $env:VMWARE_STAGE_DIR '*') -DestinationPath $output -Force
+          if ((Get-Item $output).Length -lt 1024) { throw 'O ZIP preparado está vazio ou incompleto.' }
+
+      - name: Publicar runtime preparado
         uses: actions/upload-artifact@v4
         with:
-          name: OnyxOS-Xbox-UWP-x64-Signed
-          path: |
-            artifacts/OnyxOS-x64.appx
-            artifacts/Microsoft.VCLibs.x64.14.00.appx
-            artifacts/OnyxOS-signing.cer
+          name: VMware-UWP-Xbox-Portable-Runtime
+          path: artifacts/VMware-Portable-Staged.zip
           if-no-files-found: error
           retention-days: 14
