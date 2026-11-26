@@ -12,7 +12,8 @@ A Visual Studio 2026 / C++ project for an Xbox Dev Mode UWP application inspired
 - VMware Workstation 12-inspired full-screen interface.
 - Added a native Win32 window-host class (`src/vmware/Win32Window.*`) and registered it in the Visual Studio project; actual desktop top-level HWND creation is compiled only for the desktop API partition.
 - Console surface/window using Win32 only if the Xbox app model supports a second top-level window; otherwise use a second in-process view/surface.
-- No XAML in the planned custom interface.
+- XAML UI removed: no `.xaml`, `.xaml.h`, or `.xaml.cpp` page files remain in the project.
+- Native C++/WinRT `IFrameworkView` / `CoreWindow` startup replaces the XAML `Application` startup.
 - Native keyboard routing and controller-driven virtual mouse.
 
 ## The only guest profile
