@@ -55,7 +55,7 @@ Use the package's app-local storage API/path to resolve LocalState at runtime; n
 - [x] Add a guarded Win32 window-host class and register its source/header in the Visual Studio project (desktop partition only).
 - [x] Remove all tracked XAML page/startup files and remove their Visual Studio project items.
 - [x] Replace XAML Application startup with a native C++/WinRT CoreWindow framework-view bootstrap.
-- [ ] Render the VMware-style main window with Direct3D 11 (the current native bootstrap is only a blank CoreWindow loop).
+- [x] Add a desktop Win32 Direct3D 11 renderer using `CreateSwapChainForHwnd`, resize handling and frame presentation (desktop partition only).\n- [ ] Render the Xbox/UWP CoreWindow with its separate `CreateSwapChainForCoreWindow` renderer; this remains the Xbox path.
 - [ ] Add Library, toolbar, menus, VM summary and settings screens.
 - [ ] Add console view/window with Direct3D 11 rendering surface.
 - [ ] Add physical keyboard routing and controller-driven virtual mouse.
@@ -66,6 +66,6 @@ Use the package's app-local storage API/path to resolve LocalState at runtime; n
 
 ## Build status and constraints
 
-This is a design and partial implementation, not evidence of a successful build or working VM. The tracked XAML UI files have been deleted and the Visual Studio project no longer compiles XAML pages. Startup now uses a C++/WinRT framework view and CoreWindow, not a desktop HWND. The VMware UI still needs to be rendered natively with Direct3D 11. The Win32 host source is now part of the Visual Studio project, but actual `CreateWindowExW` calls are guarded to desktop builds; the Xbox UWP partition deliberately reports that desktop top-level window creation is unsupported. Xbox UWP is sandboxed. It does not grant unrestricted desktop Win32, arbitrary child processes, kernel drivers, VT-x access, or guaranteed multiple top-level windows. Verify each API against the Xbox target and installed SDK before relying on it.
+This is a design and partial implementation, not evidence of a successful build or working VM. The tracked XAML UI files have been deleted and the Visual Studio project no longer compiles XAML pages. Startup now uses a C++/WinRT framework view and CoreWindow, not a desktop HWND. A desktop-only `Win32D3D11Renderer` now provides an HWND swap chain; it does not run in the Xbox/UWP app partition. The separate CoreWindow renderer is the Xbox path and still needs its full UI. The Win32 host source is now part of the Visual Studio project, but actual `CreateWindowExW` calls are guarded to desktop builds; the Xbox UWP partition deliberately reports that desktop top-level window creation is unsupported. Xbox UWP is sandboxed. It does not grant unrestricted desktop Win32, arbitrary child processes, kernel drivers, VT-x access, or guaranteed multiple top-level windows. Verify each API against the Xbox target and installed SDK before relying on it.
 
 The original OnyxOS `main` branch is preserved. Legacy QEMU source remains in this branch until the build files and runtime dependencies can be safely audited and removed.
