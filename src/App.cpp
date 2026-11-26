@@ -1,4 +1,5 @@
 #include "App.h"
+#include "graphics/NativeRenderer.h"
 
 #include <winrt/Windows.ApplicationModel.Core.h>
 #include <winrt/Windows.UI.Core.h>
@@ -17,7 +18,7 @@ namespace
                 winrt::Windows::UI::Core::CoreWindow const&,
                 winrt::Windows::UI::Core::CoreWindowEventArgs const&)
             {
-                m_window.Dispatcher().StopProcessEvents();
+                m_closed = true;
             });
         }
 
@@ -26,8 +27,18 @@ namespace
         void Run()
         {
             m_window.Activate();
-            m_window.Dispatcher().ProcessEvents(
-                winrt::Windows::UI::Core::CoreProcessEventsOption::ProcessUntilQuit);
+
+            const HRESULT initResult = m_renderer.Initialize(m_window);
+            if (FAILED(initResult))
+                return;
+
+            while (!m_closed)
+            {
+                m_window.Dispatcher().ProcessEvents(
+                    winrt::Windows::UI::Core::CoreProcessEventsOption::ProcessAll);
+                if (!m_closed)
+                    m_renderer.Render();
+            }
         }
 
         void Uninitialize()
@@ -37,6 +48,8 @@ namespace
 
     private:
         winrt::Windows::UI::Core::CoreWindow m_window{ nullptr };
+        NativeRenderer m_renderer;
+        bool m_closed{ false };
     };
 }
 
