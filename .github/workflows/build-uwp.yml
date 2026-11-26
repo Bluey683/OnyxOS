@@ -95,12 +95,17 @@ jobs:
           $appx = "artifacts/OnyxOS-x64-$configuration-unsigned.appx"
           & $signTool.FullName sign /fd SHA256 /f $pfxPath /p $pfxPassword $appx
           if ($LASTEXITCODE -ne 0) { throw "SignTool failed: $LASTEXITCODE" }
+
+          # The certificate is self-signed. Trust it in this temporary CI runner
+          # before running Authenticode policy verification.
+          Import-Certificate -FilePath 'artifacts/OnyxOS-Development.cer' -CertStoreLocation 'Cert:\CurrentUser\Root' | Out-Null
           & $signTool.FullName verify /pa /v $appx
           if ($LASTEXITCODE -ne 0) { throw "APPX signature verification failed: $LASTEXITCODE" }
           Rename-Item $appx "OnyxOS-x64-$configuration.appx"
           Remove-Item $pfxPath -Force
           [Array]::Clear($passwordBytes, 0, $passwordBytes.Length)
           Remove-Item "Cert:\CurrentUser\My\$($cert.Thumbprint)" -Force
+          Remove-Item "Cert:\CurrentUser\Root\$($cert.Thumbprint)" -Force
 
       - name: Upload ${{ matrix.configuration }} artifacts
         uses: actions/upload-artifact@v4
