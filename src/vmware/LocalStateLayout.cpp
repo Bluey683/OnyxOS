@@ -27,7 +27,7 @@ namespace VMwareXbox::Storage
         for (auto const& name : folders)
         {
             co_await root.CreateFolderAsync(
-                winrt::hstring(name.data(), name.size()),
+                winrt::hstring(name.data(), static_cast<winrt::hstring::size_type>(name.size())),
                 winrt::Windows::Storage::CreationCollisionOption::OpenIfExists);
         }
     }
