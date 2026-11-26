@@ -1,15 +1,14 @@
 #pragma once
 
-#include <collection.h>
-
 namespace OnyxOS
 {
-    public ref class OnyxLogger sealed
+    class OnyxLogger final
     {
     public:
-        static void App(Platform::String^ message);
-        static void Qemu(Platform::String^ message);
+        static void App(const wchar_t* message);
+        static void Qemu(const wchar_t* message);
+
     private:
-        static void Write(Platform::String^ fileName, Platform::String^ source, Platform::String^ message);
+        static void Write(const wchar_t* fileName, const wchar_t* source, const wchar_t* message);
     };
 }
