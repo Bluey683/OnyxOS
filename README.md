@@ -10,7 +10,7 @@ A Visual Studio 2026 / C++ project for an Xbox Dev Mode UWP application inspired
 - Visual Studio 2026, C++ / MSVC, x64 app package.
 - Compatible Windows SDK; 10.0.26100.0 is the intended baseline.
 - VMware Workstation 12-inspired full-screen interface.
-- Main application surface using Win32-style window/message handling where supported by Xbox UWP.
+- Added a native Win32 window-host class (`src/vmware/Win32Window.*`) and registered it in the Visual Studio project; actual desktop top-level HWND creation is compiled only for the desktop API partition.
 - Console surface/window using Win32 only if the Xbox app model supports a second top-level window; otherwise use a second in-process view/surface.
 - No XAML in the planned custom interface.
 - Native keyboard routing and controller-driven virtual mouse.
@@ -42,7 +42,7 @@ The app must not create or modify the user's Windows Documents, Desktop, Downloa
 
 Xbox UWP is not unrestricted desktop Windows. Separate top-level Win32 windows, child processes, drivers, unrestricted file access and VT-x must not be assumed available. A 32-bit guest does not automatically eliminate the need for hardware virtualization; actual guest execution requires a compatible software execution engine or supported hardware virtualization path.
 
-The original VMware Workstation 12 host application and its drivers cannot simply be copied into an APPX. The current branch defines the application direction and storage layout; successful build, Xbox deployment, and guest boot have not yet been verified.
+The original VMware Workstation 12 host application and its drivers cannot simply be copied into an APPX. The current branch defines the application direction, storage layout and guarded Win32 window-host scaffold; successful build, Xbox deployment, and guest boot have not yet been verified. In the Xbox UWP app partition, the Win32 host currently reports `ERROR_NOT_SUPPORTED` rather than claiming that a desktop window was created.
 
 ## Project plan
 
