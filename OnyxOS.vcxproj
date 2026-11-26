@@ -45,7 +45,9 @@
     <Image Include="Assets\SplashScreen.png" />
     <Content Include="graphics\shaders\onyxos.hlsl">
       <Link>Shaders\onyxos.hlsl</Link>
+      <TargetPath>Shaders\onyxos.hlsl</TargetPath>
       <DeploymentContent>true</DeploymentContent>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
   <ItemGroup><Midl Include="src\OnyxOS.idl"/><AppxManifest Include="Package.appxmanifest"/></ItemGroup>
