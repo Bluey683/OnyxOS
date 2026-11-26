@@ -61,6 +61,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\vmware\Win32Window.cpp">
+      <CompileAsWinRT>false</CompileAsWinRT>
+      <LanguageStandard>stdcpp14</LanguageStandard>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="src\OnyxLogger.cpp">
       <CompileAsWinRT>true</CompileAsWinRT>
       <LanguageStandard>stdcpp14</LanguageStandard>
@@ -94,6 +99,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\vmware\Win32Window.h" />
     <ClInclude Include="src\vm\VirtualMachine.h" />
     <ClInclude Include="src\vm\QemuHostAdapter.h" />
     <ClInclude Include="src\vm\QemuInputBridge.h" />
