@@ -80,7 +80,8 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $cert = New-SelfSignedCertificate -Type Custom -Subject 'CN=Bluey683' -FriendlyName 'OnyxOS Xbox Development' -CertStoreLocation 'Cert:\\CurrentUser\\My' -KeyAlgorithm RSA -KeyLength 2048 -HashAlgorithm SHA256 -KeyUsage DigitalSignature -KeyExportPolicy Exportable -NotAfter (Get-Date).AddYears(2)
+          $configuration = '${{ matrix.configuration }}'
+          $cert = New-SelfSignedCertificate -Type Custom -Subject 'CN=Bluey683' -FriendlyName 'OnyxOS Xbox Development' -CertStoreLocation 'Cert:\CurrentUser\My' -KeyAlgorithm RSA -KeyLength 2048 -HashAlgorithm SHA256 -KeyUsage DigitalSignature -KeyExportPolicy Exportable -NotAfter (Get-Date).AddYears(2)
           if (!$cert) { throw 'Failed to create OnyxOS development certificate.' }
           $passwordBytes = New-Object byte[] 32
           [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($passwordBytes)
@@ -89,7 +90,7 @@ jobs:
           $pfxPath = Join-Path $env:RUNNER_TEMP 'OnyxOS-Development.pfx'
           Export-PfxCertificate -Cert $cert -FilePath $pfxPath -Password $securePassword | Out-Null
           Export-Certificate -Cert $cert -FilePath 'artifacts/OnyxOS-Development.cer' -Type CERT | Out-Null
-          $signTool = Get-ChildItem "$env:ProgramFiles(x86)\\Windows Kits\\10\\bin\\*\\x64\\signtool.exe" -ErrorAction SilentlyContinue | Sort-Object FullName -Descending | Select-Object -First 1
+          $signTool = Get-ChildItem "$env:ProgramFiles(x86)\Windows Kits\10\bin\*\x64\signtool.exe" -ErrorAction SilentlyContinue | Sort-Object FullName -Descending | Select-Object -First 1
           if (!$signTool) { throw 'Windows SDK SignTool not found.' }
           $appx = "artifacts/OnyxOS-x64-$configuration-unsigned.appx"
           & $signTool.FullName sign /fd SHA256 /f $pfxPath /p $pfxPassword $appx
@@ -99,7 +100,7 @@ jobs:
           Rename-Item $appx "OnyxOS-x64-$configuration.appx"
           Remove-Item $pfxPath -Force
           [Array]::Clear($passwordBytes, 0, $passwordBytes.Length)
-          Remove-Item "Cert:\\CurrentUser\\My\\$($cert.Thumbprint)" -Force
+          Remove-Item "Cert:\CurrentUser\My\$($cert.Thumbprint)" -Force
 
       - name: Upload ${{ matrix.configuration }} artifacts
         uses: actions/upload-artifact@v4
@@ -107,7 +108,15 @@ jobs:
           name: VMware-UWP-Xbox-${{ matrix.configuration }}-x64-Signed
           path: |
             artifacts/OnyxOS-x64-${{ matrix.configuration }}.appx
-            artifacts/OnyxOS-x64-Debug.pdb
             artifacts/OnyxOS-Development.cer
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload Debug symbols
+        if: matrix.configuration == 'Debug'
+        uses: actions/upload-artifact@v4
+        with:
+          name: VMware-UWP-Xbox-Debug-x64-PDB
+          path: artifacts/OnyxOS-x64-Debug.pdb
           if-no-files-found: error
           retention-days: 14
