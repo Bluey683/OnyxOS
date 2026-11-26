@@ -1,12 +1,14 @@
 #pragma once
 
-#include "App.g.h"
+#include <winrt/Windows.ApplicationModel.Core.h>
+#include <winrt/Windows.Foundation.h>
 
 namespace winrt::OnyxOS::implementation
 {
-    struct App : AppT<App>
+    struct App final : winrt::implements<
+        App,
+        winrt::Windows::ApplicationModel::Core::IFrameworkViewSource>
     {
-        App() = default;
-        Windows::ApplicationModel::Core::IFrameworkView CreateView();
+        winrt::Windows::ApplicationModel::Core::IFrameworkView CreateView();
     };
 }
