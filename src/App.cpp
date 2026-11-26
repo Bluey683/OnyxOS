@@ -17,7 +17,7 @@ namespace
                 winrt::Windows::UI::Core::CoreWindow const&,
                 winrt::Windows::UI::Core::CoreWindowEventArgs const&)
             {
-                m_running = false;
+                m_window.Dispatcher().StopProcessEvents();
             });
         }
 
@@ -26,22 +26,17 @@ namespace
         void Run()
         {
             m_window.Activate();
-            while (m_running)
-            {
-                m_window.Dispatcher().ProcessEvents(
-                    winrt::Windows::UI::Core::CoreProcessEventsOption::ProcessAllIfPresent);
-            }
+            m_window.Dispatcher().ProcessEvents(
+                winrt::Windows::UI::Core::CoreProcessEventsOption::ProcessUntilQuit);
         }
 
         void Uninitialize()
         {
-            m_running = false;
             m_window = nullptr;
         }
 
     private:
         winrt::Windows::UI::Core::CoreWindow m_window{ nullptr };
-        bool m_running{ true };
     };
 }
 
