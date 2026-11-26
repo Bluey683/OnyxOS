@@ -1,0 +1,8 @@
+namespace OnyxOS
+{
+    [default_interface]
+    runtimeclass App : Windows.ApplicationModel.Core.IFrameworkViewSource
+    {
+        App();
+    }
+}
