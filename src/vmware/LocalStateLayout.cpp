@@ -1,5 +1,7 @@
 #include "LocalStateLayout.h"
 
+#include <winrt/Windows.Storage.h>
+
 #include <array>
 #include <string_view>
 
