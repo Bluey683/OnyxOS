@@ -1,5 +1,5 @@
 #include "App.h"
-#include "graphics/NativeRenderer.h"
+#include "vmware/VmwareDisplayHost.h"
 
 #include <winrt/Windows.ApplicationModel.Core.h>
 #include <winrt/Windows.UI.Core.h>
@@ -28,7 +28,7 @@ namespace
         {
             m_window.Activate();
 
-            const HRESULT initResult = m_renderer.Initialize(m_window);
+            const HRESULT initResult = m_display.InitializeCoreWindow(m_window);
             if (FAILED(initResult))
                 return;
 
@@ -37,18 +37,19 @@ namespace
                 m_window.Dispatcher().ProcessEvents(
                     winrt::Windows::UI::Core::CoreProcessEventsOption::ProcessAll);
                 if (!m_closed)
-                    m_renderer.Render();
+                    m_display.RenderCoreWindowFrame();
             }
         }
 
         void Uninitialize()
         {
+            m_display.Shutdown();
             m_window = nullptr;
         }
 
     private:
         winrt::Windows::UI::Core::CoreWindow m_window{ nullptr };
-        NativeRenderer m_renderer;
+        VMwareXbox::VmwareDisplayHost m_display;
         bool m_closed{ false };
     };
 }
