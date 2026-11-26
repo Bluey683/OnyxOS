@@ -107,6 +107,7 @@ namespace VMwareXbox
             DestroyWindow(window);
             return 0;
         case WM_DESTROY:
+            PostQuitMessage(0);
             return 0;
         default:
             return DefWindowProcW(window, message, wParam, lParam);
