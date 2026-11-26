@@ -1,4 +1,4 @@
-name: VMware-UWP-Xbox - Portable Runtime
+name: VMware-UWP-Xbox - Installer Runtime Staging
 
 on:
   push:
@@ -12,9 +12,9 @@ on:
     branches: [VMware-UWP-Xbox]
   workflow_dispatch:
     inputs:
-      portable_zip_url:
-        description: "URL HTTPS direta do ZIP portátil autorizado do VMware"
-        required: false
+      installer_url:
+        description: "URL HTTPS direta do instalador VMware Workstation 12.5.9 EXE"
+        required: true
         type: string
 
 permissions:
@@ -25,10 +25,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  stage-portable-runtime:
-    name: Baixar, extrair e preparar runtime portátil
+  install-and-stage:
+    name: Instalar VMware no runner e preparar arquivos candidatos
     runs-on: windows-2022
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -37,80 +37,88 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $tempRoot = Join-Path $env:RUNNER_TEMP 'VMware-UWP-Xbox'
-          $zipDir = Join-Path $tempRoot 'download'
-          $extractDir = Join-Path $tempRoot 'extracted'
-          $stageDir = Join-Path $env:GITHUB_WORKSPACE 'Package/Runtime/VMware'
-          New-Item -ItemType Directory -Force -Path $zipDir, $extractDir, $stageDir | Out-Null
-          "VMWARE_TEMP_ROOT=$tempRoot" | Out-File -FilePath $env:GITHUB_ENV -Append
-          "VMWARE_ZIP_DIR=$zipDir" | Out-File -FilePath $env:GITHUB_ENV -Append
-          "VMWARE_EXTRACT_DIR=$extractDir" | Out-File -FilePath $env:GITHUB_ENV -Append
-          "VMWARE_STAGE_DIR=$stageDir" | Out-File -FilePath $env:GITHUB_ENV -Append
+          $root = Join-Path $env:RUNNER_TEMP 'VMware-UWP-Xbox'
+          $download = Join-Path $root 'download'
+          $stage = Join-Path $env:GITHUB_WORKSPACE 'Package/Runtime/VMware'
+          New-Item -ItemType Directory -Force -Path $download, $stage | Out-Null
+          "VMWARE_TEMP_ROOT=$root" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "VMWARE_DOWNLOAD_DIR=$download" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "VMWARE_STAGE_DIR=$stage" | Out-File -FilePath $env:GITHUB_ENV -Append
 
-      - name: Baixar ZIP portátil
+      - name: Baixar instalador VMware Workstation 12.5.9
         shell: pwsh
         env:
-          INPUT_ZIP_URL: ${{ inputs.portable_zip_url }}
-          REPO_ZIP_URL: ${{ vars.VMWARE_PORTABLE_ZIP_URL }}
+          INSTALLER_URL: ${{ inputs.installer_url }}
         run: |
           $ErrorActionPreference = 'Stop'
-          $url = $env:INPUT_ZIP_URL
-          if ([string]::IsNullOrWhiteSpace($url)) { $url = $env:REPO_ZIP_URL }
-
-          $zipPath = Join-Path $env:VMWARE_ZIP_DIR 'VMware-Portable.zip'
-          $repoZip = Join-Path $env:GITHUB_WORKSPACE 'VMware-Portable.zip'
-
-          if (-not [string]::IsNullOrWhiteSpace($url)) {
-            $uri = [Uri]$url
-            if ($uri.Scheme -ne 'https') { throw 'A URL do ZIP precisa usar HTTPS.' }
-            Invoke-WebRequest -Uri $uri -OutFile $zipPath
-          } elseif (Test-Path $repoZip) {
-            Copy-Item $repoZip $zipPath -Force
-          } else {
-            throw 'ZIP não fornecido. Informe portable_zip_url ao executar manualmente ou configure a variável de repositório VMWARE_PORTABLE_ZIP_URL.'
+          $uri = [Uri]$env:INSTALLER_URL
+          if ($uri.Scheme -ne 'https') { throw 'O instalador precisa ser baixado por HTTPS.' }
+          $installer = Join-Path $env:VMWARE_DOWNLOAD_DIR 'VMware-workstation-full-12.5.9-7535481.exe'
+          Invoke-WebRequest -Uri $uri -OutFile $installer
+          if (-not (Test-Path $installer) -or (Get-Item $installer).Length -lt 10MB) {
+            throw 'O instalador está ausente ou parece incompleto.'
           }
+          "VMWARE_INSTALLER=$installer" | Out-File -FilePath $env:GITHUB_ENV -Append
 
-          if (-not (Test-Path $zipPath) -or (Get-Item $zipPath).Length -lt 1024) {
-            throw 'VMware-Portable.zip está ausente ou parece inválido.'
-          }
-          "VMWARE_ZIP_PATH=$zipPath" | Out-File -FilePath $env:GITHUB_ENV -Append
-
-      - name: Extrair ZIP para pasta temporária
+      - name: Instalar VMware silenciosamente no runner Windows
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          Expand-Archive -LiteralPath $env:VMWARE_ZIP_PATH -DestinationPath $env:VMWARE_EXTRACT_DIR -Force
-          $files = @(Get-ChildItem -LiteralPath $env:VMWARE_EXTRACT_DIR -Recurse -File)
-          if ($files.Count -eq 0) { throw 'O ZIP não contém arquivos.' }
-          Write-Host "Arquivos extraídos: $($files.Count)"
+          # A instalação ocorre somente na máquina temporária do GitHub Actions.
+          # Isso NÃO instala drivers no Xbox nem torna o Workstation compatível com UWP.
+          $args = '/s /v"/qn EULAS_AGREED=1 REBOOT=ReallySuppress"'
+          $p = Start-Process -FilePath $env:VMWARE_INSTALLER -ArgumentList $args -Wait -PassThru
+          if ($p.ExitCode -notin @(0, 3010, 1641)) {
+            throw "Instalador VMware falhou. ExitCode=$($p.ExitCode)"
+          }
+          $candidates = @(
+            (Join-Path $env:ProgramFiles 'VMware/VMware Workstation'),
+            (Join-Path ${env:ProgramFiles(x86)} 'VMware/VMware Workstation')
+          ) | Where-Object { $_ -and (Test-Path $_) }
+          if ($candidates.Count -eq 0) {
+            throw 'A instalação terminou, mas a pasta VMware Workstation não foi encontrada.'
+          }
+          "VMWARE_INSTALL_DIR=$($candidates[0])" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Host "Instalado em: $($candidates[0])"
 
-      - name: Copiar runtime para a estrutura do pacote UWP
+      - name: Copiar arquivos de aplicação sem drivers para análise
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $items = @(Get-ChildItem -LiteralPath $env:VMWARE_EXTRACT_DIR -Force)
-          if ($items.Count -eq 0) { throw 'A pasta temporária está vazia.' }
-          Copy-Item -Path (Join-Path $env:VMWARE_EXTRACT_DIR '*') -Destination $env:VMWARE_STAGE_DIR -Recurse -Force
+          $source = $env:VMWARE_INSTALL_DIR
+          $dest = $env:VMWARE_STAGE_DIR
 
-          $staged = @(Get-ChildItem -LiteralPath $env:VMWARE_STAGE_DIR -Recurse -File)
-          if ($staged.Count -eq 0) { throw 'A cópia para Package/Runtime/VMware falhou.' }
-          Write-Host "Runtime preparado: $($staged.Count) arquivos"
-          Get-ChildItem -LiteralPath $env:VMWARE_STAGE_DIR -Force
+          # Não incluir drivers de kernel, serviços, instaladores ou componentes de rede.
+          $excludedDirs = @('Drivers', 'NetworkDrivers', 'VMware VIX')
+          $excludedFiles = @('*.sys', '*.inf', '*.cat', '*service*.exe', 'vmware-usbarbitrator*.exe')
 
-      - name: Criar artefato do runtime preparado
+          Get-ChildItem -LiteralPath $source -Force | ForEach-Object {
+            if ($_.PSIsContainer -and $excludedDirs -contains $_.Name) { return }
+            if (-not $_.PSIsContainer -and ($excludedFiles | Where-Object { $_ -and $_ -like $_.Name })) { return }
+            Copy-Item -LiteralPath $_.FullName -Destination $dest -Recurse -Force
+          }
+
+          $staged = @(Get-ChildItem -LiteralPath $dest -Recurse -File)
+          if ($staged.Count -eq 0) { throw 'Nenhum arquivo de aplicação foi preparado.' }
+          if (@(Get-ChildItem -LiteralPath $dest -Recurse -Include *.sys,*.inf,*.cat).Count -gt 0) {
+            throw 'Foram encontrados drivers no staging; interrompendo para não empacotá-los.'
+          }
+          Write-Host "Arquivos candidatos preparados: $($staged.Count)"
+
+      - name: Criar artefato para inspeção
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
           New-Item -ItemType Directory -Force -Path artifacts | Out-Null
-          $output = Join-Path $PWD 'artifacts/VMware-Portable-Staged.zip'
+          $output = Join-Path $PWD 'artifacts/VMware-Workstation-12.5.9-Files.zip'
           if (Test-Path $output) { Remove-Item $output -Force }
           Compress-Archive -Path (Join-Path $env:VMWARE_STAGE_DIR '*') -DestinationPath $output -Force
-          if ((Get-Item $output).Length -lt 1024) { throw 'O ZIP preparado está vazio ou incompleto.' }
+          if ((Get-Item $output).Length -lt 1MB) { throw 'O artefato preparado parece incompleto.' }
 
-      - name: Publicar runtime preparado
+      - name: Publicar arquivos candidatos
         uses: actions/upload-artifact@v4
         with:
-          name: VMware-UWP-Xbox-Portable-Runtime
-          path: artifacts/VMware-Portable-Staged.zip
+          name: VMware-UWP-Xbox-Workstation-12.5.9-Inspection
+          path: artifacts/VMware-Workstation-12.5.9-Files.zip
           if-no-files-found: error
           retention-days: 14
