@@ -1,37 +1,51 @@
 # VMware-UWP-Xbox
 
-A Visual Studio 2026 / C++ project direction for an Xbox Dev Mode UWP application inspired by the VMware Workstation 12 desktop interface.
+A Visual Studio 2026 / C++ project for an Xbox Dev Mode UWP application inspired by the VMware Workstation 12 desktop interface.
 
-**Current milestone: application shell and window/input design.** This repository does not claim to port VMware Workstation 12's proprietary hypervisor or to boot guest operating systems.
+**Initial scope:** VMware-style application shell and exactly one guest profile: **Windows x86 (32-bit)**. This repository does not claim to port VMware Workstation 12's proprietary hypervisor or to boot a guest OS yet.
 
-## Initial target
+## Target
 
 - Xbox One / Xbox Series X|S Dev Mode, subject to API and package validation.
-- C++ and MSVC, x64 app package.
-- Visual Studio 2026 and a compatible Windows SDK (10.0.26100.0 is the intended baseline).
-- VMware Workstation 12-inspired full-screen main interface.
-- Initial guest architecture target: x86 (32-bit); actual execution engine is a separate future decision.
-- No XAML requirement for the planned custom Win32/Direct3D interface.
+- Visual Studio 2026, C++ / MSVC, x64 app package.
+- Compatible Windows SDK; 10.0.26100.0 is the intended baseline.
+- VMware Workstation 12-inspired full-screen interface.
+- Main application surface using Win32-style window/message handling where supported by Xbox UWP.
+- Console surface/window using Win32 only if the Xbox app model supports a second top-level window; otherwise use a second in-process view/surface.
+- No XAML in the planned custom interface.
+- Native keyboard routing and controller-driven virtual mouse.
 
-## Planned experience
+## The only guest profile
 
-- Main window: VMware-style menus, toolbar, Library, VM details and settings.
-- Console: a second Win32 top-level window if Xbox UWP supports it; otherwise a second in-process view/surface.
-- Input: native keyboard routing, controller-driven virtual mouse, and optional on-screen keyboard.
-- Storage: app-private `LocalState/VMware/` directories for configuration, VM files, ISO images, disks, snapshots, logs and cache.
-- No creation or modification of the user's Windows Documents/Desktop/Downloads folders.
+- **Windows 32-bit (x86)**.
+- No Linux, macOS, Windows x64, or other guest profiles in the initial release.
+- No Windows ISO or installer is bundled. The user supplies compatible installation media if a fresh guest installation is needed and is responsible for licensing.
 
-## Important technical constraints
+## Storage
 
-Xbox UWP is not unrestricted desktop Windows. A Win32 API being available in desktop Windows does not guarantee it is available to an Xbox UWP app. In particular, separate top-level windows, child processes, drivers, unrestricted file access and VT-x must not be assumed.
+The app creates its own folders under package `LocalState/VMware/`:
 
-A 32-bit guest target does not automatically eliminate the need for hardware virtualization. Actual guest execution requires a compatible software execution engine or supported hardware virtualization path. The original VMware Workstation 12 host application and its drivers cannot simply be copied into an APPX.
+```text
+LocalState/VMware/
+├── Config/
+├── Virtual Machines/
+├── ISO/
+├── Disks/
+├── Snapshots/
+├── Logs/
+└── Cache/
+```
 
-## Project documentation
+The app must not create or modify the user's Windows Documents, Desktop, Downloads, or other personal folders.
 
-- [VMware Xbox architecture and implementation plan](docs/VMWARE-XBOX-PLAN.md)
-- [Original OnyxOS history](https://github.com/Bluey683/OnyxOS/tree/main)
+## Technical limits
 
-## Branching and preservation
+Xbox UWP is not unrestricted desktop Windows. Separate top-level Win32 windows, child processes, drivers, unrestricted file access and VT-x must not be assumed available. A 32-bit guest does not automatically eliminate the need for hardware virtualization; actual guest execution requires a compatible software execution engine or supported hardware virtualization path.
 
-This work is being staged on the `VMware-UWP-Xbox` branch. The original `main` branch is preserved. Existing QEMU scaffold files are retained until a replacement execution engine is selected and the new application shell is validated.
+The original VMware Workstation 12 host application and its drivers cannot simply be copied into an APPX. The current branch defines the application direction and storage layout; successful build, Xbox deployment, and guest boot have not yet been verified.
+
+## Project plan
+
+See [docs/VMWARE-XBOX-PLAN.md](docs/VMWARE-XBOX-PLAN.md) and [docs/OS-PROFILES.md](docs/OS-PROFILES.md).
+
+The original OnyxOS `main` branch remains preserved. Legacy QEMU source is not yet removed from this branch; it must be audited and detached from the build before claiming a clean VMware-only executable.
