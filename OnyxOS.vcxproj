@@ -67,6 +67,11 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="src\vmware\VmwareDisplayHost.cpp">
+      <CompileAsWinRT>false</CompileAsWinRT>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="src\graphics\NativeRenderer.cpp">
       <CompileAsWinRT>false</CompileAsWinRT>
       <LanguageStandard>stdcpp17</LanguageStandard>
@@ -97,6 +102,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\App.h" />
+    <ClInclude Include="srcmwareVmwareDisplayHost.h" />
     <ClInclude Include="src\graphics\NativeRenderer.h" />
     <ClInclude Include="src\graphics\Win32D3D11Renderer.h" />
     <ClInclude Include="src\vmware\Win32Window.h" />
