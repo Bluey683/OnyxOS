@@ -14,6 +14,10 @@ jobs:
   build-appx:
     runs-on: windows-2022
     timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        configuration: [Debug, Release]
     steps:
       - uses: actions/checkout@v4
 
@@ -24,36 +28,44 @@ jobs:
           . ./scripts/Make-Assets.ps1
           if (!(Test-Path Assets/StoreLogo.png)) { throw 'StoreLogo asset not generated.' }
 
-      - name: Locate MSBuild
+      - name: Locate MSBuild with MSVC x64
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
           $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio/Installer/vswhere.exe'
           if (!(Test-Path $vswhere)) { throw 'vswhere missing.' }
           $msbuild = & $vswhere -latest -products '*' -requires Microsoft.Component.MSBuild Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -find 'MSBuild/**/Bin/MSBuild.exe' | Select-Object -First 1
-          if (!$msbuild) { throw 'MSBuild with C++ toolset not found.' }
+          if (!$msbuild) { throw 'MSBuild with MSVC x64 toolset not found.' }
           "MSBUILD_PATH=$msbuild" | Out-File $env:GITHUB_ENV -Append
           Write-Host $msbuild
 
-      - name: Build unsigned APPX x64
+      - name: Build unsigned APPX x64 (${{ matrix.configuration }})
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $out = Join-Path $PWD 'artifacts/Appx'
+          $configuration = '${{ matrix.configuration }}'
+          $out = Join-Path $PWD "artifacts/Appx/$configuration"
           New-Item -ItemType Directory -Force -Path $out | Out-Null
-          & $env:MSBUILD_PATH OnyxOS.vcxproj /m /t:Rebuild /p:Configuration=Release /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0.26100.0 /p:AppxPackage=true /p:GenerateAppxPackageOnBuild=true /p:AppxPackageSigningEnabled=false /p:AppxBundle=Never "/p:AppxPackageDir=$out/"
+          & $env:MSBUILD_PATH OnyxOS.vcxproj /m /t:Rebuild /p:Configuration=$configuration /p:Platform=x64 /p:WindowsTargetPlatformVersion=10.0.26100.0 /p:AppxPackage=true /p:GenerateAppxPackageOnBuild=true /p:AppxPackageSigningEnabled=false /p:AppxBundle=Never "/p:AppxPackageDir=$out/"
           if ($LASTEXITCODE -ne 0) { throw "MSBuild failed: $LASTEXITCODE" }
           $packages = Get-ChildItem $out -Recurse -File -Include *.appx,*.msix | Where-Object { $_.Name -notmatch 'VCLibs|Dependencies' }
-          if (!$packages) { throw 'No APPX/MSIX package found after build.' }
+          if (!$packages) { throw "No APPX/MSIX package found for $configuration." }
           $chosen = $packages | Sort-Object Length -Descending | Select-Object -First 1
-          Copy-Item $chosen.FullName (Join-Path $PWD 'artifacts/OnyxOS-x64-unsigned.appx') -Force
-          Write-Host "APPX produced: $($chosen.FullName)"
+          $destination = "artifacts/OnyxOS-x64-$configuration-unsigned.appx"
+          Copy-Item $chosen.FullName $destination -Force
+          if ($configuration -eq 'Debug') {
+            $pdb = 'build/x64/Debug/OnyxOS.pdb'
+            if (Test-Path $pdb) { Copy-Item $pdb 'artifacts/OnyxOS-x64-Debug.pdb' -Force }
+            else { throw 'Debug PDB was not generated.' }
+          }
+          Write-Host "APPX produced: $destination"
 
       - name: Validate APPX container and contents
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $appx = 'artifacts/OnyxOS-x64-unsigned.appx'
+          $configuration = '${{ matrix.configuration }}'
+          $appx = "artifacts/OnyxOS-x64-$configuration-unsigned.appx"
           Add-Type -AssemblyName System.IO.Compression.FileSystem
           $zip = [IO.Compression.ZipFile]::OpenRead((Resolve-Path $appx))
           try {
@@ -61,13 +73,15 @@ jobs:
             foreach ($required in @('AppxManifest.xml','Shaders/onyxos.hlsl')) {
               if ($names -notcontains $required) { throw "Missing APPX entry: $required" }
             }
-            Write-Host "APPX container validation passed; $($zip.Entries.Count) entries."
+            Write-Host "$configuration APPX validation passed; $($zip.Entries.Count) entries."
           } finally { $zip.Dispose() }
 
-      - name: Upload APPX artifact
+      - name: Upload ${{ matrix.configuration }} artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: VMware-UWP-Xbox-APPX-x64
-          path: artifacts/OnyxOS-x64-unsigned.appx
+          name: VMware-UWP-Xbox-${{ matrix.configuration }}-x64
+          path: |
+            artifacts/OnyxOS-x64-${{ matrix.configuration }}-unsigned.appx
+            artifacts/OnyxOS-x64-Debug.pdb
           if-no-files-found: error
           retention-days: 14
