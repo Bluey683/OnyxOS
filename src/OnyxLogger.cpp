@@ -3,6 +3,7 @@
 
 #include <windows.h>
 #include <fileapifromapp.h>
+#include <fileapifromapp.h>
 #include <string>
 
 using namespace Platform;
