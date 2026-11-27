@@ -8,10 +8,7 @@ namespace onyx
 {
 namespace vm
 {
-    enum class GuestOperatingSystem
-    {
-        Windows
-    };
+    enum class GuestOperatingSystem { Windows };
 
     struct VmConfiguration
     {
@@ -22,8 +19,8 @@ namespace vm
         std::string diskPath;
         std::string machineType{ "q35" };
         std::string cpuModel{ "max" };
-        std::uint32_t memoryMB{ 4096 };
-        std::uint32_t cpuCount{ 2 };
+        std::uint32_t memoryMB{ 3072 };
+        std::uint32_t cpuCount{ 1 };
         std::uint32_t tcgJitCacheMB{ 128 };
         bool useUefi{ true };
         bool enableNetwork{ true };
@@ -33,6 +30,7 @@ namespace vm
         std::uint32_t displayWidth{ 1920 };
         std::uint32_t displayHeight{ 1080 };
         std::uint32_t displayRefreshHz{ 60 };
+        std::string windowsRelease{ "Windows 11 22H2" };
     };
 
     struct ValidationResult
@@ -41,7 +39,6 @@ namespace vm
         std::string message;
     };
 
-    // Builds arguments for the QEMU UWP host API; it does not launch a VM.
     VmConfiguration CreateProfile(const std::string& profileId);
     ValidationResult Validate(const VmConfiguration& configuration);
     std::vector<std::string> BuildQemuArguments(const VmConfiguration& configuration);
