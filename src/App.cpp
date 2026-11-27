@@ -23,7 +23,14 @@ namespace OnyxOS
             OutputDebugStringW(L"[OnyxOS] CoreApplication initialized.\n");
             OnyxLogger::Info(L"APP", L"CoreApplication initialized.");
             if (onyx::vm::EnsureDevelopmentFilesDirectories())
+            {
                 OnyxLogger::Info(L"STORAGE", L"Windows 11 LocalState folders are ready.");
+                const auto disk = onyx::vm::FindDevelopmentFilesDisk("windows11");
+                if (!disk.empty())
+                    OnyxLogger::Info(L"STORAGE", L"QCOW2 template is available in LocalState; existing guest disks are preserved.");
+                else
+                    OnyxLogger::Error(L"STORAGE", L"QCOW2 template could not be copied or validated in LocalState.");
+            }
             else
                 OnyxLogger::Error(L"STORAGE", L"Could not create Windows 11 LocalState folders.");
         }
