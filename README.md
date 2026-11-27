@@ -32,7 +32,7 @@ Mode. Hardware virtualization, KVM and VT-x are not assumed.
     LocalState/
     ├── Windows11/
     │   ├── ISO/
-    │   │   └── Windows11-22H2-x64.iso
+    │   │   └── any-Windows11-installer.iso
     │   ├── Disks/
     │   │   └── Windows11-22H2.qcow2
     │   ├── Configurations/
@@ -41,7 +41,7 @@ Mode. Hardware virtualization, KVM and VT-x are not assumed.
         ├── OnyxOS.log
         └── QEMU.log
 
-The ISO is the installer media; the QCOW2 file stores the installed guest.
+Any valid Windows 11 installer ISO filename can be placed in the ISO folder; OnyxOS detects the first valid *.iso. The ISO is the installer media; the QCOW2 file stores the installed guest.
 Automatic QCOW2 creation and full installation flow are not implemented yet.
 
 ## Diagnostics
