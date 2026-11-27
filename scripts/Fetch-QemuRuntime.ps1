@@ -1,82 +1,60 @@
 #requires -Version 5.1
 [CmdletBinding()]
-param(
-    [string]$RepositoryRoot = (Split-Path -Parent $PSScriptRoot),
-    [string]$Branch = 'x86-64'
-)
-
+param([string]$RepositoryRoot = (Split-Path -Parent $PSScriptRoot))
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
+# Pin the upstream implementation to an immutable commit. Do not silently
+# change the QEMU ABI or its runtime DLL set when the upstream branch advances.
 $owner = 'rodrigoandrigo'
 $repository = 'QEMU-UWP-Host'
-$archiveUrl = "https://codeload.github.com/$owner/$repository/zip/refs/heads/$Branch"
+$upstreamCommit = '53d6af6314f535c4c71c4be269777a710063327b'
+$archiveUrl = "https://codeload.github.com/$owner/$repository/zip/$upstreamCommit"
 $dependenciesRoot = Join-Path $RepositoryRoot 'Dependencies'
 $qemuDirectory = Join-Path $dependenciesRoot 'Qemu'
 $runtimeDirectory = Join-Path $dependenciesRoot 'Runtime'
+$firmwareDirectory = Join-Path $RepositoryRoot 'qemu'
 $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("OnyxOS-QEMU-" + [guid]::NewGuid().ToString('N'))
 $archivePath = Join-Path $tempRoot 'qemu-uwp-host.zip'
 $extractPath = Join-Path $tempRoot 'source'
 
-New-Item -ItemType Directory -Force -Path $tempRoot, $qemuDirectory, $runtimeDirectory | Out-Null
-
+New-Item -ItemType Directory -Force -Path $tempRoot,$qemuDirectory,$runtimeDirectory,$firmwareDirectory | Out-Null
 try {
-    Write-Host "Downloading QEMU UWP source archive from $archiveUrl ..." -ForegroundColor Cyan
+    Write-Host "Downloading pinned QEMU-UWP-Host commit $upstreamCommit ..." -ForegroundColor Cyan
     Invoke-WebRequest -Uri $archiveUrl -Headers @{ 'User-Agent' = 'OnyxOS-QEMU-runtime-fetcher' } -OutFile $archivePath -UseBasicParsing
-
     Expand-Archive -LiteralPath $archivePath -DestinationPath $extractPath -Force
     $sourceRoot = Get-ChildItem -LiteralPath $extractPath -Directory | Select-Object -First 1
-    if (-not $sourceRoot) {
-        throw 'O arquivo do repositório QEMU não contém a pasta raiz esperada.'
-    }
+    if (-not $sourceRoot) { throw 'Upstream archive has no repository root.' }
 
     $sourceQemu = Join-Path $sourceRoot.FullName 'Dependencies/Qemu'
     $sourceRuntime = Join-Path $sourceRoot.FullName 'Dependencies/Runtime'
     $sourceFirmware = Join-Path $sourceRoot.FullName 'qemu'
-    $firmwareDirectory = Join-Path $RepositoryRoot 'qemu'
-    # Create every destination before copying files. The upstream firmware
-    # directory is outside Dependencies and may not exist in a clean checkout.
-    New-Item -ItemType Directory -Force -Path $qemuDirectory, $runtimeDirectory, $firmwareDirectory | Out-Null
     $mainDll = Join-Path $sourceQemu 'qemu-system-x86_64.dll'
-    if (-not (Test-Path -LiteralPath $mainDll -PathType Leaf)) {
-        throw "A DLL qemu-system-x86_64.dll não foi encontrada em $sourceQemu"
+    if (-not (Test-Path -LiteralPath $mainDll -PathType Leaf)) { throw 'Upstream x64 QEMU host DLL is missing.' }
+    if ((Get-Item -LiteralPath $mainDll).Length -ne 24338555) { throw 'Upstream QEMU DLL size differs from the pinned build; refusing an unverified binary.' }
+    if (-not (Test-Path -LiteralPath $sourceRuntime -PathType Container)) { throw 'Upstream Runtime dependency folder is missing.' }
+    if (-not (Test-Path -LiteralPath $sourceFirmware -PathType Container)) { throw 'Upstream QEMU firmware folder is missing.' }
+
+    foreach ($file in Get-ChildItem -LiteralPath $sourceQemu -File) {
+        Copy-Item -LiteralPath $file.FullName -Destination (Join-Path $qemuDirectory $file.Name) -Force
+    }
+    $runtimeFiles = @(Get-ChildItem -LiteralPath $sourceRuntime -Filter '*.dll' -File)
+    if ($runtimeFiles.Count -lt 20) { throw "Upstream runtime dependency set is incomplete: $($runtimeFiles.Count) DLLs." }
+    foreach ($file in $runtimeFiles) {
+        Copy-Item -LiteralPath $file.FullName -Destination (Join-Path $runtimeDirectory $file.Name) -Force
     }
 
-    foreach ($sourceDirectory in @(
-        @{ Source = $sourceQemu; Destination = $qemuDirectory },
-        @{ Source = $sourceRuntime; Destination = $runtimeDirectory },
-        @{ Source = $sourceFirmware; Destination = $firmwareDirectory }
-    )) {
-        if (-not (Test-Path -LiteralPath $sourceDirectory.Source -PathType Container)) {
-            if ($sourceDirectory.Source -eq $sourceRuntime) {
-                Write-Warning 'A pasta de dependências Runtime não foi encontrada no arquivo upstream.'
-                continue
-            }
-            throw "Diretório upstream ausente: $($sourceDirectory.Source)"
-        }
+    # Preserve nested firmware resources (for example keymaps and descriptors).
+    Copy-Item -Path (Join-Path $sourceFirmware '*') -Destination $firmwareDirectory -Recurse -Force
+    $stagedDll = Join-Path $qemuDirectory 'qemu-system-x86_64.dll'
+    if ((Get-Item -LiteralPath $stagedDll).Length -ne 24338555) { throw 'Staged QEMU DLL failed size verification.' }
+    if (-not (Test-Path -LiteralPath (Join-Path $firmwareDirectory 'bios-256k.bin'))) { throw 'x86 BIOS was not staged.' }
+    if (-not (Test-Path -LiteralPath (Join-Path $firmwareDirectory 'edk2-x86_64-code.fd'))) { throw 'x86_64 UEFI firmware was not staged.' }
 
-        foreach ($file in Get-ChildItem -LiteralPath $sourceDirectory.Source -File) {
-            $target = Join-Path $sourceDirectory.Destination $file.Name
-            if ((Test-Path -LiteralPath $target) -and
-                (Get-Item -LiteralPath $target).Length -eq $file.Length) {
-                Write-Host "Already present: $($file.Name)" -ForegroundColor DarkGray
-                continue
-            }
-            Copy-Item -LiteralPath $file.FullName -Destination $target -Force
-            if ((Get-Item -LiteralPath $target).Length -ne $file.Length) {
-                Remove-Item -LiteralPath $target -Force -ErrorAction SilentlyContinue
-                throw "Falha na validação de tamanho de $($file.Name)."
-            }
-            Write-Host "Staged $($file.Name) ($($file.Length) bytes)" -ForegroundColor Cyan
-        }
-    }
-
-    Write-Host 'QEMU host DLL and runtime dependencies staged successfully.' -ForegroundColor Green
-    Write-Host "Source: https://github.com/$owner/$repository/tree/$Branch/Dependencies"
+    Write-Host "QEMU-UWP-Host $upstreamCommit staged: x64 host DLL, $($runtimeFiles.Count) runtime DLLs and firmware resources." -ForegroundColor Green
+    Write-Host "Upstream: https://github.com/$owner/$repository/tree/$upstreamCommit"
 }
 finally {
-    if (Test-Path -LiteralPath $tempRoot) {
-        Remove-Item -LiteralPath $tempRoot -Recurse -Force -ErrorAction SilentlyContinue
-    }
+    if (Test-Path -LiteralPath $tempRoot) { Remove-Item -LiteralPath $tempRoot -Recurse -Force -ErrorAction SilentlyContinue }
 }
