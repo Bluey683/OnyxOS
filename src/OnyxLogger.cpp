@@ -2,6 +2,7 @@
 #include "OnyxNativeLog.h"
 
 #include <windows.h>
+#include <fileapifromapp.h>
 #include <string>
 
 using namespace Platform;
@@ -28,7 +29,7 @@ namespace OnyxOS
         }
     }
 
-    void OnyxLogger::Write(String^ fileName, String^ source, String^ message)
+    void OnyxLogger::Write(String^ fileName, String^ source, String^ level, String^ message)
     {
         SYSTEMTIME now{};
         GetLocalTime(&now);
@@ -37,7 +38,7 @@ namespace OnyxOS
         swprintf_s(timestamp, L"%04u-%02u-%02u %02u:%02u:%02u.%03u",
             now.wYear, now.wMonth, now.wDay, now.wHour, now.wMinute, now.wSecond, now.wMilliseconds);
 
-        String^ line = ref new String(timestamp) + L" [" + source + L"] " +
+        String^ line = ref new String(timestamp) + L" [" + level + L"] [" + source + L"] " +
             (message == nullptr ? L"(empty message)" : message) + L"\r\n";
         OutputDebugStringW(line->Data());
 
@@ -45,34 +46,44 @@ namespace OnyxOS
         HANDLE file = INVALID_HANDLE_VALUE;
         try
         {
-            String^ fullPath = ApplicationData::Current->LocalFolder->Path + L"\\" + fileName;
-            CREATEFILE2_EXTENDED_PARAMETERS createParams{};
-            createParams.dwSize = sizeof(createParams);
-            file = CreateFile2FromAppW(fullPath->Data(), FILE_APPEND_DATA,
-                FILE_SHARE_READ | FILE_SHARE_WRITE, OPEN_ALWAYS, &createParams);
-
-            if (file == INVALID_HANDLE_VALUE)
+            String^ localPath = ApplicationData::Current->LocalFolder->Path;
+            String^ logDirectory = localPath + L"\\Logs";
+            if (!CreateDirectoryFromAppW(logDirectory->Data(), nullptr) &&
+                GetLastError() != ERROR_ALREADY_EXISTS)
             {
-                wchar_t error[128]{};
-                swprintf_s(error, L"[OnyxOS] Cannot open log file (error %lu).\n", GetLastError());
-                OutputDebugStringW(error);
+                OutputDebugStringW(L"[OnyxOS][ERROR] Could not create LocalState\\Logs.\n");
             }
             else
             {
-                LARGE_INTEGER length{};
-                if (GetFileSizeEx(file, &length) && length.QuadPart == 0)
-                {
-                    const wchar_t bom = 0xFEFF;
-                    WriteAll(file, &bom, sizeof(bom));
-                }
+                String^ fullPath = logDirectory + L"\\" + fileName;
+                CREATEFILE2_EXTENDED_PARAMETERS createParams{};
+                createParams.dwSize = sizeof(createParams);
+                file = CreateFile2FromAppW(fullPath->Data(), FILE_APPEND_DATA,
+                    FILE_SHARE_READ | FILE_SHARE_WRITE, OPEN_ALWAYS, &createParams);
 
-                if (!WriteAll(file, line->Data(), line->Length() * sizeof(wchar_t)))
+                if (file == INVALID_HANDLE_VALUE)
                 {
                     wchar_t error[128]{};
-                    swprintf_s(error, L"[OnyxOS] Cannot write log file (error %lu).\n", GetLastError());
+                    swprintf_s(error, L"[OnyxOS] Cannot open log file (error %lu).\n", GetLastError());
                     OutputDebugStringW(error);
                 }
-                FlushFileBuffers(file);
+                else
+                {
+                    LARGE_INTEGER length{};
+                    if (GetFileSizeEx(file, &length) && length.QuadPart == 0)
+                    {
+                        const wchar_t bom = 0xFEFF;
+                        WriteAll(file, &bom, sizeof(bom));
+                    }
+
+                    if (!WriteAll(file, line->Data(), line->Length() * sizeof(wchar_t)))
+                    {
+                        wchar_t error[128]{};
+                        swprintf_s(error, L"[OnyxOS] Cannot write log file (error %lu).\n", GetLastError());
+                        OutputDebugStringW(error);
+                    }
+                    FlushFileBuffers(file);
+                }
             }
         }
         catch (Exception^ ex)
@@ -85,14 +96,14 @@ namespace OnyxOS
         ReleaseSRWLockExclusive(&g_logLock);
     }
 
-    void OnyxLogger::App(String^ message) { Write(L"App.txt", L"APP", message); }
+    void OnyxLogger::App(String^ message) { Write(L"OnyxOS.log", L"APP", L"INFO", message); }
+    void OnyxLogger::Info(String^ source, String^ message) { Write(L"OnyxOS.log", source, L"INFO", message); }
+    void OnyxLogger::Warning(String^ source, String^ message) { Write(L"OnyxOS.log", source, L"WARN", message); }
+    void OnyxLogger::Error(String^ source, String^ message) { Write(L"OnyxOS.log", source, L"ERROR", message); }
     void OnyxLogger::Qemu(String^ message)
     {
-        // Keep a dedicated QEMU log and mirror the same diagnostic into App.txt.
-        // This makes launch/validation failures visible even in file viewers that
-        // only expose the primary application log.
-        Write(L"QEMU.txt", L"QEMU", message);
-        Write(L"App.txt", L"QEMU", message);
+        Write(L"QEMU.log", L"QEMU", L"INFO", message);
+        Write(L"OnyxOS.log", L"QEMU", L"INFO", message);
     }
 
     void WriteQemuLogNative(const wchar_t* message)
