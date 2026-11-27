@@ -24,7 +24,7 @@ Mode. Hardware virtualization, KVM and VT-x are not assumed.
 - QEMU TCG single-threaded software translation.
 - 128 MB JIT translation-block cache (configurable 16–256 MB).
 - Q35 machine and UEFI firmware.
-- Windows 11 22H2 x64 installer ISO and persistent VHDX disk.
+- Windows 11 22H2 x64 installer ISO and persistent QCOW2 disk.
 - Direct3D 11 CoreWindow host; no XAML pages.
 
 ## LocalState storage
@@ -34,15 +34,15 @@ Mode. Hardware virtualization, KVM and VT-x are not assumed.
     │   ├── ISO/
     │   │   └── Windows11-22H2-x64.iso
     │   ├── Disks/
-    │   │   └── Windows11-22H2.vhdx
+    │   │   └── Windows11-22H2.qcow2
     │   ├── Configurations/
     │   └── State/
     └── Logs/
         ├── OnyxOS.log
         └── QEMU.log
 
-The ISO is the installer media; the VHDX stores the installed guest. Automatic
-VHDX creation and full installation flow are not implemented yet.
+The ISO is the installer media; the QCOW2 file stores the installed guest.
+Automatic QCOW2 creation and full installation flow are not implemented yet.
 
 ## Diagnostics
 
@@ -69,7 +69,7 @@ hardware virtualization.
 - Windows 11 22H2 officially requires at least 2 CPU cores and 4 GB RAM;
   this project's 1-vCPU/3-GB cap is an unsupported configuration.
 - TPM 2.0 and Secure Boot emulation still need implementation and validation.
-- VHDX creation, complete VM lifecycle, guest framebuffer, input, audio and
+- QCOW2 creation, complete VM lifecycle, guest framebuffer, input, audio and
   networking still need end-to-end Xbox testing.
 - TCG software emulation may be slow; Xbox/UWP memory and executable-memory
   restrictions apply.
@@ -77,6 +77,6 @@ hardware virtualization.
 ## Documentation
 
 - [VM engine and JIT](docs/VM-ENGINE.md)
-- [ISO and VHDX storage](docs/AUTO-OS-DOWNLOAD.md)
+- [ISO and QCOW2 storage](docs/AUTO-OS-DOWNLOAD.md)
 - [QEMU host integration](docs/QEMU-UWP-HOST-INTEGRATION.md)
 - [QEMU host API](docs/QEMU-UWP-HOST-API.md)
