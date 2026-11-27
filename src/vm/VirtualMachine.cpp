@@ -92,6 +92,8 @@ namespace vm
         add("-smp", "1,sockets=1,cores=1,threads=1");
         add("-display", "host");
         add("-L", "qemu");
+        // Use the packaged x86_64 UEFI firmware for the Windows 11 guest.
+        add("-bios", c.useUefi ? "qemu/edk2-x86_64-code.fd" : "qemu/bios-256k.bin");
 
         add("-drive", "file=" + c.diskPath + ",if=none,id=onyx_disk,format=qcow2");
         args.emplace_back("-device");
