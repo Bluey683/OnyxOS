@@ -46,9 +46,26 @@ jobs:
           $ErrorActionPreference = 'Stop'
           choco install qemu -y --no-progress
           if ($LASTEXITCODE -ne 0) { throw "Chocolatey QEMU installation failed: $LASTEXITCODE" }
+          # Chocolatey installs QEMU under Program Files, but the installer
+          # does not reliably refresh the current Actions process PATH.
+          $candidateDirs = @(
+            (Join-Path $env:ProgramFiles 'qemu'),
+            (Join-Path $env:ProgramFiles 'QEMU'),
+            (Join-Path $env:ChocolateyInstall 'lib/qemu/tools')
+          ) | Where-Object { $_ -and (Test-Path -LiteralPath $_) }
+          foreach ($dir in $candidateDirs) {
+            $env:PATH = "$dir;$env:PATH"
+            $env:GITHUB_PATH | Out-Null
+            if ($env:GITHUB_PATH) { Add-Content -LiteralPath $env:GITHUB_PATH -Value $dir }
+          }
           $qemuImg = Get-Command qemu-img.exe -ErrorAction SilentlyContinue
-          if (-not $qemuImg) { $qemuImg = Get-Command qemu-img -ErrorAction Stop }
-          & $qemuImg.Source --version
+          if (-not $qemuImg) {
+            $qemuImgPath = Get-ChildItem -Path $candidateDirs -Filter 'qemu-img.exe' -File -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($qemuImgPath) { $qemuImg = $qemuImgPath }
+          }
+          if (-not $qemuImg) { throw "QEMU was installed, but qemu-img.exe was not found. Searched: $($candidateDirs -join '; ')" }
+          $qemuImgExecutable = if ($qemuImg.Source) { $qemuImg.Source } else { $qemuImg.FullName }
+          & $qemuImgExecutable --version
           if ($LASTEXITCODE -ne 0) { throw 'qemu-img version check failed.' }
       - name: Create a fresh Windows 11 QCOW2 template
         shell: pwsh
