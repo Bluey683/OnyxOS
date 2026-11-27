@@ -81,8 +81,30 @@ namespace vm
     std::wstring FindDevelopmentFilesIso(const std::string& profileId)
     {
         if (profileId != "windows11" || !EnsureDevelopmentFilesDirectories()) return {};
-        const auto path = Windows11Path(L"ISO\\Windows11-22H2-x64.iso");
-        return IsRecognizedIsoFile(path) ? path : std::wstring{};
+
+        // Accept any Windows 11 installer ISO filename placed in the ISO folder.
+        // Enumerate in name order so the selected image is deterministic.
+        const auto pattern = Windows11Path(L"ISO\\*.iso");
+        WIN32_FIND_DATAW entry{};
+        HANDLE search = FindFirstFileExFromAppW(
+            pattern.c_str(), FindExInfoBasic, &entry, FindExSearchNameMatch, nullptr, 0);
+        if (search == INVALID_HANDLE_VALUE) return {};
+
+        std::wstring selected;
+        do
+        {
+            if ((entry.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0)
+                continue;
+            const auto candidate = Windows11Path((std::wstring(L"ISO\\") + entry.cFileName).c_str());
+            if (IsRecognizedIsoFile(candidate))
+            {
+                selected = candidate;
+                break;
+            }
+        } while (FindNextFileW(search, &entry));
+
+        FindClose(search);
+        return selected;
     }
 
     bool IsValidQcow2File(const std::wstring& path)
