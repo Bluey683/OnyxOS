@@ -86,7 +86,7 @@ namespace vm
                 const auto folder = winrt::Windows::Storage::StorageFolder::GetFolderFromPathAsync(
                     Windows11Path(L"Disks")).get();
                 source.CopyAsync(folder, L"Windows11-22H2.qcow2",
-                    winrt::Windows::Storage::NameCollisionOption::failIfExists).get();
+                    winrt::Windows::Storage::NameCollisionOption::FailIfExists).get();
             }
             catch (...)
             {
