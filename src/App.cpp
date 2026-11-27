@@ -4,6 +4,7 @@
 #include <d3d11_1.h>
 #include <dxgi1_2.h>
 #include <string>
+#include "OnyxLogger.h"
 
 using namespace Platform;
 using namespace Windows::ApplicationModel::Core;
@@ -17,6 +18,7 @@ namespace OnyxOS
         virtual void Initialize(CoreApplicationView^)
         {
             OutputDebugStringW(L"[OnyxOS] CoreApplication initialized.\n");
+            OnyxLogger::Info(L"APP", L"CoreApplication initialized.");
         }
 
         virtual void SetWindow(CoreWindow^ window)
@@ -56,6 +58,7 @@ namespace OnyxOS
         {
             ReleaseGraphics();
             OutputDebugStringW(L"[OnyxOS] CoreWindow shutdown complete.\n");
+            OnyxLogger::Info(L"APP", L"CoreWindow shutdown complete.");
         }
 
     private:
@@ -118,6 +121,7 @@ namespace OnyxOS
 
             m_graphicsReady = true;
             OutputDebugStringW(L"[OnyxOS] CoreWindow Direct3D 11 renderer initialized.\n");
+            OnyxLogger::Info(L"GRAPHICS", L"CoreWindow Direct3D 11 renderer initialized.");
         }
 
         void Render()
@@ -139,6 +143,7 @@ namespace OnyxOS
             wchar_t message[96]{};
             swprintf_s(message, L"[OnyxOS][Input] CoreWindow key: %u\n", static_cast<unsigned>(args->VirtualKey));
             OutputDebugStringW(message);
+            OnyxLogger::Info(L"INPUT", ref new String(message));
         }
 
         void OnPointerPressed(CoreWindow^, PointerEventArgs^ args)
@@ -147,6 +152,7 @@ namespace OnyxOS
             wchar_t message[128]{};
             swprintf_s(message, L"[OnyxOS][Input] Pointer: %.1f, %.1f\n", point.X, point.Y);
             OutputDebugStringW(message);
+            OnyxLogger::Info(L"INPUT", ref new String(message));
         }
 
         static void LogHr(const wchar_t* operation, HRESULT hr)
@@ -154,6 +160,7 @@ namespace OnyxOS
             wchar_t message[192]{};
             swprintf_s(message, L"[OnyxOS] %s failed: 0x%08X\n", operation, static_cast<unsigned>(hr));
             OutputDebugStringW(message);
+            OnyxLogger::Error(L"GRAPHICS", ref new String(message));
         }
 
         CoreWindow^ m_window;
