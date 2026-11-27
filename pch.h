@@ -1,9 +1,3 @@
 #pragma once
-
-// Shared precompiled-header shim for the C++/CX UWP XAML-generated sources.
-#include <collection.h>
-#include <ppltasks.h>
-
-// Make the XAML page runtime classes visible to generated XamlTypeInfo code.
-#include "src/MainPage.xaml.h"
-#include "src/GuestPage.xaml.h"
+// No XAML-generated headers or precompiled XAML runtime types.
+// Translation units include only the Win32/WinRT headers they require.
