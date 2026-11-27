@@ -1,58 +1,44 @@
-# Windows 11 VM Engine
+# Windows 11 22H2 VM Engine
 
-OnyxOS has one guest profile: **Windows 11 x86-64**. The VM configuration
-prepares QEMU arguments; successful boot on Xbox has not yet been verified.
+Only Windows 11 22H2 x64 is configured as a guest.
 
-## Profile defaults
+## Strict Xbox resource limits
 
-- QEMU q35 machine and max CPU model.
-- 2 vCPUs and 4096 MB configured guest RAM (subject to Xbox UWP limits).
-- QEMU TCG multi-threaded software translation.
-- TCG translation-block/JIT cache: 128 MB by default, configurable from 16 to
-  256 MB.
-- Installer ISO mounted as a read-only CD-ROM ahead of the VHDX boot device.
-- VHDX used as the persistent Windows 11 system disk.
-- Virtio VGA, USB keyboard/tablet, user-mode networking and XAudio2/HDA
-  arguments are prepared, but device integration still needs target testing.
+- Exactly 1 virtual CPU.
+- Maximum 3072 MB (3 GiB) guest RAM.
+- QEMU TCG single-threaded software translation.
+- 128 MB JIT translation-block cache by default (16–256 MB range).
+- q35 machine and UEFI.
 
-## App-private storage
+**Compatibility warning:** Microsoft's published Windows 11 minimums are
+2 CPU cores and 4 GB RAM. This project's 1-vCPU/3-GB configuration is below
+those requirements and is unsupported. Windows Setup may refuse installation,
+and a bypass would not make the configuration supported or guarantee stability.
 
-LocalState contains the following layout:
+## Storage
 
     LocalState/
     ├── Windows11/
-    │   ├── ISO/
-    │   │   └── Windows11.iso
-    │   ├── Disks/
-    │   │   └── Windows11.vhdx
+    │   ├── ISO/Windows11-22H2-x64.iso
+    │   ├── Disks/Windows11-22H2.vhdx
     │   ├── Configurations/
     │   └── State/
-    │       └── installation-complete.marker
     └── Logs/
-        ├── OnyxOS.log
-        └── QEMU.log
 
-The folders are created by the storage provisioner when it is called. The
-Windows 11 ISO is selected/downloaded into Windows11/ISO; the VHDX is the
-persistent guest disk in Windows11/Disks. The marker is only written after
-an explicit installation-complete confirmation.
+The ISO is installation media; the VHDX is persistent guest storage. Automatic
+VHDX creation and end-to-end install are not implemented yet.
 
-## JIT / TCG
+## TCG JIT
 
-QEMU TCG is the CPU translator and JIT engine; it is not a separate host
-hypervisor. OnyxOS passes the following default argument:
+QEMU TCG is software CPU translation, not a separate hypervisor. The current
+argument uses a bounded translation-block cache:
 
-    -accel tcg,thread=multi,tb-size=128
+    -accel tcg,thread=single,tb-size=128
 
-The value is generated from VmConfiguration::tcgJitCacheMB and validated
-between 16 and 256 MB. This controls the translation-block cache, not the
-amount of RAM assigned to Windows 11. TCG remains software emulation; Xbox
-hardware virtualization/KVM is not assumed.
+The cache size is separate from the 3072 MB guest RAM cap. The final accepted
+option set must be checked against the exact upstream QEMU-UWP-Host build.
 
-## Implementation boundary
+## Status
 
-The VM configuration builds the argument vector, and the QEMU adapter loads
-the packaged host DLL and exposes lifecycle methods. This documentation does
-not claim that the full CoreWindow-to-QEMU start path, guest frame rendering,
-audio, networking, VHDX creation, TPM 2.0 or Secure Boot are complete. Those
-items still require build and Xbox testing.
+CoreWindow startup, guest boot, frame presentation, TPM 2.0, Secure Boot,
+VHDX creation, and full device integration still require build and Xbox testing.
