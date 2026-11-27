@@ -37,6 +37,7 @@ namespace OnyxOS
 
         virtual void Run()
         {
+            m_window->Activate();
             while (!m_closed)
             {
                 if (m_visible)
