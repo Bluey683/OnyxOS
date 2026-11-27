@@ -4,7 +4,9 @@ param(
     [string]$RepositoryRoot = (Split-Path -Parent $PSScriptRoot),
     [string]$MSYS2Root = 'C:\msys64',
     [string]$QemuVersion = '11.0.2',
-    [string]$QemuOverlayCommit = 'b9d726d9c4e1c06a5666178a267fd635d0e69e52'
+    [string]$QemuOverlayCommit = 'b9d726d9c4e1c06a5666178a267fd635d0e69e52',
+    [string]$QemuRepository = 'https://gitlab.com/qemu-project/qemu.git',
+    [string]$OverlayRepository = 'https://github.com/rodrigoandrigo/Qemu-Dll-shadps4.git'
 )
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
@@ -13,11 +15,10 @@ Set-StrictMode -Version Latest
 $shell = Join-Path $MSYS2Root 'msys2_shell.cmd'
 if (-not (Test-Path -LiteralPath $shell)) { throw "MSYS2 shell not found: $shell" }
 $work = Join-Path ([IO.Path]::GetTempPath()) ("OnyxOS-QEMU-Build-" + [guid]::NewGuid().ToString('N'))
-$archive = Join-Path $work "qemu-$QemuVersion.tar.xz"
-$overlayZip = Join-Path $work 'qemu-uwp-overlay.zip'
 $extract = Join-Path $work 'src'
 $overlayExtract = Join-Path $work 'overlay'
-$source = Join-Path $extract "qemu-$QemuVersion"
+$source = Join-Path $extract 'qemu-source'
+$overlaySource = Join-Path $overlayExtract 'overlay-source'
 $qemuDll = Join-Path $source 'build/qemu-system-x86_64.dll'
 $destination = Join-Path $RepositoryRoot 'Dependencies/Qemu/qemu-system-x86_64.dll'
 
@@ -29,22 +30,26 @@ function ConvertTo-MsysPath([string]$Path) {
 
 New-Item -ItemType Directory -Force -Path $work,$extract,$overlayExtract | Out-Null
 try {
-    $qemuUrl = "https://download.qemu.org/qemu-$QemuVersion.tar.xz"
-    $overlayUrl = "https://codeload.github.com/rodrigoandrigo/Qemu-Dll-shadps4/zip/$QemuOverlayCommit"
-    Write-Host "Downloading QEMU $QemuVersion source..." -ForegroundColor Cyan
-    Invoke-WebRequest -Uri $qemuUrl -OutFile $archive -UseBasicParsing
-    Write-Host "Downloading pinned UWP source overlay $QemuOverlayCommit..." -ForegroundColor Cyan
-    Invoke-WebRequest -Uri $overlayUrl -OutFile $overlayZip -UseBasicParsing
+    $git = Get-Command git -ErrorAction SilentlyContinue
+    if (-not $git) { throw 'Git is required but git.exe was not found on PATH.' }
+    $gitExe = $git.Source
 
-    & tar.exe -xf $archive -C $extract
-    if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $source -PathType Container)) {
-        throw "Could not extract QEMU source archive: $archive"
-    }
-    Expand-Archive -LiteralPath $overlayZip -DestinationPath $overlayExtract -Force
-    $overlayRoot = Get-ChildItem -LiteralPath $overlayExtract -Directory | Select-Object -First 1
-    if (-not $overlayRoot) { throw 'UWP overlay archive has no root directory.' }
-    Copy-Item -Path (Join-Path $overlayRoot.FullName '*') -Destination $source -Recurse -Force
+    Write-Host "Cloning QEMU repository and checking out v$QemuVersion..." -ForegroundColor Cyan
+    & $gitExe clone --filter=blob:none --no-checkout $QemuRepository $source
+    if ($LASTEXITCODE -ne 0) { throw 'Git clone of the QEMU repository failed.' }
+    & $gitExe -C $source fetch --depth 1 origin "refs/tags/v$QemuVersion"
+    if ($LASTEXITCODE -ne 0) { throw "Could not fetch QEMU tag v$QemuVersion." }
+    & $gitExe -C $source checkout --detach FETCH_HEAD
+    if ($LASTEXITCODE -ne 0) { throw "Could not check out QEMU v$QemuVersion." }
 
+    Write-Host "Cloning UWP overlay repository and checking out $QemuOverlayCommit..." -ForegroundColor Cyan
+    & $gitExe clone --filter=blob:none --no-checkout $OverlayRepository $overlaySource
+    if ($LASTEXITCODE -ne 0) { throw 'Git clone of the UWP overlay repository failed.' }
+    & $gitExe -C $overlaySource fetch --depth 1 origin $QemuOverlayCommit
+    if ($LASTEXITCODE -ne 0) { throw "Could not fetch pinned UWP overlay commit $QemuOverlayCommit." }
+    & $gitExe -C $overlaySource checkout --detach FETCH_HEAD
+    if ($LASTEXITCODE -ne 0) { throw "Could not check out pinned UWP overlay commit $QemuOverlayCommit." }
+    Copy-Item -Path (Join-Path $overlaySource '*') -Destination $source -Recurse -Force
     $patchScript = Join-Path $RepositoryRoot 'scripts/Apply-QemuBlockAlignmentFix.ps1'
     if (-not (Test-Path -LiteralPath $patchScript)) { throw "QEMU alignment patch script missing: $patchScript" }
     & $patchScript -QemuSourceRoot $source
