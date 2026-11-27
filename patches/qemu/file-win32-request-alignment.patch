@@ -1,0 +1,30 @@
+diff --git a/block/file-win32.c b/block/file-win32.c
+--- a/block/file-win32.c
++++ b/block/file-win32.c
+@@
+-    if (s->drive_path[0]) {
+-        GetDiskFreeSpace(s->drive_path, &sectorsPerCluster,
+-                         &bytesPerSector,
+-                         &freeClusters, &totalClusters);
+-        bs->bl.request_alignment = bytesPerSector;
+-        return;
+-    }
++    if (s->drive_path[0]) {
++        /*
++         * GetDiskFreeSpace can fail in packaged UWP/Xbox processes. The
++         * output parameters are then undefined (often zero), and assigning
++         * bytesPerSector directly violates QEMU's power-of-two invariant.
++         * Keep the conservative 512-byte default unless the query succeeds
++         * and returns a valid power-of-two sector size.
++         */
++        if (GetDiskFreeSpace(s->drive_path, &sectorsPerCluster,
++                             &bytesPerSector,
++                             &freeClusters, &totalClusters) &&
++            bytesPerSector != 0 &&
++            (bytesPerSector & (bytesPerSector - 1)) == 0) {
++            bs->bl.request_alignment = bytesPerSector;
++        } else {
++            bs->bl.request_alignment = BDRV_SECTOR_SIZE;
++        }
++        return;
++    }
