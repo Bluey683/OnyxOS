@@ -90,6 +90,14 @@ Invoke-CheckedCommand $makeAppx @('unpack','/p',$finalAppx,'/d',$unpacked,'/o')
 foreach ($file in @((Get-Item -LiteralPath $qemu)) + $runtimeFiles) {
     Copy-Item -LiteralPath $file.FullName -Destination (Join-Path $unpacked $file.Name) -Force
 }
+$diskTemplate = Join-Path $outPath 'Windows11-22H2-template.qcow2'
+if (!(Test-Path -LiteralPath $diskTemplate)) {
+    throw 'The qemu-img QCOW2 template is missing. Run scripts/New-Qcow2Template.ps1 before packaging.'
+}
+$diskTemplateInfo = Get-Item -LiteralPath $diskTemplate
+if ($diskTemplateInfo.Length -lt 72) { throw 'The generated QCOW2 template is too small.' }
+Copy-Item -LiteralPath $diskTemplate -Destination (Join-Path $unpacked 'Windows11-22H2-template.qcow2') -Force
+
 $firmwareSource = Join-Path $root 'qemu'
 if (!(Test-Path -LiteralPath (Join-Path $firmwareSource 'bios-256k.bin'))) {
     throw 'QEMU firmware is missing: qemu/bios-256k.bin. The guest cannot boot without the packaged BIOS.'
@@ -121,6 +129,10 @@ try {
         Where-Object { $_ -match '(^|/)qemu-system-x86_64\.dll$' } |
         Select-Object -First 1
 
+    $diskEntry = 'Windows11-22H2-template.qcow2'
+    if (!$entries.ContainsKey($diskEntry) -or $entries[$diskEntry] -lt 72) {
+        throw 'The final APPX does not contain the generated QCOW2 disk template.'
+    }
     $shaderEntry = 'Shaders/onyxos.hlsl'
     if (!$entries.ContainsKey($shaderEntry) -or $entries[$shaderEntry] -le 0) {
         throw "The final APPX does not contain Shaders/onyxos.hlsl."
