@@ -2,13 +2,23 @@
 
 **Xbox UWP OS emulator project powered by QEMU**
 
-OnyxOS is an experimental project exploring x86-64 guest operating systems inside a Windows/UWP application, with an interface intended for Xbox and controller-based use.
+OnyxOS is an experimental Windows UWP application designed to host x86-64 guest operating systems on Xbox consoles through software emulation. The project targets Xbox Developer Mode and uses a native C++/WinRT CoreWindow application model.
 
-> **Status: early development / scaffold.** The repository contains the initial package structure, build workflow, OS profile metadata, and graphics shader examples. The seven app entries currently use the same placeholder host. The Launcher interface, QEMU integration, guest boot process, and device/audio pipelines are not complete. No guest operating system is currently claimed to boot successfully.
+> **Development status: experimental scaffold.** The repository contains the CoreWindow host shell, package/build configuration, guest profile metadata, VM configuration code, and scripts for staging a pinned upstream QEMU-UWP-Host runtime. The QEMU runtime is not yet proven to boot a guest from the OnyxOS application. The guest display bridge, input, audio, networking, storage workflow, and full VM lifecycle still require integration and testing. No successful guest boot or fully validated Xbox deployment is claimed.
+
+## Target platform
+
+- **Platform:** Xbox Series X|S, through UWP Developer Mode.
+- **Application model:** native CoreWindow; this branch removes the previous XAML page structure.
+- **Architecture:** x64.
+- **Virtualization:** QEMU x86-64 using software emulation (TCG); hardware virtualization, KVM, and VT-x are not assumed.
+- **Graphics direction:** Direct3D 11/CoreWindow swap chain for the host window. Guest framebuffer presentation is still an integration task.
+
+OnyxOS is an Xbox/UWP project. It is not an Android application and does not provide a Moto/phone version.
 
 ## Package design
 
-OnyxOS is designed to ship as **one APPX package containing seven application entries**:
+The package is designed to expose seven application entries:
 
 1. OnyxOS Launcher
 2. Windows 10
@@ -18,42 +28,54 @@ OnyxOS is designed to ship as **one APPX package containing seven application en
 6. Arch Linux
 7. macOS (experimental)
 
-These are entries inside one package, not seven separate installers. At the current stage, the entries are manifest/build scaffolding and do not yet provide independent working virtual machines.
+These are entries in one APPX package, not seven separate installers. They are currently package/profile scaffolding and should not be interpreted as seven independently working virtual machines.
 
 See [docs/APPX-STRUCTURE.md](docs/APPX-STRUCTURE.md).
 
-## Planned operating-system profiles
+## Guest operating-system profiles
 
-The profile metadata is stored in [config/os-profiles.json](config/os-profiles.json). It describes intended architecture, machine settings, memory targets, and media locations for Windows 10/11, Debian, Ubuntu, Arch Linux, and experimental macOS.
+Guest profile metadata is stored in [config/os-profiles.json](config/os-profiles.json). It describes intended architectures, machine settings, memory targets, and installation media locations.
 
-Guest compatibility depends on firmware, QEMU configuration, operating-system requirements, and UWP restrictions. Windows 11 may require additional TPM/Secure Boot support. macOS has additional licensing and hardware restrictions and remains experimental.
+Actual compatibility depends on QEMU support, firmware, guest requirements, and UWP restrictions. Windows 11 may require additional TPM and Secure Boot support. macOS remains experimental and is subject to its own hardware and licensing restrictions.
 
 See [docs/OS-PROFILES.md](docs/OS-PROFILES.md).
 
-## Planned architecture
+## Architecture and implementation status
 
-| Component | Purpose | Status |
+| Component | Intended role | Current status |
 | --- | --- | --- |
-| Launcher | Select and manage the six guest profiles | Planned |
-| QEMU x86-64 host | Run VMs using software emulation (TCG) | Not integrated |
-| Display | Present the guest framebuffer | Shader source examples only |
-| HLSL / Direct3D | Intended initial Xbox graphics path | Not connected to QEMU |
-| GLSL | Alternative OpenGL shader path | Not connected to QEMU |
-| Input | Keyboard, mouse, and Xbox controller | Planned |
-| Audio | Guest audio through XAudio2 | Planned |
-| Storage | ISO images and persistent virtual disks | Layout documented |
-| Networking | Guest network connectivity | Planned |
+| CoreWindow host | Native Xbox/UWP application window and event loop | Initial host shell present; device testing required |
+| D3D11 presentation | Swap chain and host rendering surface | Host renderer scaffold; guest framebuffer not yet connected end to end |
+| QEMU x86-64 | Execute guest machines using TCG | Pinned upstream runtime staging is configured; VM boot not verified |
+| VM configuration | Validate guest settings and prepare QEMU configuration/arguments | Shared configuration layer present |
+| Launcher and profiles | Select and manage guest operating systems | Profile/package scaffolding; complete launcher workflow pending |
+| Input | Keyboard, pointer, and Xbox controller | Not fully integrated |
+| Audio | Guest audio output through the Xbox/UWP audio path | Not integrated |
+| Storage | ISO images, virtual disks, and VM configuration | Intended layout documented; complete provisioning workflow pending |
+| Networking | Guest network connectivity | Not integrated |
 
-### Graphics notes
+## QEMU-UWP-Host runtime
 
-Shader examples are in [graphics/shaders/](graphics/shaders/):
+This branch uses the upstream [QEMU-UWP-Host](https://github.com/rodrigoandrigo/QEMU-UWP-Host) project, pinned to commit:
 
-- `onyxos.hlsl` — HLSL vertex and pixel shader source.
-- `onyxos.vert` and `onyxos.frag` — GLSL vertex and fragment shader source.
+`53d6af6314f535c4c71c4be269777a710063327b`
 
-The shaders are not yet compiled or connected to a QEMU framebuffer. GLSL requires a compatible OpenGL implementation or translation layer; it is not automatically supported by an HLSL renderer. Guest 3D acceleration and GPU passthrough are not guaranteed.
+The script [scripts/Fetch-QemuRuntime.ps1](scripts/Fetch-QemuRuntime.ps1) downloads that exact revision and stages the x86-64 QEMU host DLL, matching runtime DLLs, firmware, and supporting QEMU resources. [Build.ps1](Build.ps1) invokes the fetch script and validates required runtime assets before packaging.
 
-## ISO and virtual disk storage
+This is dependency staging only. It does not establish that the upstream API is fully connected to the OnyxOS CoreWindow lifecycle, that guest frames are displayed, or that a guest operating system boots successfully.
+
+See:
+- [QEMU-UWP-Host integration notes](docs/QEMU-UWP-HOST-INTEGRATION.md)
+- [Upstream QEMU-UWP-Host API notes](docs/QEMU-UWP-HOST-API.md)
+- [Upstream license](Dependencies/QEMU-UWP-Host-LICENSE)
+
+## Graphics
+
+The host application uses a Direct3D 11 swap chain associated with CoreWindow. Shader examples, where present, are not evidence of a completed guest GPU pipeline or hardware acceleration.
+
+UWP sandboxing and Xbox hardware restrictions mean GPU passthrough and unrestricted device access must not be assumed. The current design relies on CPU-based QEMU TCG emulation for guest execution.
+
+## Guest files and storage
 
 The intended app-private data layout is:
 
@@ -65,84 +87,56 @@ LocalState/
 └── Logs/
 ```
 
-These folders are intended for installation images, virtual disks, VM configuration files, and logs. The current scaffold does not yet include the complete file-picker and VM boot workflow. Each UWP application has its own private storage area; an app must not assume it can directly access another app's LocalState.
-
-## QEMU dependency
-
-On the `feature/windows11-corewindow` branch, the x86-64 runtime is sourced from the upstream [QEMU-UWP-Host](https://github.com/rodrigoandrigo/QEMU-UWP-Host) project at pinned commit `53d6af6314f535c4c71c4be269777a710063327b`. `scripts/Fetch-QemuRuntime.ps1` stages its `qemu-system-x86_64.dll`, matching runtime DLLs, BIOS/UEFI firmware and supporting QEMU resources. `Build.ps1` runs this fetch automatically and validates the staged files before packaging. See [QEMU-UWP-Host integration](docs/QEMU-UWP-HOST-INTEGRATION.md) and the retained upstream Apache-2.0 license. The runtime fetch is not proof of successful VM boot; the CoreWindow frame bridge and Xbox runtime still require end-to-end testing.
+These locations are intended for installation images, virtual disks, VM configuration files, and logs. The complete file-selection, disk-creation, and guest-start workflow is still under development. UWP applications have isolated private storage; one app entry must not assume direct access to another app entry's LocalState.
 
 ## Build and installation
 
-- [BUILDING.md](BUILDING.md) — build prerequisites, GitHub Actions, local build, packaging, and signing notes.
-- [INSTALLING.md](INSTALLING.md) — install guidance for Windows and Xbox Developer Mode.
+- [BUILDING.md](BUILDING.md) — build prerequisites, local build, GitHub Actions, packaging, and signing.
+- [INSTALLING.md](INSTALLING.md) — installation guidance for Windows and Xbox Developer Mode.
+- [GitHub Actions](.github/workflows/build-uwp.yml) — x64 UWP build workflow.
 
-The GitHub Actions workflow is intended to build the seven application targets and package them into one x64 APPX artifact. The workflow and package still need a successful build and device deployment test; do not treat the artifact as validated until those tests pass.
+The workflow is configured to build and package the project. A workflow run or generated APPX is not proof of a successful Xbox deployment. Treat the package as unvalidated until the build completes successfully and the app is installed and tested on target hardware.
 
-## Tests
+Package signing requires a development certificate whose subject matches the Publisher in [Package.appxmanifest](Package.appxmanifest).
 
-The `Tests/` directory is reserved for validation scripts, test instructions, logs, and compatibility checks.
+## Documentation
 
-Start here: [Tests/README.md](Tests/README.md).
+- [APPX package structure](docs/APPX-STRUCTURE.md)
+- [OS profiles](docs/OS-PROFILES.md)
+- [VM engine](docs/VM-ENGINE.md)
+- [VM devices](docs/VM-DEVICES.md)
+- [Automatic OS downloads and VHDX](docs/AUTO-OS-DOWNLOAD.md)
+- [Guest display status](docs/GUEST-DISPLAY.md)
+- [QEMU-UWP-Host integration](docs/QEMU-UWP-HOST-INTEGRATION.md)
 
 ## Important limitations
 
-- QEMU TCG is software emulation; performance depends heavily on the host CPU.
-- UWP sandboxing and Xbox memory limits constrain available devices, files, and resources.
-- VT-x/KVM, kernel drivers, unrestricted hardware access, and GPU passthrough must not be assumed available.
-- VM memory settings are targets, not guarantees; test each guest profile on the target hardware.
-- Keyboard/mouse/controller input, XAudio2 audio, Wi-Fi networking, and full VM lifecycle management are not implemented yet.
-- Package signing requires a development certificate matching the Publisher declared in `Package.appxmanifest` (`CN=Bluey683`).
+- QEMU TCG is software emulation and can be slow, especially on console-class low-power execution environments.
+- Xbox/UWP memory budgets, sandboxing, API availability, and package restrictions constrain what the application can do.
+- VT-x/KVM, kernel drivers, unrestricted hardware access, and GPU passthrough are not assumed available.
+- Configured guest RAM values are targets, not guarantees of available memory.
+- Input, audio, networking, persistent disk provisioning, guest display integration, and complete VM lifecycle controls are not yet verified end to end.
+- Windows 11 and macOS guest compatibility must not be assumed from the presence of profile entries.
 
 ## Repository structure
 
 ```text
 .
-├── .github/workflows/   # GitHub Actions build workflow
-├── config/              # Guest OS profile metadata
-├── docs/                # Architecture and implementation notes
-├── graphics/shaders/    # HLSL and GLSL shader examples
-├── scripts/             # Asset generation scripts
-├── src/                 # UWP host scaffold
-├── Tests/               # Test documentation and checks
+├── .github/workflows/       # GitHub Actions workflow
+├── config/                  # Guest OS profile metadata
+├── Dependencies/            # Third-party runtime staging locations
+├── docs/                    # Architecture and integration notes
+├── graphics/                # Host graphics and shader sources
+├── qemu/                    # QEMU firmware and supporting resources
+├── scripts/                 # Runtime and asset scripts
+├── src/                     # Native UWP/CoreWindow and VM source
+├── Tests/                   # Test documentation and checks
+├── Build.ps1                # Build and packaging entry point
 ├── BUILDING.md
 ├── INSTALLING.md
-├── CMakeLists.txt
 └── Package.appxmanifest
 ```
 
 ## License
 
-This repository's license and the licenses of all bundled dependencies must be reviewed before redistribution. QEMU and other third-party components retain their respective licenses.
-
-
-## VM Engine (initial implementation)
-
-The repository now includes a shared C++ VM configuration layer in
-`src/vm/VirtualMachine.h/.cpp`. It validates guest settings and generates
-starter QEMU arguments for the configured ISO and VHDX paths. All seven app
-entry targets compile this module.
-
-See [VM Engine documentation](docs/VM-ENGINE.md). This is not yet a bootable
-virtual machine: the QEMU UWP host DLL/API, UEFI firmware, framebuffer, audio,
-input, networking, disk creation, and VM lifecycle controls still need to be
-integrated. No successful build or guest boot has been verified yet.
-
-## VM devices
-
-- [Audio, keyboard, mouse, Xbox controller and network integration](docs/VM-DEVICES.md)
-
-## Automatic OS image downloads and VHDX
-
-- [Official ISO download catalog, TCG and VHDX provisioning status](docs/AUTO-OS-DOWNLOAD.md)
-
-## Xbox display layout
-
-The guest interface uses a 1920 × 1080 (16:9) design canvas for installation
-and normal use. XAML scales the same layout to the active Xbox/TV mode, with
-slightly larger controls and text for TV viewing. The app does not change the
-console's system display setting. OnyxOS is Xbox-only; there is no Android/Moto
-version.
-
-## XAML guest display
-
-- [Shared Xbox XAML QEMU display for the six OS apps](docs/GUEST-DISPLAY.md)
+Review this repository's license and the licenses of all third-party dependencies before redistribution. QEMU and upstream QEMU-UWP-Host components retain their respective licenses; see the included upstream license file and upstream project for details.
