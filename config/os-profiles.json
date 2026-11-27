@@ -1,7 +1,7 @@
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "application": "OnyxOS",
-  "guestOS": "Windows 11",
+  "guestOS": "Windows 11 22H2",
   "architecture": "x86_64",
   "engine": "QEMU-UWP-Host",
   "runtime": {
@@ -20,19 +20,21 @@
     "configurationDirectory": "LocalState/Windows11/Configurations",
     "stateDirectory": "LocalState/Windows11/State",
     "logDirectory": "LocalState/Logs",
-    "installerIso": "Windows11.iso",
-    "virtualDisk": "Windows11.vhdx",
+    "installerIso": "Windows11-22H2-x64.iso",
+    "virtualDisk": "Windows11-22H2.vhdx",
     "diskFormat": "vhdx"
   },
   "profile": {
     "id": "windows11",
-    "name": "Windows 11",
+    "name": "Windows 11 22H2",
+    "release": "22H2",
     "enabled": true,
     "architecture": "x86_64",
     "machine": "q35",
     "cpuModel": "max",
-    "cpuCount": 2,
-    "ramMB": 4096,
+    "cpuCount": 1,
+    "ramMB": 3072,
+    "memoryLimitMB": 3072,
     "display": {"width": 1920, "height": 1080, "refreshHz": 60},
     "firmware": "UEFI",
     "tpm": "TPM 2.0 emulation still required",
@@ -46,8 +48,8 @@
       "network": "e1000e user-mode NAT",
       "audio": "XAudio2 / Intel HDA"
     },
-    "jit": {"engine": "tcg", "thread": "multi", "translationBlockCacheMB": 128},
+    "jit": {"engine": "tcg", "thread": "single", "translationBlockCacheMB": 128},
     "diskSizeGB": 80,
-    "notes": "VHDX creation and Windows 11 TPM/Secure Boot compatibility are not yet complete."
+    "notes": "One vCPU and 3 GB RAM are below Microsoft's Windows 11 minimum requirements. Installation and operation may be blocked or unsupported. TPM 2.0, Secure Boot and VHDX creation remain to be implemented."
   }
 }
