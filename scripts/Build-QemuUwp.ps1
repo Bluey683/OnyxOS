@@ -59,7 +59,7 @@ try {
     # setup-msys2 can leave a freshly initialized UCRT64 shell without the
     # compiler group available; install and verify GCC inside the exact shell
     # used for the build before invoking QEMU's configure script.
-    $command = "set -e; export PATH=/ucrt64/bin:/usr/bin:\$PATH; pacman -S --needed --noconfirm mingw-w64-ucrt-x86_64-gcc; command -v gcc; gcc --version; command -v cc; cd '$sourceUnix'; mkdir -p build; cd build; ../configure --target-list=x86_64-softmmu --disable-gtk --disable-werror --disable-docs --disable-libnfs --disable-qga-vss --disable-sdl --disable-sdl-image --disable-dsound --enable-uwp --enable-xaudio2 --audio-drv-list=xaudio2; make -j2; strip --strip-unneeded qemu-system-x86_64.dll"
+    $command = "set -e; export PATH=/ucrt64/bin:/usr/bin:`$PATH; pacman -S --needed --noconfirm mingw-w64-ucrt-x86_64-gcc; command -v gcc; gcc --version; command -v cc; cd '$sourceUnix'; mkdir -p build; cd build; ../configure --target-list=x86_64-softmmu --disable-gtk --disable-werror --disable-docs --disable-libnfs --disable-qga-vss --disable-sdl --disable-sdl-image --disable-dsound --enable-uwp --enable-xaudio2 --audio-drv-list=xaudio2; make -j2; strip --strip-unneeded qemu-system-x86_64.dll"
     Write-Host 'Installing/verifying UCRT64 GCC, then configuring and compiling patched QEMU x64 (TCG)...' -ForegroundColor Cyan
     & $shell -defterm -no-start -ucrt64 -c $command
     if ($LASTEXITCODE -ne 0) { throw "QEMU UWP compilation failed with exit code $LASTEXITCODE." }
