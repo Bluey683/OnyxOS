@@ -49,49 +49,35 @@
       <WarningLevel>Level4</WarningLevel>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;NOMINMAX;UNICODE;_UNICODE;WINVER=0x0A00;_WIN32_WINNT=0x0A00;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir)src;$(ProjectDir)Generated Files\src;$(ProjectDir)src\vm;$(ProjectDir)src\downloads;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp14</LanguageStandard>
-      <CompileAsWinRT>true</CompileAsWinRT>
-      <ConformanceMode>false</ConformanceMode>
+      <AdditionalIncludeDirectories>$(ProjectDir)src;$(ProjectDir)src\vm;$(ProjectDir)src\downloads;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <CompileAsWinRT>false</CompileAsWinRT>
+      <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
-      <AdditionalDependencies>d3d11.lib;dxgi.lib;d3dcompiler.lib;windowsapp.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3d11.lib;dxgi.lib;windowsapp.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\App.cpp">
+      <CompileAsWinRT>true</CompileAsWinRT>
+      <LanguageStandard>stdcpp14</LanguageStandard>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <ConformanceMode>false</ConformanceMode>
+    </ClCompile>
     <ClCompile Include="src\OnyxLogger.cpp">
       <CompileAsWinRT>true</CompileAsWinRT>
       <LanguageStandard>stdcpp14</LanguageStandard>
-      <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="src\App.xaml.cpp">
-      <DependentUpon>App.xaml</DependentUpon>
-      <CompileAsWinRT>true</CompileAsWinRT>
-      <LanguageStandard>stdcpp14</LanguageStandard>
       <ConformanceMode>false</ConformanceMode>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="src\\vm\\VirtualMachine.cpp"><CompileAsWinRT>false</CompileAsWinRT><LanguageStandard>stdcpp20</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
-    <ClCompile Include="src\\graphics\\QemuD3DRenderer.cpp"><CompileAsWinRT>true</CompileAsWinRT><LanguageStandard>stdcpp14</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
-    <ClCompile Include="src\\vm\\QemuHostAdapter.cpp"><CompileAsWinRT>false</CompileAsWinRT><LanguageStandard>stdcpp20</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
-    <ClCompile Include="src\\vm\\QemuInputBridge.cpp"><CompileAsWinRT>false</CompileAsWinRT><LanguageStandard>stdcpp20</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
-    <ClCompile Include="src\\vm\\VhdxProvisioner.cpp"><CompileAsWinRT>false</CompileAsWinRT><LanguageStandard>stdcpp20</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
-    <ClCompile Include="src\\downloads\\OsImageDownloader.cpp"><CompileAsWinRT>false</CompileAsWinRT><LanguageStandard>stdcpp20</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader></ClCompile>
-    <ClCompile Include="src\MainPage.xaml.cpp">
-      <DependentUpon>MainPage.xaml</DependentUpon>
-      <CompileAsWinRT>true</CompileAsWinRT><LanguageStandard>stdcpp14</LanguageStandard><ConformanceMode>false</ConformanceMode><PrecompiledHeader>NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="src\GuestPage.xaml.cpp">
-      <DependentUpon>GuestPage.xaml</DependentUpon>
-      <CompileAsWinRT>true</CompileAsWinRT><LanguageStandard>stdcpp14</LanguageStandard><ConformanceMode>false</ConformanceMode><PrecompiledHeader>NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="src\InstallerPage.xaml.cpp">
-      <DependentUpon>InstallerPage.xaml</DependentUpon>
-      <CompileAsWinRT>true</CompileAsWinRT><LanguageStandard>stdcpp14</LanguageStandard><ConformanceMode>false</ConformanceMode><PrecompiledHeader>NotUsing</PrecompiledHeader>
-    </ClCompile>
+    <ClCompile Include="src\vm\VirtualMachine.cpp" />
+    <ClCompile Include="src\vm\QemuHostAdapter.cpp" />
+    <ClCompile Include="src\vm\QemuInputBridge.cpp" />
+    <ClCompile Include="src\vm\VhdxProvisioner.cpp" />
+    <ClCompile Include="src\downloads\OsImageDownloader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\vm\VirtualMachine.h" />
@@ -101,41 +87,28 @@
     <ClInclude Include="src\downloads\OsImageDownloader.h" />
     <ClInclude Include="src\OnyxLogger.h" />
     <ClInclude Include="src\OnyxNativeLog.h" />
-    <ClInclude Include="src\App.xaml.h"><DependentUpon>App.xaml</DependentUpon></ClInclude>
-    <ClInclude Include="src\MainPage.xaml.h"><DependentUpon>MainPage.xaml</DependentUpon></ClInclude>
-    <ClInclude Include="src\GuestPage.xaml.h"><DependentUpon>GuestPage.xaml</DependentUpon></ClInclude>
-    <ClInclude Include="src\InstallerPage.xaml.h"><DependentUpon>InstallerPage.xaml</DependentUpon></ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <!-- Package the exact x64/UWP QEMU host DLL at the package root so
-         LoadPackagedLibrary(L"qemu-system-x86_64.dll") can resolve it. -->
     <Content Include="Dependencies\Qemu\qemu-system-x86_64.dll">
-      <Link>%(Filename)%(Extension)</Link>
+      <Link>qemu-system-x86_64.dll</Link>
       <DeploymentContent>true</DeploymentContent>
     </Content>
-    <!-- Keep every matching upstream runtime DLL beside the QEMU host DLL. -->
     <Content Include="Dependencies\Runtime\*.dll">
       <Link>%(Filename)%(Extension)</Link>
       <DeploymentContent>true</DeploymentContent>
     </Content>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="graphics\shaders\onyxos.hlsl">
-      <Link>Shaders\onyxos.hlsl</Link>
+    <Content Include="qemu\**\*">
+      <Link>qemu\%(RecursiveDir)%(Filename)%(Extension)</Link>
       <DeploymentContent>true</DeploymentContent>
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <Page Include="src\App.xaml"><Generator>MSBuild:Compile</Generator><SubType>Designer</SubType></Page>
-    <Page Include="src\MainPage.xaml"><Generator>MSBuild:Compile</Generator><SubType>Designer</SubType></Page>
-    <Page Include="src\GuestPage.xaml"><Generator>MSBuild:Compile</Generator><SubType>Designer</SubType></Page>
-    <Page Include="src\InstallerPage.xaml"><Generator>MSBuild:Compile</Generator><SubType>Designer</SubType></Page>
     <AppxManifest Include="Package.appxmanifest" />
-    <Image Include="Assets\\StoreLogo.png" />
-    <Image Include="Assets\\Square150x150Logo.png" />
-    <Image Include="Assets\\Square44x44Logo.png" />
-    <Image Include="Assets\\Wide310x150Logo.png" />
-    <Image Include="Assets\\SplashScreen.png" />
+    <Image Include="Assets\StoreLogo.png" />
+    <Image Include="Assets\Square150x150Logo.png" />
+    <Image Include="Assets\Square44x44Logo.png" />
+    <Image Include="Assets\Wide310x150Logo.png" />
+    <Image Include="Assets\SplashScreen.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />
