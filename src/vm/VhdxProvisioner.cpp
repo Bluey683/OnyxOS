@@ -3,6 +3,7 @@
 #include <windows.h>
 #include <fileapifromapp.h>
 #include <winrt/Windows.Storage.h>
+#include <winrt/Windows.Foundation.h>
 #include <cstdint>
 #include <string>
 
@@ -75,6 +76,23 @@ namespace vm
     {
         if (profileId != "windows11" || !EnsureDevelopmentFilesDirectories()) return {};
         const auto path = Windows11Path(L"Disks\\Windows11-22H2.qcow2");
+        if (!IsRegularFile(path))
+        {
+            // Seed LocalState only once. Never overwrite an existing guest disk during app updates.
+            try
+            {
+                const auto source = winrt::Windows::Storage::StorageFile::GetFileFromApplicationUriAsync(
+                    winrt::Windows::Foundation::Uri(L"ms-appx:///Windows11-22H2-template.qcow2")).get();
+                const auto folder = winrt::Windows::Storage::StorageFolder::GetFolderFromPathAsync(
+                    Windows11Path(L"Disks")).get();
+                source.CopyAsync(folder, L"Windows11-22H2.qcow2",
+                    winrt::Windows::Storage::NameCollisionOption::failIfExists).get();
+            }
+            catch (...)
+            {
+                return {};
+            }
+        }
         return IsRegularFile(path) && IsValidQcow2File(path) ? path : std::wstring{};
     }
 
