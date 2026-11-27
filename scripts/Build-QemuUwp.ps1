@@ -56,17 +56,16 @@ try {
     if (-not $?) { throw 'Applying the QEMU UWP block alignment fix failed.' }
 
     $sourceUnix = ConvertTo-MsysPath $source
-    # QEMU's UWP overlay hardcodes an MSYS POSIX pkg-config path in its Meson
-    # Windows cross file. Meson runs as native Windows Python, so replace it
-    # with a Windows executable path before configuration.
+    # Meson runs through native Windows Python, so use a Windows pkg-config path.
     $mesonWindowsFile = Join-Path $source 'configs/meson/windows.txt'
-    if (Test-Path -LiteralPath $mesonWindowsFile) {
-        $mesonWindowsText = Get-Content -LiteralPath $mesonWindowsFile -Raw
-        $pkgConfigWindows = (Join-Path $MSYS2Root 'ucrt64/bin/pkg-config.exe').Replace('\\','/')
-        $mesonWindowsText = [regex]::Replace($mesonWindowsText, '(?m)^\s*pkgconfig\s*=\s*.*    # setup-msys2 can leave a freshly initialized UCRT64 shell without the
-    # compiler group available; install and verify GCC inside the exact shell
-    # used for the build before invoking QEMU's configure script.
-    $command = "set -e; export PATH=/ucrt64/bin:/usr/bin:`$PATH; pacman -S --needed --noconfirm mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-python mingw-w64-ucrt-x86_64-ninja mingw-w64-ucrt-x86_64-pkgconf mingw-w64-ucrt-x86_64-glib2; command -v pkg-config; pkg-config --modversion glib-2.0; export PKG_CONFIG=/ucrt64/bin/pkg-config; test -x /ucrt64/bin/pkg-config.exe; pkg-config --modversion glib-2.0; command -v ninja; ninja --version; command -v gcc; gcc --version; command -v cc; command -v python; python --version; cd '$sourceUnix'; mkdir -p build; cd build; ../configure --python=/ucrt64/bin/python.exe --target-list=x86_64-softmmu --disable-gtk --disable-werror --disable-docs --disable-libnfs --disable-qga-vss --disable-sdl --disable-sdl-image --disable-dsound --enable-uwp --enable-xaudio2 --audio-drv-list=xaudio2; make -j2; strip --strip-unneeded qemu-system-x86_64.dll"
+    if (-not (Test-Path -LiteralPath $mesonWindowsFile)) { throw "Meson Windows cross file not found: $mesonWindowsFile" }
+    $mesonWindowsText = Get-Content -LiteralPath $mesonWindowsFile -Raw
+    $pkgConfigWindows = Join-Path $MSYS2Root 'ucrt64/bin/pkg-config.exe'
+    $pkgConfigWindows = $pkgConfigWindows.Replace('\','/')
+    $mesonWindowsText = [regex]::Replace($mesonWindowsText, '(?m)^\s*pkgconfig\s*=\s*.*$', "pkgconfig = '$pkgConfigWindows'")
+    Set-Content -LiteralPath $mesonWindowsFile -Value $mesonWindowsText -Encoding utf8
+    # Install and verify build tools in the same UCRT64 shell.
+    $command = "set -e; export PATH=/ucrt64/bin:/usr/bin:`$PATH; pacman -S --needed --noconfirm mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-python mingw-w64-ucrt-x86_64-ninja mingw-w64-ucrt-x86_64-pkgconf mingw-w64-ucrt-x86_64-glib2; command -v pkg-config; pkg-config --modversion glib-2.0; command -v ninja; ninja --version; command -v gcc; gcc --version; command -v python; python --version; cd '$sourceUnix'; mkdir -p build; cd build; ../configure --python=/ucrt64/bin/python.exe --target-list=x86_64-softmmu --disable-gtk --disable-werror --disable-docs --disable-libnfs --disable-qga-vss --disable-sdl --disable-sdl-image --disable-dsound --enable-uwp --enable-xaudio2 --audio-drv-list=xaudio2; make -j2; strip --strip-unneeded qemu-system-x86_64.dll"
     Write-Host 'Installing/verifying UCRT64 GCC, Python, Ninja, pkg-config and GLib, then configuring and compiling patched QEMU x64 (TCG)...' -ForegroundColor Cyan
     & $shell -defterm -no-start -ucrt64 -c $command
     if ($LASTEXITCODE -ne 0) { throw "QEMU UWP compilation failed with exit code $LASTEXITCODE." }
