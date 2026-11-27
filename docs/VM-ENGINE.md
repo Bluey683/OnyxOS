@@ -20,13 +20,13 @@ and a bypass would not make the configuration supported or guarantee stability.
     LocalState/
     ├── Windows11/
     │   ├── ISO/Windows11-22H2-x64.iso
-    │   ├── Disks/Windows11-22H2.vhdx
+    │   ├── Disks/Windows11-22H2.qcow2
     │   ├── Configurations/
     │   └── State/
     └── Logs/
 
-The ISO is installation media; the VHDX is persistent guest storage. Automatic
-VHDX creation and end-to-end install are not implemented yet.
+The ISO is installation media; the QCOW2 file is persistent guest storage.
+Automatic QCOW2 creation and end-to-end install are not implemented yet.
 
 ## TCG JIT
 
@@ -41,4 +41,4 @@ option set must be checked against the exact upstream QEMU-UWP-Host build.
 ## Status
 
 CoreWindow startup, guest boot, frame presentation, TPM 2.0, Secure Boot,
-VHDX creation, and full device integration still require build and Xbox testing.
+QCOW2 creation, and full device integration still require build and Xbox testing.
