@@ -4,7 +4,7 @@
          xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest"
          xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
          IgnorableNamespaces="uap mp rescap">
-  <Identity Name="Bluey683.OnyxOS" Publisher="CN=Bluey683" Version="0.2.1.0" ProcessorArchitecture="x64" />
+  <Identity Name="Bluey683.OnyxOS" Publisher="CN=Bluey683" Version="0.2.2.0" ProcessorArchitecture="x64" />
   <mp:PhoneIdentity PhoneProductId="7d7c4f2a-6c19-4a7b-9a1f-8c4e3b2d1a60" PhonePublisherId="00000000-0000-0000-0000-000000000000" />
   <Properties>
     <DisplayName>OnyxOS</DisplayName>
@@ -13,14 +13,13 @@
   </Properties>
   <Dependencies>
     <TargetDeviceFamily Name="Windows.Universal" MinVersion="10.0.19041.0" MaxVersionTested="10.0.26100.0" />
-    <PackageDependency Name="Microsoft.VCLibs.140.00"
-                       MinVersion="14.0.30704.0"
-                       Publisher="CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US" />
+    <PackageDependency Name="Microsoft.VCLibs.140.00" MinVersion="14.0.30704.0"
+      Publisher="CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US" />
   </Dependencies>
   <Resources><Resource Language="pt-BR" /></Resources>
   <Applications>
-    <Application Id="App" Executable="OnyxOS.exe" EntryPoint="OnyxOS.App">
-      <uap:VisualElements DisplayName="OnyxOS" Description="OnyxOS Virtual Machine Center" BackgroundColor="#101820" Square150x150Logo="Assets\Square150x150Logo.png" Square44x44Logo="Assets\Square44x44Logo.png">
+    <Application Id="App" Executable="OnyxOS.exe" EntryPoint="App">
+      <uap:VisualElements DisplayName="OnyxOS" Description="OnyxOS CoreWindow virtual machine host" BackgroundColor="#101820" Square150x150Logo="Assets\Square150x150Logo.png" Square44x44Logo="Assets\Square44x44Logo.png">
         <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png" />
         <uap:SplashScreen Image="Assets\SplashScreen.png" />
       </uap:VisualElements>
@@ -29,9 +28,7 @@
   <Capabilities>
     <Capability Name="internetClient" />
     <Capability Name="privateNetworkClientServer" />
-    <!-- QEMU TCG generates executable translation blocks inside the UWP app. -->
     <rescap:Capability Name="codeGeneration" />
-    <!-- Request the Xbox expanded memory/CPU resource partition for the VM. -->
     <rescap:Capability Name="expandedResources" />
   </Capabilities>
 </Package>
