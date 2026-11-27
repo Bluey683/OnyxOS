@@ -131,6 +131,9 @@ try {
     if (!$entries.ContainsKey('qemu/bios-256k.bin') -or $entries['qemu/bios-256k.bin'] -le 0) {
         throw "The final APPX does not contain qemu/bios-256k.bin; QEMU has no packaged x86 BIOS."
     }
+    if (!$entries.ContainsKey('qemu/edk2-x86_64-code.fd') -or $entries['qemu/edk2-x86_64-code.fd'] -le 0) {
+        throw "The final APPX does not contain qemu/edk2-x86_64-code.fd; x86_64 UEFI guests cannot boot."
+    }
 
     $missing = @()
     foreach ($file in $runtimeFiles) {
@@ -144,7 +147,7 @@ try {
     if ($missing.Count) {
         throw ("APPX missing runtime DLLs: " + ($missing -join ', '))
     }
-    Write-Host "Verified HLSL, QEMU host and $($runtimeFiles.Count) runtime DLLs inside APPX." -ForegroundColor Green
+    Write-Host "Verified HLSL, QEMU host, BIOS, x86_64 UEFI firmware and $($runtimeFiles.Count) runtime DLLs inside APPX." -ForegroundColor Green
 } finally {
     $zip.Dispose()
 }
