@@ -8,7 +8,7 @@ namespace vm
     // Creates and resolves the Windows 11 ISO, QCOW2 and state folders in app-private LocalState.
     bool EnsureDevelopmentFilesDirectories();
     std::wstring FindDevelopmentFilesDisk(const std::string& profileId);
-    std::wstring FindDevelopmentFilesIso(const std::string& profileId);
+    std::wstring FindDevelopmentFilesIso(const std::string& profileId); // Returns the first valid *.iso in LocalState/Windows11/ISO.
     // Checks the QCOW2 magic header before passing a disk image to QEMU.
     bool IsValidQcow2File(const std::wstring& path);
     bool IsRecognizedIsoFile(const std::wstring& path);
