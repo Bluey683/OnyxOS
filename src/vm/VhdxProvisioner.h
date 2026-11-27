@@ -5,7 +5,7 @@ namespace onyx
 {
 namespace vm
 {
-    // Looks for the profile disk in the Xbox Dev Mode DevelopmentFiles area.
+    // Creates and resolves the Windows 11 ISO, VHDX and state folders in app-private LocalState.
     bool EnsureDevelopmentFilesDirectories();
     std::wstring FindDevelopmentFilesVhdx(const std::string& profileId);
     std::wstring FindDevelopmentFilesIso(const std::string& profileId);
