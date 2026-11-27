@@ -20,7 +20,8 @@
     "configurationDirectory": "LocalState/Windows11/Configurations",
     "stateDirectory": "LocalState/Windows11/State",
     "logDirectory": "LocalState/Logs",
-    "installerIso": "Windows11-22H2-x64.iso",
+    "installerIso": "*.iso",
+    "installerIsoSelection": "first valid ISO in LocalState/Windows11/ISO",
     "virtualDisk": "Windows11-22H2.qcow2",
     "diskFormat": "qcow2"
   },
