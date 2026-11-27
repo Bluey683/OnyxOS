@@ -97,7 +97,7 @@ jobs:
 
       - name: Build patched QEMU DLL, compile and package OnyxOS
         shell: pwsh
-        run: ./Build.ps1 -Mode GitHubActions -Configuration Release -Architecture x64 -BuildQemuFromSource -MSYS2Root "$env:RUNNER_TEMP/msys64"
+        run: ./Build.ps1 -Mode GitHubActions -Configuration Release -Architecture x64 -BuildQemuFromSource -MSYS2Root "C:\msys64"
 
       - name: Sign APPX
         if: github.event_name != 'pull_request'
