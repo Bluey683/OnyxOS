@@ -1,4 +1,4 @@
-# Windows 11 ISO, VHDX and TCG/JIT
+# Windows 11 ISO, QCOW2 and TCG/JIT
 
 ## Windows 11 installer ISO
 
@@ -10,7 +10,7 @@ instead of pretending that the page itself is an ISO file.
 
 Save the ISO as:
 
-    LocalState/Windows11/ISO/Windows11.iso
+    LocalState/Windows11/ISO/Windows11-22H2-x64.iso
 
 The storage provisioner checks the ISO9660 CD001 volume descriptor before
 returning the image path to the VM configuration.
@@ -19,12 +19,12 @@ returning the image path to the VM configuration.
 
 The persistent guest disk path is:
 
-    LocalState/Windows11/Disks/Windows11.vhdx
+    LocalState/Windows11/Disks/Windows11-22H2.qcow2
 
-An existing VHDX is checked for its VHDX signatures before use. Automatic
-VHDX creation is not implemented yet; the app must not create an empty file
-and misrepresent it as a bootable disk. A UWP-compatible VHDX creator still
-needs to be integrated and tested.
+QCOW2 images are validated using their QFI\xfb magic header before use.
+Automatic QCOW2 creation is not implemented yet; the app must not create an
+empty file and misrepresent it as a bootable disk. A UWP-compatible QCOW2
+creator or QEMU image-creation path still needs to be integrated and tested.
 
 ## Logs
 
