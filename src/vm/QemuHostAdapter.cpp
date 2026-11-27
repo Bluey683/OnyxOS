@@ -5,6 +5,7 @@
 #include <cstring>
 #include <algorithm>
 #include <thread>
+#include <cstdio>
 #include <roapi.h>
 
 namespace onyx::vm
@@ -20,6 +21,98 @@ namespace onyx::vm
         }
         std::uint32_t PackBgra(std::uint32_t r, std::uint32_t g, std::uint32_t b)
         { return 0xff000000u | ((r & 0xffu) << 16) | ((g & 0xffu) << 8) | (b & 0xffu); }
+
+        std::wstring Utf8ToWide(const std::string& value)
+        {
+            if (value.empty()) return {};
+            const int count = MultiByteToWideChar(CP_UTF8, 0, value.c_str(), -1, nullptr, 0);
+            if (count <= 1) return {};
+            std::wstring result(static_cast<std::size_t>(count), L'\0');
+            MultiByteToWideChar(CP_UTF8, 0, value.c_str(), -1, &result[0], count);
+            result.resize(static_cast<std::size_t>(count - 1));
+            return result;
+        }
+
+        std::string WideToUtf8(const std::wstring& value)
+        {
+            if (value.empty()) return {};
+            const int count = WideCharToMultiByte(CP_UTF8, 0, value.c_str(), -1, nullptr, 0, nullptr, nullptr);
+            if (count <= 1) return {};
+            std::string result(static_cast<std::size_t>(count), '\0');
+            WideCharToMultiByte(CP_UTF8, 0, value.c_str(), -1, &result[0], count, nullptr, nullptr);
+            result.resize(static_cast<std::size_t>(count - 1));
+            return result;
+        }
+
+        void PrepareQemuRuntime(std::vector<std::string>& arguments)
+        {
+            wchar_t executablePath[MAX_PATH + 1]{};
+            const DWORD pathLength = GetModuleFileNameW(nullptr, executablePath, ARRAYSIZE(executablePath));
+            if (pathLength == 0 || pathLength >= ARRAYSIZE(executablePath))
+            {
+                OnyxOS::WriteQemuLogNative(L"WARNING: unable to resolve packaged OnyxOS path; QEMU firmware paths remain relative.");
+                return;
+            }
+
+            std::wstring packageRoot(executablePath, pathLength);
+            const auto slash = packageRoot.find_last_of(L"/\\");
+            if (slash == std::wstring::npos) return;
+            packageRoot.resize(slash);
+            const std::wstring qemuDirectory = packageRoot + L"\\qemu";
+
+            // UWP's current directory is not a reliable firmware search root.
+            // Resolve -L and -bios against the actual installed package.
+            for (std::size_t i = 0; i + 1 < arguments.size(); ++i)
+            {
+                if (arguments[i] == "-L")
+                    arguments[i + 1] = WideToUtf8(qemuDirectory);
+                else if (arguments[i] == "-bios")
+                {
+                    std::wstring firmware = Utf8ToWide(arguments[i + 1]);
+                    if (firmware.compare(0, 5, L"qemu\\") == 0 ||
+                        firmware.compare(0, 5, L"qemu/") == 0)
+                        firmware.erase(0, 5);
+                    if (!firmware.empty() && firmware.find(L":\\") == std::wstring::npos &&
+                        firmware[0] != L'\\' && firmware[0] != L'/')
+                        arguments[i + 1] = WideToUtf8(qemuDirectory + L"\\" + firmware);
+                }
+            }
+            OnyxOS::WriteQemuLogNative((L"QEMU package root: " + packageRoot).c_str());
+            OnyxOS::WriteQemuLogNative((L"QEMU firmware directory: " + qemuDirectory).c_str());
+
+            // Capture native QEMU diagnostics in LocalState, including errors
+            // emitted before the host log callback becomes active.
+            for (std::size_t i = 0; i + 1 < arguments.size(); ++i)
+            {
+                if (arguments[i] != "-drive") continue;
+                const std::string& drive = arguments[i + 1];
+                const std::string key = "file=";
+                const auto fileAt = drive.find(key);
+                if (fileAt == std::string::npos) continue;
+                const auto end = drive.find(',', fileAt + key.size());
+                const std::wstring diskPath = Utf8ToWide(drive.substr(fileAt + key.size(),
+                    end == std::string::npos ? std::string::npos : end - fileAt - key.size()));
+                const std::wstring marker = L"\\Windows11\\Disks\\";
+                const auto localStateEnd = diskPath.find(marker);
+                if (localStateEnd == std::wstring::npos) break;
+                const std::wstring logPath = diskPath.substr(0, localStateEnd) + L"\\qemu-runtime.log";
+                FILE* stream = nullptr;
+                const errno_t stderrResult = _wfreopen_s(&stream, logPath.c_str(), L"w", stderr);
+                FILE* stdoutStream = nullptr;
+                const errno_t stdoutResult = _wfreopen_s(&stdoutStream, logPath.c_str(), L"a", stdout);
+                if (stderrResult == 0 && stdoutResult == 0)
+                {
+                    setvbuf(stderr, nullptr, _IONBF, 0);
+                    setvbuf(stdout, nullptr, _IONBF, 0);
+                    OnyxOS::WriteQemuLogNative((L"QEMU stdout/stderr redirected to: " + logPath).c_str());
+                }
+                else
+                    OnyxOS::WriteQemuLogNative((L"WARNING: could not redirect QEMU stdout/stderr; errno=" +
+                        std::to_wstring(stderrResult ? stderrResult : stdoutResult)).c_str());
+                break;
+            }
+        }
+
         bool ConvertQemuFrame(const void* pixels, int width, int height, int stride, int format, std::vector<std::uint32_t>& output)
         {
             if (!pixels || width <= 0 || height <= 0 || stride <= 0 ||
@@ -203,6 +296,7 @@ namespace onyx::vm
         // the executable name, followed by the command-line options.
         if (arguments.empty() || arguments.front() != "qemu-system-x86_64")
             arguments.insert(arguments.begin(), "qemu-system-x86_64");
+        PrepareQemuRuntime(arguments);
         std::vector<const char*> argv;
         argv.reserve(arguments.size());
         for (const auto& arg : arguments) argv.push_back(arg.c_str());
