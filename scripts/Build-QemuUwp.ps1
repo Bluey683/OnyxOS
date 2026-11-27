@@ -82,26 +82,3 @@ try {
 finally {
     if (Test-Path -LiteralPath $work) { Remove-Item -LiteralPath $work -Recurse -Force -ErrorAction SilentlyContinue }
 }
-, "pkgconfig = '$pkgConfigWindows'")
-        Set-Content -LiteralPath $mesonWindowsFile -Value $mesonWindowsText -Encoding utf8
-    } else { throw "Meson Windows cross file not found: $mesonWindowsFile" }
-    # setup-msys2 can leave a freshly initialized UCRT64 shell without the
-    # compiler group available; install and verify GCC inside the exact shell
-    # used for the build before invoking QEMU's configure script.
-    $command = "set -e; export PATH=/ucrt64/bin:/usr/bin:`$PATH; pacman -S --needed --noconfirm mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-python mingw-w64-ucrt-x86_64-ninja mingw-w64-ucrt-x86_64-pkgconf mingw-w64-ucrt-x86_64-glib2; command -v pkg-config; pkg-config --modversion glib-2.0; export PKG_CONFIG=/ucrt64/bin/pkg-config; test -x /ucrt64/bin/pkg-config.exe; pkg-config --modversion glib-2.0; command -v ninja; ninja --version; command -v gcc; gcc --version; command -v cc; command -v python; python --version; cd '$sourceUnix'; mkdir -p build; cd build; ../configure --python=/ucrt64/bin/python.exe --target-list=x86_64-softmmu --disable-gtk --disable-werror --disable-docs --disable-libnfs --disable-qga-vss --disable-sdl --disable-sdl-image --disable-dsound --enable-uwp --enable-xaudio2 --audio-drv-list=xaudio2; make -j2; strip --strip-unneeded qemu-system-x86_64.dll"
-    Write-Host 'Installing/verifying UCRT64 GCC, Python, Ninja, pkg-config and GLib, then configuring and compiling patched QEMU x64 (TCG)...' -ForegroundColor Cyan
-    & $shell -defterm -no-start -ucrt64 -c $command
-    if ($LASTEXITCODE -ne 0) { throw "QEMU UWP compilation failed with exit code $LASTEXITCODE." }
-    if (-not (Test-Path -LiteralPath $qemuDll -PathType Leaf)) { throw 'QEMU build did not produce qemu-system-x86_64.dll.' }
-    $built = Get-Item -LiteralPath $qemuDll
-    if ($built.Length -lt 20000000) { throw "Compiled QEMU DLL is unexpectedly small: $($built.Length) bytes." }
-
-    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $destination) | Out-Null
-    Copy-Item -LiteralPath $qemuDll -Destination $destination -Force
-    $hash = (Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash
-    Write-Host "Patched QEMU UWP DLL staged: $destination ($($built.Length) bytes)" -ForegroundColor Green
-    Write-Host "SHA256: $hash" -ForegroundColor Green
-}
-finally {
-    if (Test-Path -LiteralPath $work) { Remove-Item -LiteralPath $work -Recurse -Force -ErrorAction SilentlyContinue }
-}
