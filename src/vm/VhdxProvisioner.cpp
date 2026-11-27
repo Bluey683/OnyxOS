@@ -2,6 +2,7 @@
 
 #include <windows.h>
 #include <fileapifromapp.h>
+#include <winrt/Windows.Storage.h>
 #include <cstdint>
 #include <string>
 
@@ -11,101 +12,87 @@ namespace vm
 {
     namespace
     {
-        const wchar_t* DiskNameForProfile(const std::string& id)
+        std::wstring LocalStatePath()
         {
-            if (id == "windows10") return L"Windows10.vhdx";
-            if (id == "windows11") return L"Windows11.vhdx";
-            if (id == "debian") return L"Debian.vhdx";
-            if (id == "ubuntu") return L"Ubuntu.vhdx";
-            if (id == "arch") return L"ArchLinux.vhdx";
-            if (id == "macos") return L"MacOS.vhdx";
-            return nullptr;
+            return winrt::Windows::Storage::ApplicationData::Current().LocalFolder().Path().c_str();
         }
 
-        std::wstring StatePathForProfile(const std::string& id)
+        std::wstring Windows11Path(const wchar_t* child)
         {
-            if (id.empty()) return {};
-            std::wstring path = L"D:\\DevelopmentFiles\\OnyxOS\\State\\";
-            path.append(id.begin(), id.end());
-            path += L".installed";
-            return path;
+            return LocalStatePath() + L"\\Windows11\\" + child;
+        }
+
+        bool EnsureDirectory(const std::wstring& path)
+        {
+            if (CreateDirectoryFromAppW(path.c_str(), nullptr))
+                return true;
+            if (GetLastError() != ERROR_ALREADY_EXISTS)
+                return false;
+            WIN32_FILE_ATTRIBUTE_DATA data{};
+            return GetFileAttributesExFromAppW(path.c_str(), GetFileExInfoStandard, &data) &&
+                (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
         }
 
         bool ReadSignature(HANDLE file, std::uint64_t offset, const char* expected)
         {
-            LARGE_INTEGER position;
+            LARGE_INTEGER position{};
             position.QuadPart = static_cast<LONGLONG>(offset);
             if (!SetFilePointerEx(file, position, nullptr, FILE_BEGIN)) return false;
-            char actual[8] = {};
+            char actual[4]{};
             DWORD read = 0;
-            return ReadFile(file, actual, 4, &read, nullptr) &&
-                read == 4 && actual[0] == expected[0] &&
+            return ReadFile(file, actual, sizeof(actual), &read, nullptr) &&
+                read == sizeof(actual) && actual[0] == expected[0] &&
                 actual[1] == expected[1] && actual[2] == expected[2] &&
                 actual[3] == expected[3];
         }
+
+        bool IsRegularFile(const std::wstring& path)
+        {
+            WIN32_FILE_ATTRIBUTE_DATA data{};
+            return GetFileAttributesExFromAppW(path.c_str(), GetFileExInfoStandard, &data) &&
+                !(data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY);
+        }
     }
 
+    // Creates the private LocalState layout used only by the Windows 11 guest.
     bool EnsureDevelopmentFilesDirectories()
     {
-        const wchar_t* directories[] = {
-            L"D:\\DevelopmentFiles",
-            L"D:\\DevelopmentFiles\\OnyxOS",
-            L"D:\\DevelopmentFiles\\OnyxOS\\VHDX",
-            L"D:\\DevelopmentFiles\\OnyxOS\\ISO",
-            L"D:\\DevelopmentFiles\\OnyxOS\\State"
+        const auto root = LocalStatePath();
+        const std::wstring directories[] = {
+            root + L"\\Windows11",
+            Windows11Path(L"ISO"),
+            Windows11Path(L"Disks"),
+            Windows11Path(L"State"),
+            Windows11Path(L"Configurations"),
+            root + L"\\Logs"
         };
-        for (const auto directory : directories)
-        {
-            if (CreateDirectoryFromAppW(directory, nullptr))
-                continue;
-            if (GetLastError() != ERROR_ALREADY_EXISTS)
-                return false;
-            WIN32_FILE_ATTRIBUTE_DATA attributesData{};
-            const bool attributesOk = GetFileAttributesExFromAppW(directory, GetFileExInfoStandard, &attributesData) != FALSE;
-            const DWORD attributes = attributesOk ? attributesData.dwFileAttributes : INVALID_FILE_ATTRIBUTES;
-            if (attributes == INVALID_FILE_ATTRIBUTES ||
-                !(attributes & FILE_ATTRIBUTE_DIRECTORY))
-                return false;
-        }
+        for (const auto& directory : directories)
+            if (!EnsureDirectory(directory)) return false;
         return true;
     }
 
     std::wstring FindDevelopmentFilesVhdx(const std::string& profileId)
     {
-        const wchar_t* filename = DiskNameForProfile(profileId);
-        if (!filename) return {};
+        if (profileId != "windows11" || !EnsureDevelopmentFilesDirectories()) return {};
+        const auto path = Windows11Path(L"Disks\\Windows11.vhdx");
+        return IsRegularFile(path) && IsValidVhdxFile(path) ? path : std::wstring{};
+    }
 
-        const wchar_t* roots[] = {
-            L"D:\\DevelopmentFiles\\OnyxOS\\VHDX\\",
-            L"D:\\DevelopmentFiles\\OnyxOS\\",
-            L"D:\\DevelopmentFiles\\"
-        };
-        for (const auto root : roots)
-        {
-            std::wstring candidate(root);
-            candidate += filename;
-            WIN32_FILE_ATTRIBUTE_DATA attributesData{};
-            const bool attributesOk = GetFileAttributesExFromAppW(candidate.c_str(), GetFileExInfoStandard, &attributesData) != FALSE;
-            const DWORD attributes = attributesOk ? attributesData.dwFileAttributes : INVALID_FILE_ATTRIBUTES;
-            if (attributes != INVALID_FILE_ATTRIBUTES &&
-                !(attributes & FILE_ATTRIBUTE_DIRECTORY) &&
-                IsValidVhdxFile(candidate))
-                return candidate;
-        }
-        return {};
+    std::wstring FindDevelopmentFilesIso(const std::string& profileId)
+    {
+        if (profileId != "windows11" || !EnsureDevelopmentFilesDirectories()) return {};
+        const auto path = Windows11Path(L"ISO\\Windows11.iso");
+        return IsRecognizedIsoFile(path) ? path : std::wstring{};
     }
 
     bool IsValidVhdxFile(const std::wstring& path)
     {
         if (path.empty()) return false;
         HANDLE file = CreateFile2FromAppW(path.c_str(), GENERIC_READ,
-            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-            OPEN_EXISTING, nullptr);
+            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, OPEN_EXISTING, nullptr);
         if (file == INVALID_HANDLE_VALUE) return false;
-
-        LARGE_INTEGER size = {};
-        const bool largeEnough = GetFileSizeEx(file, &size) &&
-            size.QuadPart >= 3ll * 1024ll * 1024ll;
+        LARGE_INTEGER size{};
+        const bool largeEnough = GetFileSizeEx(file, &size) && size.QuadPart >= 3ll * 1024ll * 1024ll;
         const bool valid = largeEnough &&
             ReadSignature(file, 0, "vhdx") &&
             ReadSignature(file, 64ull * 1024ull, "head") &&
@@ -115,70 +102,23 @@ namespace vm
         return valid;
     }
 
-    std::wstring FindDevelopmentFilesIso(const std::string& profileId)
-    {
-        const wchar_t* filename = nullptr;
-        if (profileId == "windows10") filename = L"Windows10.iso";
-        else if (profileId == "windows11") filename = L"Windows11.iso";
-        else if (profileId == "debian") filename = L"Debian.iso";
-        else if (profileId == "ubuntu") filename = L"Ubuntu.iso";
-        else if (profileId == "arch") filename = L"ArchLinux.iso";
-        else if (profileId == "macos") filename = L"MacOS.iso";
-        if (!filename) return {};
-
-        const std::wstring roots[] = {
-            L"D:\\DevelopmentFiles\\OnyxOS\\ISO\\",
-            L"D:\\DevelopmentFiles\\OnyxOS\\",
-            L"D:\\DevelopmentFiles\\"
-        };
-        for (const auto& root : roots)
-        {
-            const std::wstring candidate = root + filename;
-            if (IsRecognizedIsoFile(candidate))
-                return candidate;
-        }
-
-        WIN32_FIND_DATAW data{};
-        const std::wstring pattern = L"D:\\DevelopmentFiles\\OnyxOS\\ISO\\*.iso";
-        HANDLE search = FindFirstFileExFromAppW(pattern.c_str(), FindExInfoBasic,
-            &data, FindExSearchNameMatch, nullptr, 0);
-        if (search != INVALID_HANDLE_VALUE)
-        {
-            do
-            {
-                if (!(data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
-                {
-                    const std::wstring candidate = roots[0] + data.cFileName;
-                    if (IsRecognizedIsoFile(candidate))
-                    {
-                        FindClose(search);
-                        return candidate;
-                    }
-                }
-            } while (FindNextFileW(search, &data));
-            FindClose(search);
-        }
-        return {};
-    }
-
     bool IsRecognizedIsoFile(const std::wstring& path)
     {
         if (path.empty()) return false;
         HANDLE file = CreateFile2FromAppW(path.c_str(), GENERIC_READ,
-            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-            OPEN_EXISTING, nullptr);
+            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, OPEN_EXISTING, nullptr);
         if (file == INVALID_HANDLE_VALUE) return false;
-        LARGE_INTEGER size = {};
+        LARGE_INTEGER size{};
         bool valid = GetFileSizeEx(file, &size) && size.QuadPart >= 17ll * 2048ll;
         if (valid)
         {
-            LARGE_INTEGER position;
+            LARGE_INTEGER position{};
             position.QuadPart = 16ll * 2048ll + 1ll;
             valid = SetFilePointerEx(file, position, nullptr, FILE_BEGIN);
-            char signature[5] = {};
+            char signature[5]{};
             DWORD read = 0;
-            valid = valid && ReadFile(file, signature, 5, &read, nullptr) &&
-                read == 5 && signature[0] == 'C' && signature[1] == 'D' &&
+            valid = valid && ReadFile(file, signature, sizeof(signature), &read, nullptr) &&
+                read == sizeof(signature) && signature[0] == 'C' && signature[1] == 'D' &&
                 signature[2] == '0' && signature[3] == '0' && signature[4] == '1';
         }
         CloseHandle(file);
@@ -187,36 +127,28 @@ namespace vm
 
     bool IsInstallationMarkedComplete(const std::string& profileId)
     {
-        const auto path = StatePathForProfile(profileId);
-        if (path.empty()) return false;
-        WIN32_FILE_ATTRIBUTE_DATA attributesData{};
-        const DWORD attributes = GetFileAttributesExFromAppW(path.c_str(), GetFileExInfoStandard, &attributesData)
-            ? attributesData.dwFileAttributes : INVALID_FILE_ATTRIBUTES;
-        return attributes != INVALID_FILE_ATTRIBUTES &&
-            !(attributes & FILE_ATTRIBUTE_DIRECTORY);
+        if (profileId != "windows11") return false;
+        return IsRegularFile(Windows11Path(L"State\\installation-complete.marker"));
     }
 
     bool MarkInstallationComplete(const std::string& profileId)
     {
-        const auto path = StatePathForProfile(profileId);
-        if (path.empty()) return false;
-        CreateDirectoryFromAppW(L"D:\\DevelopmentFiles\\OnyxOS", nullptr);
-        CreateDirectoryFromAppW(L"D:\\DevelopmentFiles\\OnyxOS\\State", nullptr);
+        if (profileId != "windows11" || !EnsureDevelopmentFilesDirectories()) return false;
+        const auto path = Windows11Path(L"State\\installation-complete.marker");
         HANDLE file = CreateFile2FromAppW(path.c_str(), GENERIC_WRITE, 0, CREATE_ALWAYS, nullptr);
         if (file == INVALID_HANDLE_VALUE) return false;
-        const char marker[] = "OnyxOS installation confirmed by user.\r\n";
+        const char marker[] = "Windows 11 installation confirmed by user.\r\n";
         DWORD written = 0;
-        const bool ok = WriteFile(file, marker,
-            static_cast<DWORD>(sizeof(marker) - 1), &written, nullptr) &&
+        const bool ok = WriteFile(file, marker, static_cast<DWORD>(sizeof(marker) - 1), &written, nullptr) &&
             written == sizeof(marker) - 1;
         CloseHandle(file);
         return ok;
     }
+
     void ClearInstallationMark(const std::string& profileId)
     {
-        const auto path = StatePathForProfile(profileId);
-        if (!path.empty()) DeleteFileFromAppW(path.c_str());
+        if (profileId == "windows11")
+            DeleteFileFromAppW(Windows11Path(L"State\\installation-complete.marker").c_str());
     }
-
 }
 }
