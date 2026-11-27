@@ -11,7 +11,7 @@ permissions:
 
 concurrency:
   group: onyxos-xbox-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build-onyxos:
@@ -58,6 +58,7 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $fetchScript = Get-Content 'scripts/Fetch-QemuRuntime.ps1' -Raw
           $qemuBuildScript = Get-Content 'scripts/Build-QemuUwp.ps1' -Raw
+          if ($qemuBuildScript -notmatch 'clone --filter') { throw 'QEMU source build must use pinned Git clones.' }
           $alignmentScript = Get-Content 'scripts/Apply-QemuBlockAlignmentFix.ps1' -Raw
           $hostPin = '53d6af6314f535c4c71c4be269777a710063327b'
           $overlayPin = 'b9d726d9c4e1c06a5666178a267fd635d0e69e52'
