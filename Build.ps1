@@ -44,6 +44,9 @@ if (!$SkipQemuDownload) {
     if (!$?) { throw 'QEMU runtime download/staging failed.' }
 }
 if ($BuildQemuFromSource) {
+    $git = Get-Command git -ErrorAction SilentlyContinue
+    if (-not $git) { throw 'Git is required to clone the pinned QEMU and UWP overlay repositories.' }
+    Write-Host "Git: $(& $git.Source --version)" -ForegroundColor Cyan
     $qemuBuild=Join-Path $root 'scripts/Build-QemuUwp.ps1'
     if (!(Test-Path -LiteralPath $qemuBuild)) { throw 'scripts/Build-QemuUwp.ps1 not found.' }
     & $qemuBuild -RepositoryRoot $root -MSYS2Root $MSYS2Root
