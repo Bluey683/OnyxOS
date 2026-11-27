@@ -1,6 +1,7 @@
 #include <windows.h>
 #include <windows.applicationmodel.core.h>
 #include <windows.ui.core.h>
+#include <windows.foundation.h>
 #include <d3d11_1.h>
 #include <dxgi1_2.h>
 #include <string>
@@ -9,6 +10,7 @@
 
 using namespace Platform;
 using namespace Windows::ApplicationModel::Core;
+using namespace Windows::Foundation;
 using namespace Windows::UI::Core;
 
 namespace OnyxOS
@@ -16,7 +18,7 @@ namespace OnyxOS
     public ref class OnyxFrameworkView sealed : IFrameworkView
     {
     public:
-        virtual void Initialize(CoreApplicationView^)
+        virtual void Initialize(CoreApplicationView^ applicationView)
         {
             OutputDebugStringW(L"[OnyxOS] CoreApplication initialized.\n");
             OnyxLogger::Info(L"APP", L"CoreApplication initialized.");
@@ -40,7 +42,7 @@ namespace OnyxOS
             InitializeGraphics();
         }
 
-        virtual void Load(String^) {}
+        virtual void Load(String^ entryPoint) { (void)entryPoint; }
 
         virtual void Run()
         {
