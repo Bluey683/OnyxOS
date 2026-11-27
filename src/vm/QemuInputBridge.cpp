@@ -112,7 +112,7 @@ namespace onyx { namespace vm
         const auto bits=static_cast<std::uint32_t>(reading.Buttons);
         if (m_virtualKeyboardMode)
         {
-            // XAML handles controller focus navigation while the virtual keyboard is open.
+            // The host UI owns focus navigation while the virtual keyboard is open.
             m_previousButtons = bits;
             return;
         }
