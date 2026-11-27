@@ -71,33 +71,30 @@ namespace vm
         return true;
     }
 
-    std::wstring FindDevelopmentFilesVhdx(const std::string& profileId)
+    std::wstring FindDevelopmentFilesDisk(const std::string& profileId)
     {
         if (profileId != "windows11" || !EnsureDevelopmentFilesDirectories()) return {};
-        const auto path = Windows11Path(L"Disks\\Windows11.vhdx");
-        return IsRegularFile(path) && IsValidVhdxFile(path) ? path : std::wstring{};
+        const auto path = Windows11Path(L"Disks\\Windows11-22H2.qcow2");
+        return IsRegularFile(path) && IsValidQcow2File(path) ? path : std::wstring{};
     }
 
     std::wstring FindDevelopmentFilesIso(const std::string& profileId)
     {
         if (profileId != "windows11" || !EnsureDevelopmentFilesDirectories()) return {};
-        const auto path = Windows11Path(L"ISO\\Windows11.iso");
+        const auto path = Windows11Path(L"ISO\\Windows11-22H2-x64.iso");
         return IsRecognizedIsoFile(path) ? path : std::wstring{};
     }
 
-    bool IsValidVhdxFile(const std::wstring& path)
+    bool IsValidQcow2File(const std::wstring& path)
     {
         if (path.empty()) return false;
         HANDLE file = CreateFile2FromAppW(path.c_str(), GENERIC_READ,
             FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, OPEN_EXISTING, nullptr);
         if (file == INVALID_HANDLE_VALUE) return false;
         LARGE_INTEGER size{};
-        const bool largeEnough = GetFileSizeEx(file, &size) && size.QuadPart >= 3ll * 1024ll * 1024ll;
-        const bool valid = largeEnough &&
-            ReadSignature(file, 0, "vhdx") &&
-            ReadSignature(file, 64ull * 1024ull, "head") &&
-            ReadSignature(file, 128ull * 1024ull, "head") &&
-            ReadSignature(file, 192ull * 1024ull, "regi");
+        // QCOW2 v2/v3 headers are at least 72 bytes and start with QFI\xfb.
+        const bool largeEnough = GetFileSizeEx(file, &size) && size.QuadPart >= 72;
+        const bool valid = largeEnough && ReadSignature(file, 0, "QFI\xfb");
         CloseHandle(file);
         return valid;
     }
