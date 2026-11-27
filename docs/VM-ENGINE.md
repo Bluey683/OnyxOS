@@ -1,53 +1,58 @@
-# VM Engine
+# Windows 11 VM Engine
 
-The VM engine now prepares a more complete QEMU configuration for the six guest
-profiles while keeping the seven app entries inside one APPX package.
+OnyxOS has one guest profile: **Windows 11 x86-64**. The VM configuration
+prepares QEMU arguments; successful boot on Xbox has not yet been verified.
 
 ## Profile defaults
 
-- x86_64 guests on the QEMU `q35` machine.
-- QEMU TCG software emulation with two vCPUs.
-- 3072 MB guest RAM as a conservative starting point for the Xbox UWP memory budget.
-- VHDX virtual disk plus an installer ISO.
-- Virtio VGA, USB keyboard/tablet and user-mode networking arguments.
-- Per-guest ISO and VHDX paths under the app's LocalState directory.
+- QEMU q35 machine and max CPU model.
+- 2 vCPUs and 4096 MB configured guest RAM (subject to Xbox UWP limits).
+- QEMU TCG multi-threaded software translation.
+- TCG translation-block/JIT cache: 128 MB by default, configurable from 16 to
+  256 MB.
+- Installer ISO mounted as a read-only CD-ROM ahead of the VHDX boot device.
+- VHDX used as the persistent Windows 11 system disk.
+- Virtio VGA, USB keyboard/tablet, user-mode networking and XAudio2/HDA
+  arguments are prepared, but device integration still needs target testing.
 
-The current profile list is Windows 10, Windows 11, Debian, Ubuntu, Arch Linux
-and an experimental macOS placeholder. macOS remains disabled.
+## App-private storage
 
-## Storage layout
+LocalState contains the following layout:
 
-```
-LocalState/
-  ISO/
-  VHDX/
-  Configurations/
-  Logs/
-```
+    LocalState/
+    ├── Windows11/
+    │   ├── ISO/
+    │   │   └── Windows11.iso
+    │   ├── Disks/
+    │   │   └── Windows11.vhdx
+    │   ├── Configurations/
+    │   └── State/
+    │       └── installation-complete.marker
+    └── Logs/
+        ├── OnyxOS.log
+        └── QEMU.log
 
-## Important implementation boundary
+The folders are created by the storage provisioner when it is called. The
+Windows 11 ISO is selected/downloaded into Windows11/ISO; the VHDX is the
+persistent guest disk in Windows11/Disks. The marker is only written after
+an explicit installation-complete confirmation.
 
-This code validates profile values and builds QEMU command-line argument vectors.
-It does **not** yet pass those arguments to the QEMU UWP host API or start a guest.
-The QemuHostAdapter currently loads the packaged DLL and checks expected exports;
-it does not call the host lifecycle functions or run the guest loop.
+## JIT / TCG
 
-The generated virtio, USB and user-network arguments are therefore preparation,
-not proof that those devices are active. Audio through XAudio2, keyboard/mouse/
-controller event forwarding, guest framebuffer presentation, UEFI firmware
-discovery and actual networking still require host-API integration and testing.
+QEMU TCG is the CPU translator and JIT engine; it is not a separate host
+hypervisor. OnyxOS passes the following default argument:
 
-UEFI arguments must be added only after the exact compatible firmware files are
-available. Windows 11 TPM 2.0/Secure Boot support is not configured, so its
-installer may reject this profile. macOS compatibility, firmware and licensing
-remain unresolved.
+    -accel tcg,thread=multi,tb-size=128
 
-See [QEMU-HOST-ADAPTER.md](QEMU-HOST-ADAPTER.md) for DLL integration status.
+The value is generated from VmConfiguration::tcgJitCacheMB and validated
+between 16 and 256 MB. This controls the translation-block cache, not the
+amount of RAM assigned to Windows 11. TCG remains software emulation; Xbox
+hardware virtualization/KVM is not assumed.
 
-## Host devices
+## Implementation boundary
 
-See [VM-DEVICES.md](VM-DEVICES.md) for the current XAudio2, keyboard, mouse,
-Xbox controller and user-mode NAT configuration. The input bridge uses the
-QEMU UWP host API and CoreWindow/Gamepad events. It is not yet a complete guest
-runtime: the QEMU initialization/main-loop and video/audio session path must be
-connected before input can control a running guest.
+The VM configuration builds the argument vector, and the QEMU adapter loads
+the packaged host DLL and exposes lifecycle methods. This documentation does
+not claim that the full CoreWindow-to-QEMU start path, guest frame rendering,
+audio, networking, VHDX creation, TPM 2.0 or Secure Boot are complete. Those
+items still require build and Xbox testing.
