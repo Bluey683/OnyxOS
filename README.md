@@ -1,88 +1,78 @@
 # OnyxOS
 
-**Xbox UWP application for running a Windows 11 x86-64 guest with QEMU**
+**Xbox UWP host for a Windows 11 22H2 x86-64 virtual machine**
 
 OnyxOS is an experimental Windows UWP application targeting Xbox Developer
-Mode. It uses a native CoreWindow host and QEMU software emulation.
+Mode. It uses a native CoreWindow host and QEMU TCG software emulation.
 
-> **Status: experimental.** The repository contains the CoreWindow shell,
-> QEMU runtime staging, Windows 11 VM configuration, app-private storage
-> layout, and diagnostic logging. A successful Windows 11 guest boot on Xbox
-> is not yet verified. VHDX creation, full VM lifecycle, guest display,
-> audio, networking, TPM 2.0 and Secure Boot still require implementation
-> and target testing.
+> **Experimental:** a complete Windows 11 guest boot on Xbox is not yet
+> verified. The VM profile is configured for one virtual CPU and a strict
+> maximum of 3072 MB guest RAM. These limits are below Microsoft's published
+> Windows 11 minimum requirements (2 cores and 4 GB RAM), so Windows 11 22H2
+> setup or runtime may refuse to proceed or be unstable.
 
 ## Scope
 
-OnyxOS supports **Windows 11 only** as its guest operating system. It does not
-provide a multi-OS launcher. Target platform is Xbox Series X|S in UWP
-Developer Mode, x64, using QEMU TCG. Hardware virtualization, KVM and VT-x
-are not assumed.
+The only guest target is **Windows 11 version 22H2, x64**. No other guest
+operating systems are included. Target host is Xbox Series X|S UWP Developer
+Mode. Hardware virtualization, KVM and VT-x are not assumed.
 
-## Architecture
+## VM configuration
 
-- Native C++/WinRT CoreWindow application; no XAML pages.
-- Direct3D 11 host swap chain.
-- QEMU x86-64 through the upstream QEMU-UWP-Host runtime.
-- TCG multi-threaded software CPU translation with a configurable JIT
-  translation-block cache (128 MB default; 16–256 MB allowed).
-- Windows 11 x64 guest profile, with 2 vCPUs and 4096 MB configured RAM.
-- Windows 11 ISO installer and persistent VHDX disk kept in app-private
-  LocalState storage.
+- One virtual CPU.
+- 3072 MB maximum guest RAM (3 GiB).
+- QEMU TCG single-threaded software translation.
+- 128 MB JIT translation-block cache (configurable 16–256 MB).
+- Q35 machine and UEFI firmware.
+- Windows 11 22H2 x64 installer ISO and persistent VHDX disk.
+- Direct3D 11 CoreWindow host; no XAML pages.
 
-## Windows 11 files
-
-On first storage initialization, OnyxOS creates the following app-private
-folders:
+## LocalState storage
 
     LocalState/
     ├── Windows11/
     │   ├── ISO/
-    │   │   └── Windows11.iso
+    │   │   └── Windows11-22H2-x64.iso
     │   ├── Disks/
-    │   │   └── Windows11.vhdx
+    │   │   └── Windows11-22H2.vhdx
     │   ├── Configurations/
     │   └── State/
     └── Logs/
         ├── OnyxOS.log
         └── QEMU.log
 
-The ISO is the Windows 11 installer. The VHDX stores the installed Windows
-11 system. Existing ISO/VHDX files are signature-checked before use. Automatic
-VHDX creation is not implemented yet, so a valid disk must be provisioned
-before booting an installed guest.
+The ISO is the installer media; the VHDX stores the installed guest. Automatic
+VHDX creation and full installation flow are not implemented yet.
 
-## Logs
+## Diagnostics
 
-- LocalState/Logs/OnyxOS.log: application INFO, WARN and ERROR events.
-- LocalState/Logs/QEMU.log: QEMU host/runtime diagnostics.
-- Messages are also sent to the debugger output stream.
+- LocalState/Logs/OnyxOS.log — application INFO/WARN/ERROR messages.
+- LocalState/Logs/QEMU.log — QEMU runtime messages.
+- Debugger output is also emitted for development diagnostics.
 
-## QEMU runtime
+## QEMU and JIT
 
 This branch uses upstream
 [QEMU-UWP-Host](https://github.com/rodrigoandrigo/QEMU-UWP-Host), pinned to
-commit 53d6af6314f535c4c71c4be269777a710063327b. The script
-[scripts/Fetch-QemuRuntime.ps1](scripts/Fetch-QemuRuntime.ps1) stages the
-matching x64 host DLL, runtime DLLs and firmware. Runtime staging does not
-prove that a guest boots.
+commit `53d6af6314f535c4c71c4be269777a710063327b`. QEMU TCG performs software
+CPU translation with a bounded JIT translation-block cache. This is not
+hardware virtualization.
 
-## Build and installation
+## Build
 
-- [BUILDING.md](BUILDING.md) — prerequisites and build instructions.
-- [INSTALLING.md](INSTALLING.md) — Windows/Xbox Developer Mode installation.
-- [GitHub Actions](.github/workflows/build-uwp.yml) — x64 UWP build.
+- [BUILDING.md](BUILDING.md)
+- [INSTALLING.md](INSTALLING.md)
+- [GitHub Actions](.github/workflows/build-uwp.yml)
 
-## Current limitations
+## Known limitations
 
-- The complete CoreWindow-to-QEMU startup and guest framebuffer path are not
-  yet verified end to end.
-- Automatic VHDX creation is not implemented.
-- Windows 11 TPM 2.0 and Secure Boot compatibility must be completed and tested.
-- Input, audio and network integration still require Xbox testing.
-- TCG is software emulation and may be slow; the JIT cache is not a hardware
-  virtualization feature.
-- Xbox/UWP memory, storage and executable-memory restrictions apply.
+- Windows 11 22H2 officially requires at least 2 CPU cores and 4 GB RAM;
+  this project's 1-vCPU/3-GB cap is an unsupported configuration.
+- TPM 2.0 and Secure Boot emulation still need implementation and validation.
+- VHDX creation, complete VM lifecycle, guest framebuffer, input, audio and
+  networking still need end-to-end Xbox testing.
+- TCG software emulation may be slow; Xbox/UWP memory and executable-memory
+  restrictions apply.
 
 ## Documentation
 
@@ -90,8 +80,3 @@ prove that a guest boots.
 - [ISO and VHDX storage](docs/AUTO-OS-DOWNLOAD.md)
 - [QEMU host integration](docs/QEMU-UWP-HOST-INTEGRATION.md)
 - [QEMU host API](docs/QEMU-UWP-HOST-API.md)
-
-## License
-
-Review this repository's license and all third-party licenses before
-redistribution. QEMU and QEMU-UWP-Host retain their respective licenses.
