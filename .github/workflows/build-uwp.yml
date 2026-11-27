@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   build-onyxos:
-    name: Build and sign seven OnyxOS entries into one APPX (x64)
+    name: Build and sign OnyxOS Windows 11 host (x64)
     runs-on: windows-2022
     timeout-minutes: 60
     steps:
