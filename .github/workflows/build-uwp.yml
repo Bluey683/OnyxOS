@@ -15,39 +15,63 @@ concurrency:
 
 jobs:
   build-onyxos:
-    name: Build and sign OnyxOS Windows 11 host (x64)
+    name: Build patched QEMU and OnyxOS Windows 11 host (x64)
     runs-on: windows-2022
-    timeout-minutes: 60
+    timeout-minutes: 120
     steps:
       - name: Check out OnyxOS
         uses: actions/checkout@v4
+
       - name: Set up MSVC x64
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x64
-      - name: Validate pinned upstream QEMU-UWP-Host integration
+
+      - name: Set up MSYS2 UCRT64 for QEMU
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            base-devel
+            git
+            make
+            patch
+            diffutils
+            flex
+            bison
+            perl
+            python
+            mingw-w64-ucrt-x86_64-toolchain
+            mingw-w64-ucrt-x86_64-glib2
+            mingw-w64-ucrt-x86_64-pixman
+            mingw-w64-ucrt-x86_64-python
+            mingw-w64-ucrt-x86_64-meson
+            mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-pkgconf
+            mingw-w64-ucrt-x86_64-zlib
+            mingw-w64-ucrt-x86_64-libslirp
+
+      - name: Validate pinned QEMU UWP source inputs
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
           $fetchScript = Get-Content 'scripts/Fetch-QemuRuntime.ps1' -Raw
-          $buildScript = Get-Content 'Build.ps1' -Raw
-          $pin = '53d6af6314f535c4c71c4be269777a710063327b'
-          if ($fetchScript -notmatch [regex]::Escape($pin)) {
-            throw "QEMU-UWP-Host is not pinned to the expected upstream commit: $pin"
-          }
-          if ($buildScript -notmatch 'Fetch-QemuRuntime\.ps1') {
-            throw 'Build.ps1 does not invoke the upstream QEMU runtime fetch step.'
-          }
-          Write-Host "Verified QEMU-UWP-Host source pin: $pin"
+          $qemuBuildScript = Get-Content 'scripts/Build-QemuUwp.ps1' -Raw
+          $alignmentScript = Get-Content 'scripts/Apply-QemuBlockAlignmentFix.ps1' -Raw
+          $hostPin = '53d6af6314f535c4c71c4be269777a710063327b'
+          $overlayPin = 'b9d726d9c4e1c06a5666178a267fd635d0e69e52'
+          if ($fetchScript -notmatch [regex]::Escape($hostPin)) { throw "Unexpected QEMU host runtime pin: $hostPin" }
+          if ($qemuBuildScript -notmatch [regex]::Escape($overlayPin)) { throw "Unexpected QEMU UWP overlay pin: $overlayPin" }
+          if ($alignmentScript -notmatch 'GetDiskFreeSpace' -or $alignmentScript -notmatch 'BDRV_SECTOR_SIZE') { throw 'The block alignment fallback patch is missing.' }
+          Write-Host 'Pinned QEMU host, UWP overlay and block alignment fix verified.'
 
-      - name: Install qemu-img on the GitHub Actions runner
+      - name: Install qemu-img on the Windows runner
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
           choco install qemu -y --no-progress
           if ($LASTEXITCODE -ne 0) { throw "Chocolatey QEMU installation failed: $LASTEXITCODE" }
-          # Chocolatey installs QEMU under Program Files, but the installer
-          # does not reliably refresh the current Actions process PATH.
           $candidateDirs = @(
             (Join-Path $env:ProgramFiles 'qemu'),
             (Join-Path $env:ProgramFiles 'QEMU'),
@@ -55,7 +79,6 @@ jobs:
           ) | Where-Object { $_ -and (Test-Path -LiteralPath $_) }
           foreach ($dir in $candidateDirs) {
             $env:PATH = "$dir;$env:PATH"
-            $env:GITHUB_PATH | Out-Null
             if ($env:GITHUB_PATH) { Add-Content -LiteralPath $env:GITHUB_PATH -Value $dir }
           }
           $qemuImg = Get-Command qemu-img.exe -ErrorAction SilentlyContinue
@@ -63,17 +86,18 @@ jobs:
             $qemuImgPath = Get-ChildItem -Path $candidateDirs -Filter 'qemu-img.exe' -File -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
             if ($qemuImgPath) { $qemuImg = $qemuImgPath }
           }
-          if (-not $qemuImg) { throw "QEMU was installed, but qemu-img.exe was not found. Searched: $($candidateDirs -join '; ')" }
+          if (-not $qemuImg) { throw 'qemu-img.exe was not found after installing QEMU.' }
           $qemuImgExecutable = if ($qemuImg.Source) { $qemuImg.Source } else { $qemuImg.FullName }
           & $qemuImgExecutable --version
           if ($LASTEXITCODE -ne 0) { throw 'qemu-img version check failed.' }
-      - name: Create a fresh Windows 11 QCOW2 template
+
+      - name: Create Windows 11 QCOW2 template
         shell: pwsh
         run: ./scripts/New-Qcow2Template.ps1 -RepositoryRoot $PWD -VirtualSize 64G
 
-      - name: Build and package OnyxOS with Visual Studio MSBuild
+      - name: Build patched QEMU DLL, compile and package OnyxOS
         shell: pwsh
-        run: ./Build.ps1 -Mode GitHubActions -Configuration Release -Architecture x64
+        run: ./Build.ps1 -Mode GitHubActions -Configuration Release -Architecture x64 -BuildQemuFromSource -MSYS2Root "$env:RUNNER_TEMP/msys64"
 
       - name: Sign APPX
         if: github.event_name != 'pull_request'
@@ -127,6 +151,7 @@ jobs:
           Remove-Item $pfxPath -Force
           $cert.Dispose()
           Write-Host 'APPX signing step completed.'
+
       - name: Upload OnyxOS APPX and runtime dependency
         if: success()
         uses: actions/upload-artifact@v4
