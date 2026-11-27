@@ -6,6 +6,7 @@
 #include <dxgi1_2.h>
 #include <string>
 #include "OnyxLogger.h"
+#include "OnyxNativeLog.h"
 #include "vm/VhdxProvisioner.h"
 #include "vm/VirtualMachine.h"
 #include "vm/QemuHostAdapter.h"
@@ -42,7 +43,7 @@ namespace OnyxOS
         if (length <= 0) return {};
         std::string result(static_cast<std::size_t>(length), '\0');
         WideCharToMultiByte(CP_UTF8, 0, value.c_str(), static_cast<int>(value.size()),
-            result.data(), length, nullptr, nullptr);
+            &result[0], length, nullptr, nullptr);
         return result;
     }
 
