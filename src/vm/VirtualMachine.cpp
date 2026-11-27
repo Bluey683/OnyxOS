@@ -53,7 +53,7 @@ namespace vm
         if (c.name != "Windows 11")
             return { false, "O nome do sistema convidado deve ser Windows 11." };
         if (c.diskPath.empty())
-            return { false, "Informe o caminho do disco virtual Windows11.vhdx." };
+            return { false, "Informe o caminho do disco virtual Windows11-22H2.qcow2." };
         if (!IsSafeMachineType(c.machineType) || !IsSafeCpuModel(c.cpuModel))
             return { false, "O tipo de máquina ou modelo de CPU contém caracteres inválidos." };
         if (c.memoryMB < 1024 || c.memoryMB > 3072)
@@ -66,8 +66,8 @@ namespace vm
             c.displayHeight > 2160 || c.displayRefreshHz < 30 || c.displayRefreshHz > 120)
             return { false, "A resolução ou taxa de atualização do vídeo é inválida." };
         if (!c.isoPath.empty())
-            return { true, "Windows 11 validado. A ISO será usada para instalação no disco VHDX." };
-        return { true, "Windows 11 validado. Inicialização pelo disco VHDX." };
+            return { true, "Windows 11 validado. A ISO será usada para instalação no disco QCOW2." };
+        return { true, "Windows 11 validado. Inicialização pelo disco QCOW2." };
     }
 
     std::vector<std::string> BuildQemuArguments(const VmConfiguration& c)
@@ -84,16 +84,16 @@ namespace vm
 
         add("-name", "Windows 11");
         add("-machine", c.machineType);
-        // QEMU TCG is the software CPU translator/JIT. The translation-block
-        // cache is configurable and deliberately bounded for Xbox UWP memory.
-        add("-accel", "tcg,thread=multi,tb-size=" + std::to_string(c.tcgJitCacheMB));
+        // QEMU TCG performs software CPU translation/JIT. Keep the translator
+        // single-threaded and bound its translation-block cache for Xbox UWP.
+        add("-accel", "tcg,thread=single,tb-size=" + std::to_string(c.tcgJitCacheMB));
         add("-cpu", c.cpuModel);
         add("-m", std::to_string(c.memoryMB));
         add("-smp", "1,sockets=1,cores=1,threads=1");
         add("-display", "host");
         add("-L", "qemu");
 
-        add("-drive", "file=" + c.diskPath + ",if=none,id=onyx_disk,format=vhdx");
+        add("-drive", "file=" + c.diskPath + ",if=none,id=onyx_disk,format=qcow2");
         args.emplace_back("-device");
         args.emplace_back("virtio-blk-pci,drive=onyx_disk,bootindex=2");
 
