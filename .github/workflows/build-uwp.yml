@@ -19,27 +19,30 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out OnyxOS
+        uses: actions/checkout@v4
       - name: Set up MSVC x64
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x64
+      - name: Validate pinned upstream QEMU-UWP-Host integration
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $fetchScript = Get-Content 'scripts/Fetch-QemuRuntime.ps1' -Raw
+          $buildScript = Get-Content 'Build.ps1' -Raw
+          $pin = '53d6af6314f535c4c71c4be269777a710063327b'
+          if ($fetchScript -notmatch [regex]::Escape($pin)) {
+            throw "QEMU-UWP-Host is not pinned to the expected upstream commit: $pin"
+          }
+          if ($buildScript -notmatch 'Fetch-QemuRuntime\.ps1') {
+            throw 'Build.ps1 does not invoke the upstream QEMU runtime fetch step.'
+          }
+          Write-Host "Verified QEMU-UWP-Host source pin: $pin"
+
       - name: Build and package OnyxOS with Visual Studio MSBuild
         shell: pwsh
         run: ./Build.ps1 -Mode GitHubActions -Configuration Release -Architecture x64
-
-      - name: Diagnose generated XAML code on build failure
-        if: failure()
-        shell: pwsh
-        run: |
-          $generated = Join-Path $PWD 'Generated Files'
-          if (Test-Path $generated) {
-            Get-ChildItem $generated -Recurse -File |
-              Where-Object { $_.Name -match 'LauncherPage|GuestPage|XamlTypeInfo' } |
-              Select-Object FullName, Length
-          } else {
-            Write-Host 'Generated Files directory was not created.'
-          }
 
       - name: Sign APPX
         if: github.event_name != 'pull_request'
@@ -93,14 +96,14 @@ jobs:
           Remove-Item $pfxPath -Force
           $cert.Dispose()
           Write-Host 'APPX signing step completed.'
-      - name: Upload signed OnyxOS package and public certificate
-        if: github.event_name != 'pull_request'
+      - name: Upload OnyxOS APPX and runtime dependency
+        if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: OnyxOS-Xbox-UWP-x64-Signed
+          name: OnyxOS-Xbox-UWP-x64-${{ github.event_name == 'pull_request' && 'Unsigned-PR' || 'Signed' }}
           path: |
             artifacts/OnyxOS-x64.appx
             artifacts/Microsoft.VCLibs.x64.14.00.appx
             artifacts/OnyxOS-signing.cer
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 14
