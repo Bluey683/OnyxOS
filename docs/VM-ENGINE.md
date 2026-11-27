@@ -19,13 +19,13 @@ and a bypass would not make the configuration supported or guarantee stability.
 
     LocalState/
     ├── Windows11/
-    │   ├── ISO/Windows11-22H2-x64.iso
+    │   ├── ISO/any-Windows11-installer.iso
     │   ├── Disks/Windows11-22H2.qcow2
     │   ├── Configurations/
     │   └── State/
     └── Logs/
 
-The ISO is installation media; the QCOW2 file is persistent guest storage.
+Any valid Windows 11 installer ISO filename is accepted from the ISO folder. The ISO is installation media; the QCOW2 file is persistent guest storage.
 Automatic QCOW2 creation and end-to-end install are not implemented yet.
 
 ## TCG JIT
