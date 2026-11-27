@@ -5,6 +5,7 @@
 #include <dxgi1_2.h>
 #include <string>
 #include "OnyxLogger.h"
+#include "vm/VhdxProvisioner.h"
 
 using namespace Platform;
 using namespace Windows::ApplicationModel::Core;
@@ -19,6 +20,10 @@ namespace OnyxOS
         {
             OutputDebugStringW(L"[OnyxOS] CoreApplication initialized.\n");
             OnyxLogger::Info(L"APP", L"CoreApplication initialized.");
+            if (onyx::vm::EnsureDevelopmentFilesDirectories())
+                OnyxLogger::Info(L"STORAGE", L"Windows 11 LocalState folders are ready.");
+            else
+                OnyxLogger::Error(L"STORAGE", L"Could not create Windows 11 LocalState folders.");
         }
 
         virtual void SetWindow(CoreWindow^ window)
