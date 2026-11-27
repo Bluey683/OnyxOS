@@ -10,29 +10,28 @@ namespace vm
 {
     enum class GuestOperatingSystem
     {
-        Windows,
-        Linux,
-        MacOS
+        Windows
     };
 
     struct VmConfiguration
     {
         std::string id;
         std::string name;
-        GuestOperatingSystem operatingSystem{ GuestOperatingSystem::Linux };
+        GuestOperatingSystem operatingSystem{ GuestOperatingSystem::Windows };
         std::string isoPath;
         std::string diskPath;
         std::string machineType{ "q35" };
         std::string cpuModel{ "max" };
-        std::uint32_t memoryMB{ 3072 };
+        std::uint32_t memoryMB{ 4096 };
         std::uint32_t cpuCount{ 2 };
+        std::uint32_t tcgJitCacheMB{ 128 };
         bool useUefi{ true };
         bool enableNetwork{ true };
         bool enableVirtioGraphics{ true };
         bool enableUsbInput{ true };
         bool enabled{ true };
-        std::uint32_t displayWidth{ 1280 };
-        std::uint32_t displayHeight{ 720 };
+        std::uint32_t displayWidth{ 1920 };
+        std::uint32_t displayHeight{ 1080 };
         std::uint32_t displayRefreshHz{ 60 };
     };
 
@@ -42,10 +41,7 @@ namespace vm
         std::string message;
     };
 
-    // Builds arguments for the QEMU UWP host API. It does not launch a process.
-    // Firmware and host-specific audio/video callbacks must be configured by
-    // the QEMU integration layer after the matching runtime is loaded.
-    // Returns the machine and display defaults selected for an OS profile.
+    // Builds arguments for the QEMU UWP host API; it does not launch a VM.
     VmConfiguration CreateProfile(const std::string& profileId);
     ValidationResult Validate(const VmConfiguration& configuration);
     std::vector<std::string> BuildQemuArguments(const VmConfiguration& configuration);
