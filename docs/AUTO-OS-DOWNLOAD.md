@@ -8,12 +8,13 @@ OnyxOS opens the official
 [Windows 11 download page](https://www.microsoft.com/software-download/windows11)
 instead of pretending that the page itself is an ISO file.
 
-Save the ISO as:
+Save any Windows 11 installer ISO with its original filename in:
 
-    LocalState/Windows11/ISO/Windows11-22H2-x64.iso
+    LocalState/Windows11/ISO/
 
-The storage provisioner checks the ISO9660 CD001 volume descriptor before
-returning the image path to the VM configuration.
+OnyxOS scans that folder and selects the first valid `*.iso` file. It does not require a fixed filename.
+
+The storage provisioner scans the ISO folder, checks each candidate for an ISO9660 CD001 volume descriptor, and returns the first valid ISO path to the VM configuration.
 
 ## Windows 11 virtual disk
 
