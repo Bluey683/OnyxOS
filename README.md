@@ -69,11 +69,7 @@ These folders are intended for installation images, virtual disks, VM configurat
 
 ## QEMU dependency
 
-The intended x86-64 host library is `qemu-system-x86_64.dll`.
-
-The DLL is not a standalone emulator package. A working integration also needs compatible runtime dependencies, firmware/resources, host API integration, and correct UWP packaging. The exact DLL build and its exported API must be validated before use.
-
-Upstream reference: [QEMU-UWP-Host](https://github.com/rodrigoandrigo/QEMU-UWP-Host).
+On the `feature/windows11-corewindow` branch, the x86-64 runtime is sourced from the upstream [QEMU-UWP-Host](https://github.com/rodrigoandrigo/QEMU-UWP-Host) project at pinned commit `53d6af6314f535c4c71c4be269777a710063327b`. `scripts/Fetch-QemuRuntime.ps1` stages its `qemu-system-x86_64.dll`, matching runtime DLLs, BIOS/UEFI firmware and supporting QEMU resources. `Build.ps1` runs this fetch automatically and validates the staged files before packaging. See [QEMU-UWP-Host integration](docs/QEMU-UWP-HOST-INTEGRATION.md) and the retained upstream Apache-2.0 license. The runtime fetch is not proof of successful VM boot; the CoreWindow frame bridge and Xbox runtime still require end-to-end testing.
 
 ## Build and installation
 
