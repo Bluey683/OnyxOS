@@ -34,11 +34,12 @@ namespace vm
         c.id = "windows11";
         c.name = "Windows 11";
         c.operatingSystem = GuestOperatingSystem::Windows;
-        c.memoryMB = 4096;
-        c.cpuCount = 2;
+        c.memoryMB = 3072;
+        c.cpuCount = 1;
         c.tcgJitCacheMB = 128;
         c.displayWidth = 1920;
         c.displayHeight = 1080;
+        c.windowsRelease = "Windows 11 22H2";
         c.enabled = (profileId == "windows11");
         return c;
     }
@@ -55,10 +56,10 @@ namespace vm
             return { false, "Informe o caminho do disco virtual Windows11.vhdx." };
         if (!IsSafeMachineType(c.machineType) || !IsSafeCpuModel(c.cpuModel))
             return { false, "O tipo de máquina ou modelo de CPU contém caracteres inválidos." };
-        if (c.memoryMB < 2048 || c.memoryMB > 8192)
-            return { false, "A memória do Windows 11 deve estar entre 2048 MB e 8192 MB." };
-        if (c.cpuCount < 1 || c.cpuCount > 4)
-            return { false, "A quantidade de vCPUs deve estar entre 1 e 4 no perfil Xbox." };
+        if (c.memoryMB < 1024 || c.memoryMB > 3072)
+            return { false, "O limite de memória convidada é 3072 MB (3 GB)." };
+        if (c.cpuCount != 1)
+            return { false, "Este perfil permite exatamente uma vCPU." };
         if (c.tcgJitCacheMB < 16 || c.tcgJitCacheMB > 256)
             return { false, "O cache JIT TCG deve estar entre 16 MB e 256 MB." };
         if (c.displayWidth < 640 || c.displayWidth > 3840 || c.displayHeight < 480 ||
@@ -88,7 +89,7 @@ namespace vm
         add("-accel", "tcg,thread=multi,tb-size=" + std::to_string(c.tcgJitCacheMB));
         add("-cpu", c.cpuModel);
         add("-m", std::to_string(c.memoryMB));
-        add("-smp", std::to_string(c.cpuCount));
+        add("-smp", "1,sockets=1,cores=1,threads=1");
         add("-display", "host");
         add("-L", "qemu");
 
