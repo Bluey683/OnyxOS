@@ -2,9 +2,9 @@
 
 **Xbox UWP OS emulator project powered by QEMU**
 
-OnyxOS is an experimental Windows UWP application designed to host x86-64 guest operating systems on Xbox consoles through software emulation. The project targets Xbox Developer Mode and uses a native C++/WinRT CoreWindow application model.
+OnyxOS is an experimental Windows UWP application designed for one purpose: running a Windows 11 x86-64 guest on Xbox consoles through QEMU software emulation. The project targets Xbox Developer Mode and uses a native C++/WinRT CoreWindow application model.
 
-> **Development status: experimental scaffold.** The repository contains the CoreWindow host shell, package/build configuration, guest profile metadata, VM configuration code, and scripts for staging a pinned upstream QEMU-UWP-Host runtime. The QEMU runtime is not yet proven to boot a guest from the OnyxOS application. The guest display bridge, input, audio, networking, storage workflow, and full VM lifecycle still require integration and testing. No successful guest boot or fully validated Xbox deployment is claimed.
+> **Development status: experimental scaffold.** The repository contains the CoreWindow host shell, package/build configuration, Windows 11 guest configuration, VM configuration code, and scripts for staging a pinned upstream QEMU-UWP-Host runtime. The QEMU runtime is not yet proven to boot a guest from the OnyxOS application. The guest display bridge, input, audio, networking, storage workflow, and full VM lifecycle still require integration and testing. No successful guest boot or fully validated Xbox deployment is claimed.
 
 ## Target platform
 
@@ -16,29 +16,11 @@ OnyxOS is an experimental Windows UWP application designed to host x86-64 guest 
 
 OnyxOS is an Xbox/UWP project. It is not an Android application and does not provide a Moto/phone version.
 
-## Package design
+## Project scope: Windows 11 only
 
-The package is designed to expose seven application entries:
+OnyxOS will support **Windows 11 only** as its guest operating system. Windows 10, Debian, Ubuntu, Arch Linux, macOS, and other guest operating systems are outside the project scope. The APPX is the OnyxOS application; Windows 11 is the single target guest, not one item in a multi-OS launcher.
 
-1. OnyxOS Launcher
-2. Windows 10
-3. Windows 11
-4. Debian
-5. Ubuntu
-6. Arch Linux
-7. macOS (experimental)
-
-These are entries in one APPX package, not seven separate installers. They are currently package/profile scaffolding and should not be interpreted as seven independently working virtual machines.
-
-See [docs/APPX-STRUCTURE.md](docs/APPX-STRUCTURE.md).
-
-## Guest operating-system profiles
-
-Guest profile metadata is stored in [config/os-profiles.json](config/os-profiles.json). It describes intended architectures, machine settings, memory targets, and installation media locations.
-
-Actual compatibility depends on QEMU support, firmware, guest requirements, and UWP restrictions. Windows 11 may require additional TPM and Secure Boot support. macOS remains experimental and is subject to its own hardware and licensing restrictions.
-
-See [docs/OS-PROFILES.md](docs/OS-PROFILES.md).
+The Windows 11 guest configuration is maintained in [config/os-profiles.json](config/os-profiles.json). Compatibility depends on QEMU, firmware, guest requirements, and UWP restrictions. Windows 11 may require additional TPM 2.0 and Secure Boot support, which must be validated in the target environment.
 
 ## Architecture and implementation status
 
@@ -46,9 +28,9 @@ See [docs/OS-PROFILES.md](docs/OS-PROFILES.md).
 | --- | --- | --- |
 | CoreWindow host | Native Xbox/UWP application window and event loop | Initial host shell present; device testing required |
 | D3D11 presentation | Swap chain and host rendering surface | Host renderer scaffold; guest framebuffer not yet connected end to end |
-| QEMU x86-64 | Execute guest machines using TCG | Pinned upstream runtime staging is configured; VM boot not verified |
+| QEMU x86-64 | Run the Windows 11 guest using TCG | Pinned upstream runtime staging is configured; VM boot not verified |
 | VM configuration | Validate guest settings and prepare QEMU configuration/arguments | Shared configuration layer present |
-| Launcher and profiles | Select and manage guest operating systems | Profile/package scaffolding; complete launcher workflow pending |
+| Windows 11 configuration | Configure the single supported guest OS | Configuration scaffolding; complete setup workflow pending |
 | Input | Keyboard, pointer, and Xbox controller | Not fully integrated |
 | Audio | Guest audio output through the Xbox/UWP audio path | Not integrated |
 | Storage | ISO images, virtual disks, and VM configuration | Intended layout documented; complete provisioning workflow pending |
@@ -87,7 +69,7 @@ LocalState/
 └── Logs/
 ```
 
-These locations are intended for installation images, virtual disks, VM configuration files, and logs. The complete file-selection, disk-creation, and guest-start workflow is still under development. UWP applications have isolated private storage; one app entry must not assume direct access to another app entry's LocalState.
+These locations are intended for the Windows 11 installation image, its virtual disk, VM configuration, and logs. The complete file-selection, disk-creation, and guest-start workflow is still under development. UWP applications have isolated private storage; the application must not assume access to another app's LocalState.
 
 ## Build and installation
 
@@ -102,7 +84,7 @@ Package signing requires a development certificate whose subject matches the Pub
 ## Documentation
 
 - [APPX package structure](docs/APPX-STRUCTURE.md)
-- [OS profiles](docs/OS-PROFILES.md)
+- [Windows 11 guest configuration](docs/OS-PROFILES.md)
 - [VM engine](docs/VM-ENGINE.md)
 - [VM devices](docs/VM-DEVICES.md)
 - [Automatic OS downloads and VHDX](docs/AUTO-OS-DOWNLOAD.md)
@@ -116,14 +98,14 @@ Package signing requires a development certificate whose subject matches the Pub
 - VT-x/KVM, kernel drivers, unrestricted hardware access, and GPU passthrough are not assumed available.
 - Configured guest RAM values are targets, not guarantees of available memory.
 - Input, audio, networking, persistent disk provisioning, guest display integration, and complete VM lifecycle controls are not yet verified end to end.
-- Windows 11 and macOS guest compatibility must not be assumed from the presence of profile entries.
+- Windows 11 guest compatibility, including TPM 2.0, Secure Boot, and installation, must be verified on target hardware.
 
 ## Repository structure
 
 ```text
 .
 ├── .github/workflows/       # GitHub Actions workflow
-├── config/                  # Guest OS profile metadata
+├── config/                  # Windows 11 guest configuration
 ├── Dependencies/            # Third-party runtime staging locations
 ├── docs/                    # Architecture and integration notes
 ├── graphics/                # Host graphics and shader sources
