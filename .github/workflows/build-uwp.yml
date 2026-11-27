@@ -1,7 +1,7 @@
 name: OnyxOS Xbox UWP Build
 on:
   push:
-    branches: [main]
+    branches: [main, feature/windows11-corewindow]
   pull_request:
     branches: [main]
   workflow_dispatch:
