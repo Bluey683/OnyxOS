@@ -55,14 +55,14 @@ try {
     if (-not (Test-Path -LiteralPath $cxbxHeader -PathType Leaf)) { throw "CXBX CPU header missing: $cxbxHeader" }
     $cxbxText = [IO.File]::ReadAllText($cxbxHeader)
     if (-not $cxbxText.Contains('QEMU_CXBX_CPU_RUN_TIMESLICE')) {
-        $enumOld = '    QEMU_CXBX_CPU_RUN_UNHANDLED_HLE,\n} QemuCxbxCpuRunReason;'
-        $enumNew = '    QEMU_CXBX_CPU_RUN_UNHANDLED_HLE,\n    QEMU_CXBX_CPU_RUN_TIMESLICE,\n    QEMU_CXBX_CPU_RUN_INTERRUPT,\n} QemuCxbxCpuRunReason;'
+        $enumOld = '    QEMU_CXBX_CPU_RUN_UNHANDLED_HLE,' + [Environment]::NewLine + '} QemuCxbxCpuRunReason;'
+        $enumNew = '    QEMU_CXBX_CPU_RUN_UNHANDLED_HLE,' + [Environment]::NewLine + '    QEMU_CXBX_CPU_RUN_TIMESLICE,' + [Environment]::NewLine + '    QEMU_CXBX_CPU_RUN_INTERRUPT,' + [Environment]::NewLine + '} QemuCxbxCpuRunReason;'
         if (-not $cxbxText.Contains($enumOld)) { throw 'CXBX run-reason enum patch target not found.' }
         $cxbxText = $cxbxText.Replace($enumOld, $enumNew)
     }
     if (-not $cxbxText.Contains('QEMU_CXBX_CPU_INTERRUPT_HARD')) {
         $flagsAnchor = 'typedef struct QemuCxbxCpuRegisters {'
-        $flagsDef = 'enum {\n    QEMU_CXBX_CPU_INTERRUPT_HARD = 1u << 0,\n    QEMU_CXBX_CPU_INTERRUPT_NMI = 1u << 1,\n};\n\n'
+        $flagsDef = 'enum {' + [Environment]::NewLine + '    QEMU_CXBX_CPU_INTERRUPT_HARD = 1u << 0,' + [Environment]::NewLine + '    QEMU_CXBX_CPU_INTERRUPT_NMI = 1u << 1,' + [Environment]::NewLine + '};' + [Environment]::NewLine + [Environment]::NewLine
         if (-not $cxbxText.Contains($flagsAnchor)) { throw 'CXBX interrupt flags patch target not found.' }
         $cxbxText = $cxbxText.Replace($flagsAnchor, $flagsDef + $flagsAnchor)
     }
