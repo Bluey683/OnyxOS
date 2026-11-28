@@ -95,9 +95,7 @@ namespace vm
         // Use the packaged x86_64 UEFI firmware for the Windows 11 guest.
         add("-bios", c.useUefi ? "qemu/edk2-x86_64-code.fd" : "qemu/bios-256k.bin");
 
-        add("-drive", "file=" + c.diskPath + ",if=none,id=onyx_disk,format=qcow2");
-        args.emplace_back("-device");
-        args.emplace_back("virtio-blk-pci,drive=onyx_disk,bootindex=2");
+        add("-drive", "file=" + c.diskPath + ",format=qcow2,if=virtio,cache=writeback");
 
         if (!c.isoPath.empty())
         {
