@@ -67,6 +67,17 @@ try {
         $cxbxText = $cxbxText.Replace($flagsAnchor, $flagsDef + $flagsAnchor)
     }
     [IO.File]::WriteAllText($cxbxHeader, $cxbxText, [Text.UTF8Encoding]::new($false))
+    # The overlay declares this exception-interception switch but omits its storage.
+    $cxbxSource = Join-Path $source 'target/i386/cxbx-cpu.c'
+    if (-not (Test-Path -LiteralPath $cxbxSource -PathType Leaf)) { throw "CXBX CPU source missing: $cxbxSource" }
+    $cxbxSourceText = [IO.File]::ReadAllText($cxbxSource)
+    $exceptionExtern = 'extern bool tcg_cxbx_intercept_guest_exceptions;'
+    if ($cxbxSourceText.Contains($exceptionExtern)) {
+        $cxbxSourceText = $cxbxSourceText.Replace($exceptionExtern, 'bool tcg_cxbx_intercept_guest_exceptions = false;')
+        [IO.File]::WriteAllText($cxbxSource, $cxbxSourceText, [Text.UTF8Encoding]::new($false))
+    } elseif (-not $cxbxSourceText.Contains('bool tcg_cxbx_intercept_guest_exceptions = false;')) {
+        throw 'CXBX exception-interception definition patch target not found.'
+    }
     $patchScript = Join-Path $RepositoryRoot 'scripts/Apply-QemuBlockAlignmentFix.ps1'
     if (-not (Test-Path -LiteralPath $patchScript)) { throw "QEMU alignment patch script missing: $patchScript" }
     & $patchScript -QemuSourceRoot $source
