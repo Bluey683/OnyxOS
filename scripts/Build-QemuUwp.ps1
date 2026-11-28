@@ -50,6 +50,23 @@ try {
     & $gitExe -C $overlaySource checkout --detach FETCH_HEAD
     if ($LASTEXITCODE -ne 0) { throw "Could not check out pinned UWP overlay commit $QemuOverlayCommit." }
     Copy-Item -Path (Join-Path $overlaySource '*') -Destination $source -Recurse -Force
+    # Repair missing public ABI constants used by the pinned CXBX TCG backend.
+    $cxbxHeader = Join-Path $source 'include/qemu/qemu-cxbx-cpu.h'
+    if (-not (Test-Path -LiteralPath $cxbxHeader -PathType Leaf)) { throw "CXBX CPU header missing: $cxbxHeader" }
+    $cxbxText = [IO.File]::ReadAllText($cxbxHeader)
+    if (-not $cxbxText.Contains('QEMU_CXBX_CPU_RUN_TIMESLICE')) {
+        $enumOld = '    QEMU_CXBX_CPU_RUN_UNHANDLED_HLE,\n} QemuCxbxCpuRunReason;'
+        $enumNew = '    QEMU_CXBX_CPU_RUN_UNHANDLED_HLE,\n    QEMU_CXBX_CPU_RUN_TIMESLICE,\n    QEMU_CXBX_CPU_RUN_INTERRUPT,\n} QemuCxbxCpuRunReason;'
+        if (-not $cxbxText.Contains($enumOld)) { throw 'CXBX run-reason enum patch target not found.' }
+        $cxbxText = $cxbxText.Replace($enumOld, $enumNew)
+    }
+    if (-not $cxbxText.Contains('QEMU_CXBX_CPU_INTERRUPT_HARD')) {
+        $flagsAnchor = 'typedef struct QemuCxbxCpuRegisters {'
+        $flagsDef = 'enum {\n    QEMU_CXBX_CPU_INTERRUPT_HARD = 1u << 0,\n    QEMU_CXBX_CPU_INTERRUPT_NMI = 1u << 1,\n};\n\n'
+        if (-not $cxbxText.Contains($flagsAnchor)) { throw 'CXBX interrupt flags patch target not found.' }
+        $cxbxText = $cxbxText.Replace($flagsAnchor, $flagsDef + $flagsAnchor)
+    }
+    [IO.File]::WriteAllText($cxbxHeader, $cxbxText, [Text.UTF8Encoding]::new($false))
     $patchScript = Join-Path $RepositoryRoot 'scripts/Apply-QemuBlockAlignmentFix.ps1'
     if (-not (Test-Path -LiteralPath $patchScript)) { throw "QEMU alignment patch script missing: $patchScript" }
     & $patchScript -QemuSourceRoot $source
