@@ -147,10 +147,35 @@ namespace onyx::vm
         OnyxOS::WriteQemuLogNative(L"Loading packaged QEMU host DLL.");
         m_error.clear();
         m_missing.clear();
+        // Capture the error immediately; subsequent Win32 calls can overwrite it.
         m_module = LoadPackagedLibrary(dllName.c_str(), 0);
         if (!m_module)
         {
-            m_error = L"LoadPackagedLibrary falhou. Código Win32: " + std::to_wstring(GetLastError());
+            const DWORD loadError = GetLastError();
+            wchar_t packagePath[MAX_PATH + 1]{};
+            const DWORD pathLength = GetModuleFileNameW(nullptr, packagePath, ARRAYSIZE(packagePath));
+            std::wstring diagnostic = L"LoadPackagedLibrary falhou para: " + dllName +
+                L"; Win32=" + std::to_wstring(loadError);
+            if (pathLength > 0 && pathLength < ARRAYSIZE(packagePath))
+            {
+                std::wstring root(packagePath, pathLength);
+                const auto slash = root.find_last_of(L"/\\");
+                if (slash != std::wstring::npos)
+                {
+                    root.resize(slash);
+                    diagnostic += L"; package root=" + root;
+                    const std::wstring dllPath = root + L"\\qemu-system-x86_64.dll";
+                    const DWORD attributes = GetFileAttributesW(dllPath.c_str());
+                    diagnostic += (attributes == INVALID_FILE_ATTRIBUTES)
+                        ? L"; main DLL missing in package root"
+                        : L"; main DLL exists in package root";
+                }
+            }
+            wchar_t errorText[512]{};
+            if (FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                nullptr, loadError, 0, errorText, ARRAYSIZE(errorText), nullptr))
+                diagnostic += L"; " + std::wstring(errorText);
+            m_error = diagnostic;
             OnyxOS::WriteQemuLogNative(m_error.c_str());
             return false;
         }
